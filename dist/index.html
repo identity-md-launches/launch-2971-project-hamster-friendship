@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Hamster Friendship: The Lost Alice</title>
-  <meta name="description" content="A short pixel-art adventure in your browser. Guide Chang the hamster through an autumn chestnut forest to learn what happened to his friend Alice.">
+  <meta name="description" content="A short pixel-art adventure in your browser. Help Chang find Alice in a seasonal pixel-art forest. Collect SQK, earn badges and try free prediction dice.">
   <meta name="theme-color" content="#1a110b">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hamster Friendship: The Lost Alice">
-  <meta property="og:description" content="Guide Chang the hamster through an autumn chestnut forest to learn what happened to his friend Alice.">
+  <meta property="og:description" content="Help Chang find Alice in a seasonal pixel-art forest. Collect SQK, earn badges and try free prediction dice.">
   <meta property="og:image" content="./og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -19,6 +19,7 @@
   <script src="./config.js" defer></script>
   <script src="./rules.js" defer></script>
   <script src="./save.js" defer></script>
+  <script src="./audio.js" defer></script>
   <script src="./game.js" defer></script>
   <script src="./wallet.js" defer></script>
   <script src="./ui.js" defer></script>
@@ -28,10 +29,13 @@
 
   <header class="site-header page">
     <h1>Hamster Friendship: The Lost Alice</h1>
-    <p class="lede">A pixel-art adventure you play in the browser. Help Chang search the chestnut forest for his missing friend.</p>
+    <p class="lede">A hamster adventure through the chestnut forest.</p>
     <nav class="game-utilities" aria-label="Player menu">
       <button class="btn btn-secondary btn-small" id="btn-profile" type="button">Profile</button>
       <button class="btn btn-secondary btn-small" id="btn-shop" type="button">Marketplace</button>
+      <button class="btn btn-secondary btn-small" id="btn-dice" type="button">SQK Dice</button>
+      <button class="btn btn-secondary btn-small" id="btn-guild" type="button" aria-expanded="false" aria-controls="player-dialog">GUILD</button>
+      <button class="btn btn-secondary btn-small" id="btn-audio" type="button">Audio</button>
       <button class="btn btn-secondary btn-small" id="btn-leaderboard" type="button">Top 100</button>
       <button class="btn btn-secondary btn-small" id="btn-wallet" type="button">Connect MetaMask</button>
     </nav>
@@ -70,17 +74,18 @@
         </p>
         <button class="btn btn-secondary btn-small hud-pause" id="btn-pause" type="button">Pause</button>
       </div>
-      <div class="map-status"><p><strong id="hud-weapon">Chestnut</strong><span id="hud-ammo"></span></p><p id="hud-timer">Boss in 60s</p></div>
+      <div class="map-status"><p><strong id="hud-weapon">Chestnut</strong><span id="hud-ammo"></span></p><p><span id="hud-season">Autumn</span> · <span id="hud-timer">Boss in 60s</span></p></div>
 
       <div class="stage" id="stage" tabindex="-1">
         <canvas id="game" width="320" height="192" tabindex="0" role="img" aria-label="Game view. Chang the hamster in the chestnut forest."></canvas>
 
         <div class="overlay" id="screen-start">
-          <h2>Chapter one: The chestnut forest</h2>
+          <h2 id="start-title">Chapter one: The chestnut forest</h2>
           <p class="overlay-text">Alice has vanished. Find out where she went.</p>
           <div class="overlay-actions">
             <button class="btn btn-primary" id="btn-start" type="button">Start chapter</button>
-            <a class="btn btn-secondary" href="#how-to-play">How to play</a>
+            <button class="btn btn-secondary" id="btn-replay" type="button" hidden>Replay map 1</button>
+            <button class="btn btn-secondary" id="btn-start-guild" type="button">Open GUILD</button>
           </div>
         </div>
 
@@ -103,8 +108,9 @@
         </div>
 
         <div class="overlay" id="screen-end" hidden>
-          <h2>Forest map complete</h2>
-          <p class="overlay-text">Chang holds a humming metal fragment. Alice is somewhere beyond the forest.</p>
+          <img class="victory-hamster" src="./victory.svg" alt="A winking Chang raises a large gold coin marked SQK" width="180" height="128">
+          <h2>Congratulations! You Win!</h2>
+          <p class="overlay-text">Another step closer to Alice. Your collected SQK is safe.</p>
           <dl class="stats">
             <div><dt>Shells collected</dt><dd id="end-shells">0</dd></div>
             <div><dt>Clues found</dt><dd id="end-clues">0 of 3</dd></div>
@@ -129,67 +135,67 @@
 
       <p id="game-error" class="error" role="alert"></p>
       <div class="touchpad" id="touchpad" aria-label="Touch controls" role="group">
-        <div class="pad-group">
-          <button class="btn btn-secondary pad-btn" type="button" data-action="left" aria-label="Move left">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 3 5 10l8 7z"/></svg>
-          </button>
-          <button class="btn btn-secondary pad-btn" type="button" data-action="right" aria-label="Move right">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 3 8 7-8 7z"/></svg>
-          </button>
+        <div class="pad-group movement-pad">
+          <div id="joystick" class="joystick" tabindex="0" role="group" aria-label="Movement joystick. Drag left or right; keyboard arrows also move."><span class="joystick-track" aria-hidden="true">↔</span><span class="joystick-thumb" aria-hidden="true"></span></div>
         </div>
         <div class="pad-group pad-group-actions">
           <button class="btn btn-secondary pad-btn" type="button" data-action="shield">Shield</button>
           <button class="btn btn-secondary pad-btn" type="button" data-action="interact">Look</button>
           <button class="btn btn-secondary pad-btn" type="button" data-action="swap">Swap</button>
           <button class="btn btn-secondary pad-btn" type="button" data-action="throw">Attack</button>
-          <button class="btn btn-primary pad-btn" type="button" data-action="jump">Jump</button>
+          <button class="btn btn-secondary pad-btn" type="button" data-action="jump">Jump</button>
         </div>
       </div>
-      <p class="pad-hint pad-hint-keys">Arrows move, Space jumps, <kbd>X</kbd> attacks, <kbd>Q</kbd> swaps weapons, hold <kbd>C</kbd> to shield, <kbd>E</kbd> looks and talks.</p>
-      <p class="pad-hint pad-hint-touch">Hold arrows to walk and Shield to block. Attack uses your equipped weapon.</p>
       <p class="save-summary" id="save-summary">Guest · saved on this device</p>
     </section>
 
-    <section class="info page" id="how-to-play" aria-labelledby="how-title">
-      <div>
-        <h2 id="how-title">How to play</h2>
+    <template id="guild-template">
+      <p class="panel-note">Find Alice, one forest map at a time.</p>
+      <details class="guild-chapter" open><summary>Controls</summary>
         <dl class="controls">
           <dt><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd></dt>
           <dd>Walk left and right</dd>
-          <dt><kbd>Space</kbd><kbd>W</kbd><kbd>&uarr;</kbd></dt>
+          <dt><kbd>Space</kbd><kbd>W</kbd><kbd>&uarr;</kbd><kbd>Z</kbd></dt>
           <dd>Jump. Hold for a higher jump.</dd>
           <dt><kbd>X</kbd> or <kbd>J</kbd></dt>
           <dd>Attack with your equipped weapon</dd>
           <dt><kbd>Q</kbd></dt>
           <dd>Swap between chestnuts and collected weapons</dd>
-          <dt><kbd>C</kbd><kbd>K</kbd><kbd>&darr;</kbd></dt>
+          <dt><kbd>C</kbd><kbd>K</kbd><kbd>&darr;</kbd><kbd>S</kbd></dt>
           <dd>Hold up a shell as a shield</dd>
           <dt><kbd>E</kbd> or <kbd>Enter</kbd></dt>
           <dd>Look, talk and read</dd>
           <dt><kbd>Esc</kbd> or <kbd>P</kbd></dt>
           <dd>Pause, resume or restart</dd>
         </dl>
+        <p>On touch screens, drag the left joystick to walk. Hold Jump for height, hold Shield to block, and use Attack, Look and Swap on the right. Rotate your phone for a wider view.</p>
+      </details>
+      <details class="guild-chapter"><summary>Combat and rewards</summary>
         <ul class="tips">
-          <li>Each map has 30 enemies and one boss. The boss appears at the forest exit after 60 seconds of active play.</li>
-          <li>One unblocked enemy hit or a fall restarts the current map. There is no healing. Shield blocks and stomps still work.</li>
-          <li>Every defeated enemy drops one gold SQK coin. Walk over it to keep it. Coins left behind disappear when you die.</li>
-          <li>Map 1 enemies have 100 HP; its boss has 500 HP. Each deeper map has 20% more HP, rounded up.</li>
-          <li>Weapon drop chance: 30%. Of drops, 30% are guns (20 damage), 30% swords (50 damage), 40% grenades (5 burning damage per second in an area for 8 seconds).</li>
-          <li>Chestnuts deal 25 damage; stomps deal 50. Shells fall from the canopy when supplies run low. Lanterns give spare shells.</li>
-          <li>Raise your shield when the cockroach charges. A blocked charge leaves it dazed.</li>
-          <li>Defeat all 30 enemies and the boss, then inspect the metal fragment beyond the gate to reach the next map.</li>
-          <li>Score: 100 per regular enemy, 500 per boss, 1,000 per map cleared. Cloud scores are checked by the server. Guest scores stay on this device.</li>
+          <li>Each map has 30 random monsters and one boss. Small monsters have 50 HP, large monsters 100 HP, and the boss 300 HP on map 1. HP rounds up after multiplying by 1.2 for every deeper map. Enemy damage also multiplies by 1.2.</li>
+          <li>One unblocked hit or a fall ends the run. Collected SQK, owned items and unlocked maps stay with your profile. There is no healing.</li>
+          <li>Each defeated monster, including the boss, independently has exactly a 20% chance to drop one SQK. Collect it before dying; coins left behind are lost.</li>
+          <li>Beetles patrol, ants charge, larvae throw chips, and ember monsters shoot fire. Face incoming attacks with Shield while on the ground. Jump and land on enemies to stomp.</li>
+          <li>The boss appears after 60 seconds of active play. Block its charge to daze it, then attack. Defeat all 30 monsters and the boss and inspect the metal fragment beyond the gate.</li>
+          <li>Chestnuts deal 25 damage; stomps and swords deal 50. Gun bullets deal 20. Grenades burn an area for 5 damage per second for 8 seconds. Skills keep their existing effects.</li>
+          <li>Weapon drops remain 30% per enemy: 30% of dropped weapons are guns, 30% swords, and 40% grenades. Low supplies trigger falling shells; lanterns, bushes and chests give more.</li>
+          <li>Score stays 100 per regular enemy, 500 per boss, and 1,000 per completed map. Spring has birds, summer sunlight, autumn leaves, and winter snow.</li>
         </ul>
-      </div>
-      <div>
-        <h2>The story so far</h2>
-        <div class="prose">
+      </details>
+      <details class="guild-chapter"><summary>SQK Dice and badges</summary>
+        <p>Predict HIGH (total greater than 7) or LOW (less than 7), then roll two independent, fair six-sided dice. Total 7 is a DRAW and gives no correct prediction. HIGH and LOW each have 15/36 outcomes (41.67%); DRAW has 6/36 (16.67%).</p>
+        <p>There is no staking, balance loss, gambling or real-money reward. Correct predictions and lifetime wins are saved. Dice never changes SQK balances.</p>
+        <p>Dice Bronze, Silver and Gold unlock at 20, 50 and 100 correct predictions. They stay on display and cannot be exchanged.</p>
+        <p>Skill badges are earned once by clearing maps 1 (Bronze), 3 (Silver) and 5 (Gold). Contribution badges are awarded by the project owner through the cloud backend for verified contributions. These separate badges can be removed once for 20, 50 or 120 SQK in Marketplace → Badge Exchange.</p>
+      </details>
+      <details class="guild-chapter"><summary>The story so far</summary>
+<div class="prose">
           <p>In a peaceful village beneath a chestnut forest, two hamster friends, Alice and Chang, live together.</p>
           <p>One evening a mysterious beam of light strikes the village. When Chang arrives, Alice is gone. All that is left is her overturned basket and a trail of scattered chestnut shells.</p>
           <p>Follow the trail, look for clues and find what lies at the forest exit.</p>
         </div>
-      </div>
-    </section>
+      </details>
+    </template>
   </main>
 
   <dialog id="player-dialog" class="player-dialog" aria-labelledby="panel-title">
@@ -204,7 +210,7 @@
   </dialog>
 
   <footer class="site-footer page">
-    <p>Hamster Friendship. Free to play with a keyboard or touch screen. Guest play never needs a wallet.</p>
+    <p><span class="brand-identity">SQUEEK.ALICE</span> · <span>SQUEEK.HAMSTER</span><br>Brand identity and domain concept. Free guest play; no wallet needed.</p>
   </footer>
 </body>
 </html>

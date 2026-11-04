@@ -26,8 +26,26 @@
     ['larva',154,10], ['beetle',172,10], ['ant',178,10], ['beetle',190,10],
     ['ant',201,10], ['beetle',204,10]
   ];
-  /** @param {number} map @param {boolean} [boss] */
-  function hp(map, boss) { return Math.ceil((boss ? 500 : 100) * Math.pow(1.2, Math.max(0, map - 1))); }
+  /** @param {number} map @param {boolean} [boss] @param {string} [size] */
+  function hp(map, boss, size) { return Math.ceil((boss ? 300 : size === 'small' ? 50 : 100) * Math.pow(1.2, Math.max(0, map - 1))); }
+  function monsterDamage(map) { return Math.pow(1.2, Math.max(0, map - 1)); }
+  function coinDrop(roll) { return roll >= 0 && roll < 0.2; }
+  function monster(roll, sizeRoll, map) {
+    var type = ['beetle', 'ant', 'larva', 'ember'][Math.min(3, Math.floor(roll * 4))];
+    var size = sizeRoll < 0.5 ? 'small' : 'large';
+    return { type: type, size: size, hp: hp(map, false, size), damage: monsterDamage(map) };
+  }
+  // Rejection sampling removes modulo bias; each die draws its own random byte.
+  function die(random) {
+    var bytes = new Uint8Array(1), value;
+    do { (random || crypto.getRandomValues.bind(crypto))(bytes); value = bytes[0]; } while (value >= 252);
+    return value % 6 + 1;
+  }
+  function diceResult(a, b, prediction) {
+    var total = a + b, outcome = total === 7 ? 'DRAW' : total > 7 ? 'HIGH' : 'LOW';
+    return { dice: [a, b], total: total, outcome: outcome, prediction: prediction, correct: prediction === outcome };
+  }
+  var tiers = [{ tier: 'bronze', correct: 20, maps: 1, sqk: 20 }, { tier: 'silver', correct: 50, maps: 3, sqk: 50 }, { tier: 'gold', correct: 100, maps: 5, sqk: 120 }];
   /** @param {number} roll @returns {string|null} */
   function drop(roll) {
     if (roll >= 0.3) return null;
@@ -41,7 +59,7 @@
   function cooldown(kind) { return kind === 'gun' ? 10 : kind === 'sword' ? 30 : kind === 'grenade' ? 60 : kind === 'stomp' ? 18 : 16; }
   /** @param {string} name */
   function validName(name) { return /^[\p{L}\p{N} _-]{2,20}$/u.test(name.trim()); }
-  var api = Object.freeze({ catalogue: Object.freeze(catalogue), spawns: Object.freeze(spawns), hp: hp, drop: drop, damage: damage, cooldown: cooldown, validName: validName });
+  var api = Object.freeze({ catalogue: Object.freeze(catalogue), spawns: Object.freeze(spawns), hp: hp, monsterDamage: monsterDamage, monster: monster, coinDrop: coinDrop, die: die, diceResult: diceResult, tiers: Object.freeze(tiers), drop: drop, damage: damage, cooldown: cooldown, validName: validName });
   // Both the browser and the Node test VM use this same global.
   globalThis.HamsterRules = api;
 })();

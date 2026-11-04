@@ -14,7 +14,8 @@
     var state = save.snapshot();
     document.getElementById('hud-sqk').textContent = state.profile.sqk.toLocaleString();
     document.getElementById('hud-pending').textContent = state.pendingCoins ? '(+' + state.pendingCoins + ' pending)' : '';
-    document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents ? 'Cloud save pending · open Profile to retry' : 'Cloud saved' : 'Guest progress · this device only');
+    document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents ? 'Cloud save pending · open Profile to retry' : state.profile.dice ? 'Cloud saved' : 'Cloud saved · legacy rules; migration 002 needed' : 'Guest progress · this device only');
+    if (window.__hamster.snapshot().state === 'title' && state.profile.highest_map > 1) { document.getElementById('btn-start').textContent = 'Continue map ' + state.profile.highest_map; document.getElementById('hud-map').textContent = String(state.profile.highest_map); document.getElementById('start-title').textContent = 'The chestnut forest · Map ' + state.profile.highest_map; document.getElementById('btn-replay').hidden = false; }
     if (panel === 'profile') {
       var values = { sqk: state.profile.sqk.toLocaleString(), total_score: state.profile.total_score.toLocaleString(), highest_map: String(state.profile.highest_map), purchases: String(state.profile.purchases.length) };
       Object.keys(values).forEach(function (key) { var node = document.getElementById('profile-' + key); if (node) node.textContent = values[key]; });
@@ -58,6 +59,88 @@
     }
     summary();
   }
+  function badgeArt(badge) {
+    var art = el('span', '', 'badge-art badge-' + badge.tier); art.setAttribute('aria-hidden', 'true'); art.textContent = badge.tier === 'gold' ? '★' : badge.tier === 'silver' ? '◆' : '●'; return art;
+  }
+  function badgeList(target, exchangeable) {
+    var state = save.snapshot();
+    if (state.cloud && !state.profile.dice) { target.append(el('p', 'Disabled until the owner applies Supabase migration 002. Existing balances and equipment remain available.', 'panel-note')); return; }
+    var badges = (state.profile.badges || []).filter(function (b) { return exchangeable ? b.source === 'skill' || b.source === 'contribution' : b.source === 'dice'; });
+    if (!badges.length) target.append(el('p', exchangeable ? 'No exchangeable badges yet. Clear maps 1, 3 and 5 to earn skill badges, or receive a verified contribution badge from the project owner.' : 'Correct predictions unlock Bronze at 20, Silver at 50 and Gold at 100.', 'panel-note'));
+    badges.forEach(function (badge) {
+      var row = el('div', '', 'badge-row'), text = el('div');
+      var name = badge.tier.charAt(0).toUpperCase() + badge.tier.slice(1);
+      text.append(el('strong', name + ' · ' + (badge.source === 'dice' ? 'Dice achievement' : badge.source === 'skill' ? 'Skill badge' : 'Contribution badge')));
+      text.append(el('p', exchangeable ? 'Exchangeable once · removed when exchanged' : 'Display only · cannot be exchanged', 'panel-note'));
+      row.append(badgeArt(badge), text);
+      if (exchangeable) {
+        var tier = rules.tiers.find(function (t) { return t.tier === badge.tier; });
+        if (!tier) return;
+        var feedback = message(''); feedback.id = 'exchange-result-' + encodeURIComponent(badge.id);
+        var button = action('Exchange · ' + tier.sqk + ' SQK', async function () {
+          button.disabled = true; feedback.textContent = 'Exchanging badge…';
+          try { await save.exchangeBadge(badge.id); window.HamsterAudio.sfx('coin'); shopPanel(true); var status = document.getElementById('exchange-feedback'); status.textContent = name + ' badge exchanged for ' + tier.sqk + ' SQK.'; document.getElementById('exchange-heading').focus({ preventScroll: true }); }
+          catch (error) { feedback.textContent = error.message; button.disabled = false; }
+        });
+        button.dataset.badge = badge.id; button.setAttribute('aria-label', 'Exchange · ' + tier.sqk + ' SQK · ' + badge.source + ' ' + name + ' badge'); button.setAttribute('aria-describedby', feedback.id); row.append(button, feedback);
+      }
+      target.append(row);
+    });
+  }
+  function dicePanel() {
+    title.textContent = 'SQK Dice'; content.replaceChildren();
+    if (save.snapshot().cloud && !save.snapshot().profile.dice) { content.append(el('p', 'Disabled until the owner applies Supabase migration 002. Forest play and existing saves remain available.', 'panel-note')); return; }
+    content.append(el('p', 'A little forest break. Two fair dice, one prediction.', 'panel-note'));
+    var stats = el('p', '', 'dice-stats');
+    function updateStats() { var d = save.snapshot().profile.dice || { correct: 0, wins: 0, rounds: 0 }; stats.textContent = d.correct + (d.correct === 1 ? ' correct prediction · ' : ' correct predictions · ') + d.wins + (d.wins === 1 ? ' lifetime win · ' : ' lifetime wins · ') + d.rounds + (d.rounds === 1 ? ' roll' : ' rolls'); }
+    updateStats(); content.append(stats);
+    var visual = el('div', '', 'dice-pair'); visual.setAttribute('aria-hidden', 'true');
+    function drawDice(values) { visual.replaceChildren(); (values || [null, null]).forEach(function (value) { var die = el('span', '', 'die'); if (!value) { die.textContent = '?'; die.classList.add('is-empty'); } else { var positions = { 1: [4], 2: [0,8], 3: [0,4,8], 4: [0,2,6,8], 5: [0,2,4,6,8], 6: [0,2,3,5,6,8] }; for (var i = 0; i < 9; i++) die.append(el('span', '', positions[value].includes(i) ? 'pip is-filled' : 'pip')); } visual.append(die); }); }
+    drawDice(); content.append(visual);
+    var field = el('fieldset', '', 'dice-predictions'); field.append(el('legend', 'Predict the total'));
+    var prediction = '', pending = null;
+    try { pending = JSON.parse(localStorage.getItem('hamster-friendship-dice-pending') || 'null'); } catch (_) { /* no pending roll */ }
+    var roll = action(pending ? 'Retry saved roll' : 'Roll dice', async function () {
+      if (!prediction && !pending) { result.textContent = 'Choose HIGH or LOW before rolling.'; return; }
+      if (!pending) pending = { id: crypto.randomUUID(), prediction: prediction };
+      try { localStorage.setItem('hamster-friendship-dice-pending', JSON.stringify(pending)); } catch (_) { /* in-memory retry */ }
+      roll.disabled = true; field.disabled = true; result.textContent = 'Rolling…';
+      try {
+        var round = await save.playDice(pending.prediction, pending.id);
+        pending = null; try { localStorage.removeItem('hamster-friendship-dice-pending'); } catch (_) { /* done */ }
+        drawDice(round.dice); visual.classList.remove('has-result'); void visual.offsetWidth; visual.classList.add('has-result');
+        result.textContent = round.dice.join(' + ') + ' = ' + round.total + '. ' + round.outcome + (round.outcome === 'DRAW' ? '. A draw. Try another prediction.' : round.correct ? '. Correct prediction!' : '. Try another prediction.');
+        window.HamsterAudio.sfx(round.correct ? 'quest' : 'dice'); updateStats(); achievements.replaceChildren(); badgeList(achievements, false);
+      } catch (error) { result.textContent = error.message + ' Retry this saved roll to keep the same result.'; }
+      finally { roll.disabled = false; field.disabled = Boolean(pending); roll.textContent = pending ? 'Retry saved roll' : 'Roll dice'; }
+    }, 'btn-primary'); roll.id = 'roll-dice';
+    ['HIGH', 'LOW'].forEach(function (value) { var label = el('label', '', 'prediction-choice'), input = el('input'); input.type = 'radio'; input.name = 'prediction'; input.value = value; input.addEventListener('change', function () { prediction = value; }); label.append(input, el('span', value + (value === 'HIGH' ? ' · > 7' : ' · < 7'))); field.append(label); });
+    field.disabled = Boolean(pending);
+    var result = message(''); result.id = 'dice-result';
+    content.append(field, roll, result, el('p', 'HIGH 41.67% · LOW 41.67% · DRAW 16.67% (total 7)', 'panel-note'), el('p', 'Free predictions only. No SQK staking, losses, gambling or real-money rewards.', 'panel-note'));
+    content.append(el('h3', 'Dice achievements', 'panel-subtitle'));
+    var achievements = el('div', '', 'badge-list'); badgeList(achievements, false); content.append(achievements);
+  }
+  function audioPanel() {
+    title.textContent = 'Audio'; content.replaceChildren();
+    var audio = window.HamsterAudio, settings = audio.snapshot();
+    content.append(el('p', 'A soft forest lullaby and little sounds for each discovery.', 'panel-note'));
+    ['music', 'sfx'].forEach(function (kind) {
+      var row = el('div', '', 'audio-setting'), label = el('label', kind === 'music' ? 'Music volume' : 'Sound effects volume'), input = el('input'), value = el('output', Math.round(settings[kind] * 100) + '%');
+      input.type = 'range'; input.min = '0'; input.max = '100'; input.step = '1'; input.value = String(Math.round(settings[kind] * 100)); input.id = kind + '-volume'; label.htmlFor = input.id; value.htmlFor = input.id;
+      input.addEventListener('input', function () { value.textContent = input.value + '%'; audio.set(kind, Number(input.value) / 100); });
+      var muteLabel = el('label', '', 'mute-label'), mute = el('input'); mute.type = 'checkbox'; mute.checked = settings[kind + 'Muted']; mute.id = kind + '-mute';
+      mute.addEventListener('change', function () { audio.set(kind + 'Muted', mute.checked); }); muteLabel.append(mute, el('span', kind === 'music' ? 'Mute music' : 'Mute sound effects'));
+      row.append(label, value, input, muteLabel); content.append(row);
+    });
+    var status = message(settings.available ? 'Audio starts after a play or preview action.' : 'This browser does not support Web Audio. The game remains playable.');
+    var preview = action('Preview audio', async function () { if (await audio.unlock()) { audio.play(true); audio.sfx('quest'); status.textContent = audio.snapshot().storageOK ? 'Playing a short preview. Volume settings are saved on this device.' : 'Playing a short preview. Browser storage is unavailable; settings last until you close this page.'; setTimeout(function () { if (panel === 'audio') audio.play(false); }, 1800); } else status.textContent = 'Audio could not start. Check this browser’s sound permissions and try again.'; }, 'btn-primary');
+    if (!settings.available) preview.disabled = true;
+    content.append(preview, status);
+  }
+  function guildPanel() {
+    title.textContent = 'GUILD'; content.replaceChildren((/** @type {HTMLTemplateElement} */ (document.getElementById('guild-template'))).content.cloneNode(true));
+  }
   function itemArt(item) {
     var box = el('span', '', 'item-art'); box.setAttribute('aria-hidden', 'true');
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('width', '40'); svg.setAttribute('height', '40');
@@ -95,7 +178,11 @@
       if (owned && item.slot === 'skill') buy.disabled = true;
       row.append(buy, rowResult); list.append(row);
     });
-    content.append(list);
+    var exchange = el('section', '', 'badge-exchange'), heading = el('h3', 'Badge Exchange', 'panel-subtitle'); heading.id = 'exchange-heading'; heading.tabIndex = -1;
+    exchange.append(heading, el('p', 'Exchange a skill or contribution badge once: Bronze 20 SQK · Silver 50 SQK · Gold 120 SQK. Dice achievements cannot be exchanged.', 'panel-note'));
+    var status = message(''); status.id = 'exchange-feedback'; exchange.append(status); badgeList(exchange, true); content.append(exchange);
+    content.append(el('h3', 'Forest equipment', 'panel-subtitle'), list);
+    var diceBadges = el('section', '', 'badge-list'); diceBadges.append(el('h3', 'Dice achievements · display only', 'panel-subtitle')); badgeList(diceBadges, false); content.append(diceBadges);
     if (keepScroll) dialog.scrollTop = top;
   }
   async function leaderboardPanel() {
@@ -118,12 +205,13 @@
   }
   function open(which, trigger) {
     window.__hamster.pause(); opener = trigger; panel = which; generation++;
-    if (which === 'profile') profilePanel(); else if (which === 'shop') shopPanel(); else void leaderboardPanel();
+    if (which === 'profile') profilePanel(); else if (which === 'shop') shopPanel(); else if (which === 'dice') dicePanel(); else if (which === 'audio') audioPanel(); else if (which === 'guild') guildPanel(); else void leaderboardPanel();
+    document.getElementById('btn-guild').setAttribute('aria-expanded', String(which === 'guild'));
     dialog.showModal(); dialog.scrollTop = 0;
   }
-  [['profile','btn-profile'],['shop','btn-shop'],['leaderboard','btn-leaderboard']].forEach(function (pair) { var button = document.getElementById(pair[1]); button.addEventListener('click', function () { open(pair[0], button); }); });
+  [['profile','btn-profile'],['shop','btn-shop'],['leaderboard','btn-leaderboard'],['dice','btn-dice'],['audio','btn-audio'],['guild','btn-guild'],['guild','btn-start-guild']].forEach(function (pair) { var button = document.getElementById(pair[1]); button.addEventListener('click', function () { open(pair[0], button); }); });
   document.getElementById('close-panel').addEventListener('click', function () { dialog.close(); });
-  dialog.addEventListener('close', function () { generation++; panel = ''; if (opener) opener.focus({ preventScroll: true }); });
+  dialog.addEventListener('close', function () { generation++; if (panel === 'audio') window.HamsterAudio.play(false); panel = ''; document.getElementById('btn-guild').setAttribute('aria-expanded', 'false'); if (opener) opener.focus({ preventScroll: true }); });
   dialog.addEventListener('click', function (event) { var r = dialog.getBoundingClientRect(); if (event.target === dialog && (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom)) dialog.close(); });
   save.subscribe(summary); summary();
 })();

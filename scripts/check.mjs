@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const FILES = ['index.html', 'styles.css', 'game.js', 'config.js', 'rules.js', 'save.js', 'wallet.js', 'ui.js', 'sqk.svg', 'favicon.svg', 'og-image.svg', 'og-image.png'];
+const FILES = ['index.html', 'styles.css', 'game.js', 'audio.js', 'config.js', 'rules.js', 'save.js', 'wallet.js', 'ui.js', 'sqk.svg', 'favicon.svg', 'og-image.svg', 'og-image.png', 'victory.svg'];
 let failures = 0;
 const fail = (msg) => { failures++; console.error(`FAIL ${msg}`); };
 const pass = (msg) => console.log(`ok   ${msg}`);

@@ -13,7 +13,9 @@
   var GRAVITY = 0.25, JUMP_V = 5.6, MAX_FALL = 5;
   var EMPTY = 0, DIRT = 1, BRANCH = 2, STONE = 3, WOOD = 4;
   var rules = window.HamsterRules, saves = window.HamsterSave;
-  var mapNumber = 1, mapLoot = [], mapPurchases = [], attackId = 0;
+  var mapNumber = 1, mapLoot = [], mapCoins = [], mapMonsters = [], mapPurchases = [], attackId = 0, legacyCloud = false;
+  var audio = window.HamsterAudio || { sfx: function () {}, unlock: function () {}, play: function () {} };
+  var seasons = ['Spring', 'Summer', 'Autumn', 'Winter'], season = Math.floor(Math.random() * 4);
   var defeatedCount = 0, burns = [], starting = false;
   function event(kind, data) { return saves.record(kind, data || {}, game.frames); }
   function hasSkill(id) { return mapPurchases.indexOf(id) !== -1; }
@@ -233,9 +235,9 @@
     roach: [pair(makeRoach(0)), pair(makeRoach(1))]
   };
   SPR.roachDead = pair(flipV(makeRoach(0)));
-  var wardrobe = {}, equippedShellColor = '#8b4a22', lastShellSkin;
+  var playerName = 'Guest', wardrobe = {}, equippedShellColor = '#8b4a22', lastShellSkin;
   function refreshWardrobe() {
-    wardrobe = saves.snapshot().profile.cosmetics;
+    var profile = saves.snapshot().profile; wardrobe = profile.cosmetics; playerName = profile.name;
     if (lastShellSkin === wardrobe.shell && SPR.equippedShell) return;
     lastShellSkin = wardrobe.shell;
     var skin = rules.catalogue.find(function (item) { return item.id === wardrobe.shell; });
@@ -351,7 +353,7 @@
       [C, 'Alice? I brought the tea leaves you wanted… Alice?'],
       [N, 'Her basket lies overturned. Chestnut shells are scattered along the path.'],
       [C, 'She would never leave her basket behind. Something happened here.'],
-      [N, 'Attack with X. Hold C to shield. One unblocked hit restarts this map. Collect gold SQK before you fall.']
+      [C, 'I’ll follow every little clue. Hold on, Alice.']
     ],
     basket: [
       [C, 'Her favourite basket. Two shells are still tucked inside.'],
@@ -361,7 +363,7 @@
       [N, 'A perfect ring of scorched grass, still smoking.'],
       [C, 'Whatever came down here was hot, and very round.']
     ],
-    sign1: [[N, 'The signpost reads: “Chestnut Forest. Beetles nest past the old roots. Throw straight.”']],
+    sign1: [[N, 'The signpost reads: “Chestnut Forest. Beetles nest past the old roots.”']],
     bush: [[N, 'You shake the bush. Three chestnut shells tumble out.']],
     bushEmpty: [[N, 'Just leaves now. You already shook this one.']],
     ribbon: [
@@ -373,10 +375,10 @@
       ['Mrs. Pebble', 'Oh, young Chang. I saw a light skim the canopy, heading for the forest exit.'],
       ['Mrs. Pebble', 'The old cockroach guards that gate. He hoards anything shiny.'],
       [C, 'Then that’s where I’m going.'],
-      ['Mrs. Pebble', 'Light the lanterns on your way, dear. They hold spare shells, but cannot heal you.']
+      ['Mrs. Pebble', 'Those old lanterns have guided little paws through the forest for years.']
     ],
-    snailAgain: [['Mrs. Pebble', 'Mind the soldier ants. They charge when they spot you, so jump over them.']],
-    lantern: [[N, 'The lantern flickers to life. You gather ten spare shells. Every fall still returns you to the start of this map.']],
+    snailAgain: [['Mrs. Pebble', 'The soldier ants have been restless ever since that strange light.']],
+    lantern: [[N, 'The lantern flickers to life. Ten spare shells sit tucked in its base.']],
     log: [
       [N, 'Inside the hollow log: a trail of oily prints, too round and even for any bug.'],
       [C, 'Metal feet? And two shells someone dropped in a hurry.']
@@ -386,7 +388,7 @@
       [N, 'The ground trembles. A giant cockroach blocks the forest exit.'],
       ['Cockroach', 'Shiny things that fall in my forest are mine. Turn back, fluffball.'],
       [C, 'Not without knowing what happened to Alice.'],
-      [N, 'Throw shells at it. When it charges, raise your shield to stop it cold.']
+      [N, 'The cockroach scrapes the earth, guarding whatever fell beyond the gate.']
     ],
     bossDown: [
       [N, 'The cockroach flips over, rights itself and scuttles off into the roots.'],
@@ -422,11 +424,13 @@
   }
 
   function addEnemy(type, c, row) {
-    var sizes = { beetle: [14, 10, 1], ant: [14, 13, 2], larva: [16, 8, 1] };
-    var s = sizes[type];
+    var spec = mapMonsters[enemies.length] || rules.monster(Math.random(), Math.random(), mapNumber);
+    type = spec.type;
+    var sizes = { beetle: [14, 10], ant: [14, 13], larva: [16, 8], ember: [14, 13] };
+    var scale = spec.size === 'large' ? 1.15 : 1, s = sizes[type].map(function (v) { return Math.ceil(v * scale); });
     enemies.push({
-      id: enemies.length, type: type, x: c * T, y: row * T - s[1], w: s[0], h: s[1], vx: 0, vy: 0, dir: -1, hp: rules.hp(mapNumber), maxHp: rules.hp(mapNumber),
-      homeX: c * T, range: 56, state: type === 'larva' ? 'buried' : 'patrol', t: 0, knock: 0, flash: 0,
+      id: enemies.length, type: type, x: c * T, y: row * T - s[1], w: s[0], h: s[1], vx: 0, vy: 0, dir: -1, hp: spec.hp, maxHp: spec.hp, size: spec.size, scale: scale, damage: spec.damage,
+      homeX: c * T, range: 56, state: type === 'larva' ? 'buried' : 'patrol', fireCd: 90 + enemies.length * 7, t: 0, knock: 0, flash: 0,
       dead: false, anim: 0, onGround: false, hitWall: false
     });
   }
@@ -439,7 +443,7 @@
   }
 
   function newBoss() {
-    return { id: 30, x: 198 * T, y: 10 * T - 20, w: 40, h: 20, vx: 0, vy: 0, dir: -1, hp: rules.hp(mapNumber, true), maxHp: rules.hp(mapNumber, true),
+    return { id: 30, x: 198 * T, y: 10 * T - 20, w: 40, h: 20, vx: 0, vy: 0, dir: -1, hp: legacyCloud ? Math.ceil(500 * Math.pow(1.2, mapNumber - 1)) : rules.hp(mapNumber, true), maxHp: legacyCloud ? Math.ceil(500 * Math.pow(1.2, mapNumber - 1)) : rules.hp(mapNumber, true), damage: rules.monsterDamage(mapNumber),
       state: 'sleep', t: 0, flash: 0, anim: 0, onGround: true, solidOnly: true, hitWall: false, moves: 0 };
   }
 
@@ -462,6 +466,7 @@
     addThing('scorch', 20, 10, 28, 6, { clue: true });
     addThing('sign', 30, 10, 14, 18, { lines: 'sign1' });
     addThing('bush', 55, 10, 22, 14);
+    addThing('chest', 58, 10, 16, 12);
     addThing('ribbon', 87, 4, 8, 8, { clue: true });
     addThing('lantern', 93, 10, 10, 26);
     addThing('snail', 89, 10, 18, 13);
@@ -486,6 +491,7 @@
   };
   function clearInput() {
     held = {}; pressed = {};
+    joystickPointer = null; if (joystick) joystick.style.setProperty('--stick-x', '0px'); if (joystick) joystick.style.setProperty('--stick-y', '0px');
     var b = document.querySelectorAll('.pad-btn.is-pressed');
     for (var i = 0; i < b.length; i++) b[i].classList.remove('is-pressed');
   }
@@ -542,6 +548,28 @@
       if (game.state === 'playing') pressed[action] = true;
     });
   });
+
+  // One pointer owns the joystick. Other pointers remain free for the actions.
+  var joystick = byId('joystick'), joystickPointer = null;
+  function moveStick(e) {
+    if (e.pointerId !== joystickPointer || game.state !== 'playing') return;
+    var b = joystick.getBoundingClientRect(), dx = e.clientX - b.left - b.width / 2, dy = e.clientY - b.top - b.height / 2;
+    var length = Math.sqrt(dx * dx + dy * dy), limit = b.width * 0.28, factor = length > limit ? limit / length : 1;
+    joystick.style.setProperty('--stick-x', dx * factor + 'px'); joystick.style.setProperty('--stick-y', dy * factor + 'px');
+    held.left = dx < -b.width * 0.12; held.right = dx > b.width * 0.12;
+  }
+  function releaseStick(e) {
+    if (e && e.pointerId !== joystickPointer) return;
+    joystickPointer = null; held.left = false; held.right = false;
+    joystick.style.setProperty('--stick-x', '0px'); joystick.style.setProperty('--stick-y', '0px');
+  }
+  joystick.addEventListener('pointerdown', function (e) {
+    if (game.state !== 'playing' || joystickPointer !== null) return;
+    e.preventDefault(); joystickPointer = e.pointerId; try { joystick.setPointerCapture(e.pointerId); } catch (_) { /* synthetic/accessibility pointer */ } moveStick(e);
+  });
+  joystick.addEventListener('pointermove', moveStick);
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) { joystick.addEventListener(name, releaseStick); });
+  joystick.addEventListener('keydown', function (e) { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') e.preventDefault(); });
 
   canvas.addEventListener('pointerdown', function () { if (game.state === 'playing') canvas.focus({ preventScroll: true }); });
 
@@ -623,20 +651,20 @@
     clearInput();
     ui.dialogue.hidden = true;
     showScreen(ui.pause, 'btn-resume');
-    ui.btnPause.textContent = 'Resume';
+    ui.btnPause.textContent = 'Resume'; audio.play(false);
   }
   function resumeGame() {
     if (game.state !== 'paused') return;
     showScreen(null);
     ui.btnPause.textContent = 'Pause';
-    game.state = game.prevState === 'dialogue' ? 'dialogue' : 'playing';
+    game.state = game.prevState === 'dialogue' ? 'dialogue' : 'playing'; audio.play(true);
     ui.dialogue.hidden = game.state !== 'dialogue';
     if (game.state === 'dialogue') ui.dlgNext.focus({ preventScroll: true }); else focusStage();
   }
 
   async function startGame(nextMap, skipIntro) {
     if (starting) return;
-    starting = true;
+    starting = true; void audio.unlock();
     var desiredMap = typeof nextMap === 'number' ? nextMap : mapNumber;
     var activeStart = byId(game.state === 'gameover' ? 'btn-retry' : game.state === 'ending' ? 'btn-again' : game.state === 'paused' ? 'btn-restart' : 'btn-start');
     var originalLabel = activeStart.textContent;
@@ -646,11 +674,15 @@
     catch (error) {
       starting = false; activeStart.disabled = false; activeStart.textContent = originalLabel;
       byId('game-error').textContent = error.message;
+      // beginMap has ended the previous run. A failed restart must not resume
+      // its stale world with no active save/reward tracking.
+      if (game.state === 'paused' || game.state === 'playing' || game.state === 'dialogue') gameOver();
       return;
     }
     byId('game-error').textContent = '';
     mapNumber = desiredMap;
-    mapLoot = setup.loot; mapPurchases = setup.purchases;
+    mapLoot = setup.loot; mapCoins = setup.coinDrops; mapMonsters = setup.monsters; mapPurchases = setup.purchases; legacyCloud = setup.rulesVersion < 3;
+    season = Math.floor(Math.random() * 4); paintSky(); byId('hud-season').textContent = seasons[season];
     defeatedCount = 0; attackId = 0; burns = [];
     starting = false; activeStart.disabled = false; activeStart.textContent = originalLabel;
     game.checkpoint = { x: 6 * T, y: 10 * T - 14 };
@@ -662,7 +694,7 @@
     ui.dialogue.hidden = true;
     ui.btnPause.textContent = 'Pause';
     showScreen(null);
-    game.state = 'playing';
+    game.state = 'playing'; audio.play(true); if (mapNumber > 1) audio.sfx('level');
     game.beam = reduceMotion ? 0 : 90;
     game.flash = reduceMotion ? 0 : 16;
     updateHud();
@@ -674,7 +706,7 @@
     event('death');
     pickups = pickups.filter(function (p) { return p.kind !== 'coin' && p.kind !== 'weapon'; });
     shots = []; burns = [];
-    game.state = 'gameover';
+    game.state = 'gameover'; audio.play(false); ui.btnPause.textContent = 'Pause';
     clearInput();
     ui.dialogue.hidden = true;
     showScreen(ui.over, 'btn-retry');
@@ -683,6 +715,8 @@
   function respawn() { return startGame(mapNumber, true); }
 
   function showEnding() {
+    if (game.state === 'ending') return;
+    audio.sfx('victory'); audio.play(false);
     event('finish', { map: mapNumber });
     game.state = 'ending';
     clearInput();
@@ -693,7 +727,8 @@
     showScreen(ui.end, 'btn-again');
   }
 
-  byId('btn-start').addEventListener('click', startGame);
+  byId('btn-start').addEventListener('click', function () { void startGame(saves.snapshot().profile.highest_map, false); });
+  byId('btn-replay').addEventListener('click', function () { void startGame(1, false); });
   byId('btn-again').addEventListener('click', function () { void startGame(mapNumber + 1, true); });
   byId('btn-restart').addEventListener('click', startGame);
   byId('btn-restart-over').addEventListener('click', startGame);
@@ -729,7 +764,7 @@
   function hurtPlayer(dmg, fromX) {
     var p = player;
     if (game.state !== 'playing') return;
-    p.hp = 0; p.hurt = 16;
+    p.hp = Math.max(0, p.hp - dmg); p.hurt = 16; audio.sfx('hurt');
     var d = fromX === undefined ? -p.dir : (sign(cx(p) - fromX) || -p.dir);
     p.vx = d * 2.2; p.vy = -2.6; p.onGround = false;
     game.shake = 8;
@@ -756,15 +791,18 @@
   }
 
   function findClue() {
-    game.clues++;
+    game.clues++; audio.sfx('quest');
     updateHud();
     toast('Clue found: ' + game.clues + ' of 3');
   }
 
   function interact(o) {
     switch (o.kind) {
+      case 'chest':
+        if (o.done) return;
+        o.done = true; addShells(6); audio.sfx('chest'); toast('Chest opened. +6 shells.'); burst(cx(o), o.y, 12, ['#ffe28c', '#f2a93b']); break;
       case 'basket':
-        o.done = true; addShells(2); say(LINES.basket, function () { toast('+2 shells'); }); break;
+        audio.sfx('item'); o.done = true; addShells(2); say(LINES.basket, function () { toast('+2 shells'); }); break;
       case 'scorch':
         o.done = true; say(LINES.scorch, findClue); break;
       case 'sign':
@@ -780,7 +818,7 @@
         o.done = true; say(LINES.ribbon, findClue); break;
       case 'lantern':
         o.done = true; o.anim = 1;
-        addShells(10);
+        addShells(10); audio.sfx('quest');
         burst(cx(o), o.y + 4, 10, ['#ffd27a', '#ffefb8']);
         say(LINES.lantern, function () { toast('Lantern lit. +10 shells.'); }); break;
       case 'snail':
@@ -819,7 +857,7 @@
       p.jumpBuf--;
       if (p.coyote > 0 && p.hurt === 0) {
         p.vy = -JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.onGround = false; p.shield = false;
-        dust(cx(p), p.y + p.h);
+        dust(cx(p), p.y + p.h); audio.sfx('jump');
       }
     }
     if (!held.jump && p.vy < -2 && p.hurt === 0 && !p.noCut) p.vy = -2;
@@ -841,7 +879,7 @@
       var kind = p.weapon;
       if ((kind === 'shell' && p.shells > 0) || kind === 'sword' || p.ammo[kind] > 0) {
         if (kind === 'shell') p.shells--; else if (kind !== 'sword') p.ammo[kind]--;
-        p.throwCd = rules.cooldown(kind); p.throwAnim = 10;
+        audio.sfx('attack'); p.throwCd = rules.cooldown(kind); p.throwAnim = 10;
         var aid = ++attackId;
         event('attack', { attack: aid, weapon: kind });
         shots.push({ id: aid, kind: kind, x: cx(p) + p.dir * 6 - 3, y: p.y + 3, w: kind === 'sword' ? 28 : 6, h: kind === 'sword' ? 18 : 6,
@@ -867,11 +905,11 @@
       p.hp = 0; updateHud(); gameOver(); return;
     }
     if (p.inv > 0) p.inv--;
-    if (Math.abs(p.vx) > 0.2 && p.onGround) p.runT++; else p.runT = 0;
+    if (Math.abs(p.vx) > 0.2 && p.onGround) { p.runT++; if (p.runT % 14 === 0) audio.sfx('move'); } else p.runT = 0;
   }
 
   function dropLoot(e) {
-    addPickup('coin', 0, 0, { target: e.id, x: cx(e) - 21, y: e.y - 28, w: 42, h: 36, vx: 0, vy: -1.6, phys: true });
+    if (mapCoins[e.id]) addPickup('coin', 0, 0, { target: e.id, x: cx(e) - 18, y: e.y - 25, w: 36, h: 31, vx: 0, vy: -1.6, phys: true });
     var drop = mapLoot[e.id];
     if (drop) addPickup('weapon', 0, 0, { target: e.id, weapon: drop, x: cx(e) + 32, y: e.y - 10, w: 12, h: 10, vx: 0.5, vy: -2.4, phys: true });
   }
@@ -893,12 +931,20 @@
   }
 
   function updateEnemy(e) {
+    if (e.dead) return;
     var p = player;
     e.anim++;
     if (e.flash > 0) e.flash--;
     var dx = cx(p) - cx(e), dy = (p.y + p.h) - (e.y + e.h);
     if (e.knock > 0) { e.knock--; e.vx *= 0.88; }
-    else if (e.type === 'beetle') {
+    else if (e.type === 'ember') {
+      e.dir = sign(dx) || e.dir; e.vx = Math.abs(dx) < 120 ? 0 : e.dir * 0.3;
+      if (Math.abs(dx) < 180 && Math.abs(dy) < 60 && --e.fireCd <= 0) {
+        e.fireCd = 140;
+        var distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        shots.push({ kind: 'fire', x: cx(e), y: e.y + 3, w: 6, h: 6, vx: dx / distance * 1.65, vy: dy / distance * 1.65, g: 0, life: 130, spin: 0, damage: e.damage });
+      }
+    } else if (e.type === 'beetle') {
       e.vx = e.dir * 0.45;
     } else if (e.type === 'ant') {
       if (e.state === 'patrol') {
@@ -925,7 +971,7 @@
         if (--e.t <= 0) {
           e.t = 120;
           if (Math.abs(dx) < 140) {
-            shots.push({ kind: 'chip', x: cx(e) - 2, y: e.y, w: 4, h: 4, vx: sign(dx) * 1.7, vy: -2.4, g: 0.12, life: 120, spin: 0 });
+            shots.push({ kind: 'chip', x: cx(e) - 2, y: e.y, w: 4, h: 4, vx: sign(dx) * 1.7, vy: -2.4, g: 0.12, life: 120, spin: 0, damage: e.damage });
           }
         }
       }
@@ -964,7 +1010,7 @@
       burst(cx(p) + p.dir * 8, p.y + 6, 4, ['#ffe6a6', '#ffffff'], 1.4);
       return;
     }
-    hurtPlayer(1, cx(e));
+    hurtPlayer(e.damage, cx(e));
   }
 
   function bossStun(t) {
@@ -1082,7 +1128,7 @@
       burst(cx(p) + p.dir * 8, p.y + 6, 6, ['#ffe6a6', '#ffffff'], 1.6);
       return;
     }
-    if (b.state !== 'stunned') hurtPlayer(1, cx(b));
+    if (b.state !== 'stunned') hurtPlayer(b.damage, cx(b));
     else { p.vx = -sign(cx(b) - cx(p)) * 1.2; }
   }
 
@@ -1113,10 +1159,10 @@
           damageBoss(rules.damage(s.kind, mapPurchases), s.id); s.hits.push(30); hit = true;
           burst(s.x, s.y, 5, ['#ffd27a', '#8b4a22']);
         }
-      } else if (!hit && s.kind === 'chip' && overlap(s, player)) {
+      } else if (!hit && (s.kind === 'chip' || s.kind === 'fire') && overlap(s, player)) {
         hit = true;
-        if (player.shield && sign(s.vx) === -player.dir) burst(s.x, s.y, 4, ['#ffe6a6', '#ffffff'], 1.4);
-        else { hurtPlayer(1, s.x); if (game.state !== 'playing') return; }
+        if (player.shield && sign(s.vx) === -player.dir) { audio.sfx('shield'); burst(s.x, s.y, 4, ['#ffe6a6', '#ffffff'], 1.4); }
+        else { hurtPlayer(s.damage || rules.monsterDamage(mapNumber), s.x); if (game.state !== 'playing') return; }
       }
       if (s.kind === 'sword') { s.checked = true; if (s.life <= 0) shots.splice(i, 1); continue; }
       if (hit) {
@@ -1160,13 +1206,13 @@
       var box = { x: k.x - 2, y: k.y - 2, w: k.w + 4, h: k.h + 4 };
       if (overlap(player, box)) {
         k.taken = true;
-        if (k.kind === 'shell') { addShells(1); burst(k.x + 4, k.y + 4, 4, ['#e9cf9c', '#d48a4e']); }
+        if (k.kind === 'shell') { audio.sfx('item'); addShells(1); burst(k.x + 4, k.y + 4, 4, ['#e9cf9c', '#d48a4e']); }
         else if (k.kind === 'coin') {
-          event('collect', { target: k.target });
+          audio.sfx('coin'); event('collect', { target: k.target });
           burst(k.x + 21, k.y + 18, 6, ['#ffe28c', '#f2a93b']);
           toast(saves.snapshot().ranked ? '+1 SQK pending cloud save' : '+1 SQK saved on this device');
         } else if (k.kind === 'weapon') {
-          event('weapon', { target: k.target });
+          audio.sfx('item'); event('weapon', { target: k.target });
           if (player.weapons.indexOf(k.weapon) === -1) player.weapons.push(k.weapon);
           if (k.weapon === 'gun') player.ammo.gun += 30;
           if (k.weapon === 'grenade') player.ammo.grenade += 3;
@@ -1255,8 +1301,11 @@
   // Pre-rendered art
   // ---------------------------------------------------------------------------
   var sky = makeLayer(W, H);
-  (function () {
+  function paintSky() {
     var bands = ['#2e2245', '#3d2850', '#552f55', '#733856', '#933f52', '#b34d4b', '#cf6444', '#e5803f', '#f19c47', '#f6b85a'];
+    if (season === 0) bands = ['#3b3458','#494565','#5b5675','#766080','#9b7885','#bd9291','#d9af9e','#e5c0a7','#f0d2b0','#f9dfbd'];
+    if (season === 1) bands = ['#294854','#365e67','#4c757b','#678d88','#8ba98f','#b1bd93','#d0ca94','#dfd69f','#eeddab','#f9e6b6'];
+    if (season === 3) bands = ['#253345','#34485d','#425c70','#536e7e','#6b8490','#889fa7','#a4b7b9','#bfd0d0','#d6e0dc','#e5ece3'];
     var bandH = 14;
     for (var i = 0; i < bands.length; i++) {
       rect(sky.g, 0, i * bandH, W, bandH, bands[i]);
@@ -1268,7 +1317,8 @@
     rect(sky.g, 0, bands.length * bandH, W, H - bands.length * bandH, bands[bands.length - 1]);
     var R = rng(3);
     for (var s = 0; s < 26; s++) rect(sky.g, Math.floor(R() * W), Math.floor(R() * 40), 1, 1, R() < 0.5 ? '#f3d9c4' : '#b89ab8');
-  })();
+  }
+  paintSky();
 
   function repeatingLayer(w, draw) { var L = makeLayer(w, H); draw(L.g, w); return L; }
 
@@ -1487,6 +1537,11 @@
   function drawThing(o, cam) {
     var x = Math.round(o.x - cam), y = Math.round(o.y), t = game.t, i;
     switch (o.kind) {
+      case 'chest':
+        rect(ctx, x, y + 3, 16, 9, '#6d3d07'); rect(ctx, x + 1, y + 4, 14, 7, '#b8743a');
+        rect(ctx, x, o.done ? y - 3 : y, 16, 4, '#e0ac5d'); rect(ctx, x + 6, y + 4, 4, 4, '#ffe28c');
+        if (o.done) rect(ctx, x + 1, y + 3, 14, 2, '#26180f');
+        break;
       case 'basket':
         if (game.state === 'title') {
           rect(ctx, x + 1, y + 2, 12, 8, '#b07a3c'); rect(ctx, x + 1, y + 2, 12, 1, '#d6a25a');
@@ -1593,10 +1648,14 @@
     if (x < -40 || x > W + 40) return;
     var fr = Math.floor(e.anim / 10) % 2;
     if (e.flash > 0 && (e.flash >> 1) % 2) ctx.globalAlpha = 0.5;
-    if (e.type === 'beetle') ctx.drawImage(facing(SPR.beetle[fr], e.dir), x, y);
+    if (e.type === 'ember') {
+      oval(ctx, x + e.w / 2, y + e.h / 2 + 1, e.w / 2, e.h / 2, '#8e3324');
+      rect(ctx, x + 3, y, e.w - 6, 4, '#f2a93b'); rect(ctx, x + (e.dir > 0 ? e.w - 4 : 2), y + 5, 2, 2, '#fff2bd');
+      if (e.fireCd < 30) { rect(ctx, x + e.w / 2 - 2, y - 5, 4, 4, '#ffdb78'); drawBubble(x + 2, y - 18, '!'); }
+    } else if (e.type === 'beetle') ctx.drawImage(facing(SPR.beetle[fr], e.dir), x, y, e.w, e.h);
     else if (e.type === 'ant') {
       var jit = e.state === 'windup' && !reduceMotion ? (e.t % 4 < 2 ? 1 : 0) : 0;
-      ctx.drawImage(facing(SPR.ant[e.state === 'windup' ? 0 : fr], e.dir), x - 1 + jit, y - 1);
+      ctx.drawImage(facing(SPR.ant[e.state === 'windup' ? 0 : fr], e.dir), x - 1 + jit, y - 1, e.w + 2, e.h + 1);
       if (e.state === 'windup') drawBubble(x + 4, y - 14, '!');
     } else if (e.type === 'larva') {
       if (e.state === 'buried') {
@@ -1605,8 +1664,8 @@
       } else {
         var rise = e.state === 'rise' ? Math.round((e.t / 30) * 8) : 0;
         ctx.save();
-        ctx.beginPath(); ctx.rect(x - 2, y - 4, 20, 12); ctx.clip();
-        ctx.drawImage(facing(SPR.larva[Math.floor(e.anim / 14) % 2], e.dir), x, y - 1 + rise);
+        ctx.beginPath(); ctx.rect(x - 2, y - 4, e.w + 4, e.h + 4); ctx.clip();
+        ctx.drawImage(facing(SPR.larva[Math.floor(e.anim / 14) % 2], e.dir), x, y - 1 + rise, e.w, e.h);
         ctx.restore();
         oval(ctx, x + 8, y + 8, 8, 2, '#7f4c29');
       }
@@ -1647,6 +1706,8 @@
         var f = (s.spin >> 2) % 4;
         rect(ctx, x, y + 1, 6, 4, equippedShellColor); rect(ctx, x + 1, y, 4, 6, equippedShellColor);
         rect(ctx, x + (f < 2 ? 1 : 3), y + (f % 2 ? 1 : 3), 2, 2, '#e9cf9c');
+      } else if (s.kind === 'fire') {
+        oval(ctx, x + 3, y + 3, 4, 3, '#e9735f'); rect(ctx, x + 1, y + 1, 4, 4, '#f2a93b'); rect(ctx, x + 2, y + 2, 2, 2, '#fff2bd');
       } else if (s.kind === 'gun') {
         rect(ctx, x, y + 2, 6, 2, '#ffe28c'); rect(ctx, x + 4, y + 1, 2, 1, '#fff2bd');
       } else if (s.kind === 'sword') {
@@ -1673,11 +1734,21 @@
     else if (p.shield) pose = 'shield';
     else if (p.throwAnim > 0) pose = 'throw';
     else if (Math.abs(p.vx) > 0.2) pose = 'run';
-    drawHamster('chang', Math.round(p.x - 2 - cam), Math.round(p.y - 1), p.dir, pose, pose === 'run' ? p.runT : game.t);
+    ctx.save(); ctx.translate(Math.round(p.x - 3 - cam), Math.round(p.y - 3)); ctx.scale(1.15, 1.15);
+    drawHamster('chang', 0, 0, p.dir, pose, pose === 'run' ? p.runT : game.t); ctx.restore();
+    drawName(playerName, cx(p) - cam, p.y - 15);
     if (pose === 'throw' && p.throwAnim > 6) { /* arm already drawn */ }
   }
 
+  function drawName(name, x, y) {
+    ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    var width = ctx.measureText(name).width + 8;
+    x = clamp(x, width / 2 + 2, W - width / 2 - 2); y = Math.max(10, y);
+    rect(ctx, x - width / 2, y - 10, width, 14, '#26180f'); ctx.fillStyle = '#fbf3e4'; ctx.fillText(name, Math.round(x), Math.round(y));
+  }
+
   function drawBackground(cam) {
+    if (reduceMotion) cam = 0;
     ctx.drawImage(sky.c, 0, 0);
     var sunX = Math.round(236 - cam * 0.02);
     oval(ctx, sunX, 112, 26, 26, '#f9c56a');
@@ -1719,7 +1790,8 @@
         if (kx < -40 || kx > W + 40) continue;
         var by = k.phys || reduceMotion ? 0 : Math.round(Math.sin(k.bob / 14) * 1.5);
         if (k.kind === 'weapon') drawWeapon(k.weapon, kx, Math.round(k.y) + by);
-        else ctx.drawImage(k.kind === 'coin' ? SPR.coin : SPR.shell, kx, Math.round(k.y) + by);
+        else if (k.kind === 'coin') ctx.drawImage(SPR.coin, kx, Math.round(k.y) + by, k.w, k.h);
+        else ctx.drawImage(SPR.shell, kx, Math.round(k.y) + by);
       }
       for (i = 0; i < burns.length; i++) {
         var fire = burns[i];
@@ -1760,11 +1832,21 @@
     // ambient leaves and fireflies
     for (var l = 0; l < leaves.length; l++) {
       var lf = leaves[l];
-      rect(ctx, lf.x, lf.y, lf.s + 1, lf.s, lf.col);
+      if (season === 2) rect(ctx, lf.x, lf.y, lf.s + 1, lf.s, lf.col);
+      else if (season === 3) rect(ctx, lf.x, lf.y, lf.s, lf.s, '#f5f8ff');
+      else if (season === 0 && l < 5) {
+        var birdX = (lf.x + (reduceMotion ? 0 : game.t * 0.3)) % W, birdY = 25 + l * 8, flap = reduceMotion ? 1 : Math.floor(game.t / 10) % 2;
+        rect(ctx, birdX, birdY, 1, 1, '#26180f'); rect(ctx, birdX - 2, birdY - flap - 1, 2, 1, '#26180f'); rect(ctx, birdX + 1, birdY - flap - 1, 2, 1, '#26180f');
+      }
     }
     for (var q = 0; q < flies.length; q++) {
       var fl = flies[q];
       if (Math.sin(fl.ph * 2) > 0.2 || reduceMotion) rect(ctx, fl.x, fl.y, 1, 1, '#fff1a0');
+    }
+    if (season === 1) {
+      ctx.globalAlpha = reduceMotion ? 0.12 : 0.1 + Math.sin(game.t / 80) * 0.03;
+      for (var ray = 0; ray < 4; ray++) { ctx.fillStyle = '#fff2bd'; ctx.beginPath(); ctx.moveTo(210 + ray * 24, 0); ctx.lineTo(110 + ray * 30, H); ctx.lineTo(130 + ray * 30, H); ctx.lineTo(216 + ray * 24, 0); ctx.fill(); }
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
     ctx.drawImage(vignette.c, 0, 0);
@@ -1800,7 +1882,7 @@
   // Title state uses a fresh world so the basket and friends render.
   buildEntities();
   player = newPlayer();
-  updateHud();
+  updateHud(); byId('hud-season').textContent = seasons[season];
   window.requestAnimationFrame(frame);
 
   // Player menus can pause the game. All gameplay diagnostics are read-only.
@@ -1812,7 +1894,7 @@
         map: mapNumber, enemyCount: enemies.length, defeated: defeatedCount, frame: game.frames,
         weapon: player.weapon, ammo: Object.assign({}, player.ammo), weapons: player.weapons.slice(),
         coinCount: pickups.filter(function (p) { return p.kind === 'coin'; }).length, burningAreas: burns.length,
-        regularHp: rules.hp(mapNumber), purchases: mapPurchases.slice() };
+        season: seasons[season], enemyTypes: enemies.map(function (e) { return { id: e.id, type: e.type, size: e.size, hp: e.hp, maxHp: e.maxHp, damage: e.damage }; }), fireProjectiles: shots.filter(function (s) { return s.kind === 'fire'; }).length, regularHp: rules.hp(mapNumber), purchases: mapPurchases.slice() };
     }
   };
 })();

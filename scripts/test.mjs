@@ -10,8 +10,8 @@ function check(name, fn) { fn(); count++; console.log('ok', name); }
 export async function fixture(seed = {}, options = {}) {
   const storage = new Map(Object.entries(seed));
   const nodes = new Map();
-  const context2d = new Proxy({}, { get: (o,k) => k in o ? o[k] : k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : () => {}, set: (o,k,v) => (o[k]=v,true) });
-  function node() { return { textContent: '', hidden: false, disabled: false, style: {}, dataset: {}, classList: { add() {}, remove() {} }, focus() {}, setAttribute() {}, addEventListener() {}, getContext: () => context2d }; }
+  const context2d = new Proxy({}, { get: (o,k) => k in o ? o[k] : k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : k === 'measureText' ? text => ({ width: text.length * 5 }) : () => {}, set: (o,k,v) => (o[k]=v,true) });
+  function node() { return { textContent: '', hidden: false, disabled: false, style: {setProperty() {}}, dataset: {}, classList: { add() {}, remove() {} }, focus() {}, setAttribute() {}, addEventListener() {}, getContext: () => context2d }; }
   const document = { hidden: false, getElementById(id) { if (!nodes.has(id)) nodes.set(id,node()); return nodes.get(id); }, createElement: node, querySelectorAll: () => [], querySelector: () => null, addEventListener() {} };
   let time = 1000;
   const world = { document, console, crypto: webcrypto, navigator: { onLine: true }, performance: { now: () => time += 200 }, Uint8Array, setTimeout, clearTimeout, setInterval() {}, addEventListener() {}, requestAnimationFrame() {}, matchMedia: () => ({ matches:false, addEventListener() {} }), localStorage: { getItem: k => storage.get(k) || null, setItem: (k,v) => storage.set(k,v) } };
@@ -27,7 +27,7 @@ export async function fixture(seed = {}, options = {}) {
     window.testing = {
       get player() { return player; }, get game() { return game; }, get enemies() { return enemies; },
       get boss() { return boss; }, get pickups() { return pickups; }, get shots() { return shots; },
-      get burns() { return burns; }, get things() { return things; },
+      get coinDrops() { return mapCoins; }, get burns() { return burns; }, get things() { return things; },
       startGame, respawn, gameOver, hurtPlayer, hitEnemy, damageBoss, updatePlayer, updateEnemy,
       updateBoss, updateShots, updateBurns, updatePickups, updateWorld, interact, available,
       showEnding, say, advanceDialogue, tick, render, pauseGame, resumeGame,
@@ -44,16 +44,17 @@ export async function fixture(seed = {}, options = {}) {
 async function run() {
   let {ctx,t,storage,nodes} = await fixture();
   const rules=ctx.HamsterRules, save=ctx.HamsterSave;
-  check('HP compounds 20% per map, with 100/500 on map 1', () => { assert.equal(rules.hp(1),100); assert.equal(rules.hp(1,true),500); assert.equal(rules.hp(2),120); assert.equal(rules.hp(2,true),600); assert.equal(rules.hp(3),144); });
+  check('small/large/boss HP is 50/100/300 and compounds by 20%', () => { assert.equal(rules.hp(1),100); assert.equal(rules.hp(1,false,'small'),50); assert.equal(rules.hp(1,true),300); assert.equal(rules.hp(2),120); assert.equal(rules.hp(2,true),360); assert.equal(rules.hp(3),144); });
   check('drop distribution is exactly 70/9/9/12 percent across 100,000 quantiles', () => { const counts={none:0,gun:0,sword:0,grenade:0}; for(let n=0;n<100000;n++) counts[rules.drop(n/100000)||'none']++; assert.deepEqual(counts,{none:70000,gun:9000,sword:9000,grenade:12000}); });
   check('all required catalogue prices are fixed', () => { assert.equal(rules.catalogue.find(i=>i.id==='vest').price,100); for(const i of rules.catalogue.filter(i=>i.slot==='shirt')) assert.equal(i.price,20); for(const i of rules.catalogue.filter(i=>i.slot==='shell')) assert.equal(i.price,100); assert.equal(rules.catalogue.find(i=>i.id==='charged').price,150); assert.equal(rules.catalogue.find(i=>i.id==='piercing').price,250); assert.equal(rules.catalogue.find(i=>i.id==='ricochet').price,300); });
   await t.startGame(1,true);
-  check('the authored forest starts with exactly 30 regular enemies and one 500 HP boss', () => { assert.equal(t.enemies.length,30); assert(t.enemies.every(e=>e.hp===100)); assert.equal(t.boss.hp,500); assert.equal(t.player.hp,1); assert(!t.pickups.some(p=>p.kind==='berry')); });
+  check('the authored forest starts with 30 randomized regular enemies and one 300 HP boss', () => { assert.equal(t.enemies.length,30); assert(t.enemies.every(e=>[50,100].includes(e.hp))); assert.equal(t.boss.hp,300); assert.equal(t.player.hp,1); assert(!t.pickups.some(p=>p.kind==='berry')); });
   check('boss is absent before 60 active seconds and appears at 60', () => { t.game.frames=3599; t.updateBoss(); assert.equal(t.boss.state,'sleep'); t.game.frames=3600; t.updateBoss(); assert.equal(t.boss.state,'waiting'); });
-  check('gun bullets deal 20 damage through the actual projectile collision path', () => { const e=t.enemies[0]; e.x=130;e.y=146;e.state='patrol'; t.shots.push({id:t.attack('gun'),kind:'gun',x:125,y:146,w:6,h:6,vx:5,vy:0,g:0,life:100,spin:0,hits:[]}); t.updateShots(); assert.equal(e.hp,80); });
+  check('gun bullets deal 20 damage through the actual projectile collision path', () => { const e=t.enemies[0]; e.hp=e.maxHp=100; e.x=130;e.y=146;e.state='patrol'; t.shots.push({id:t.attack('gun'),kind:'gun',x:125,y:146,w:6,h:6,vx:5,vy:0,g:0,life:100,spin:0,hits:[]}); t.updateShots(); assert.equal(e.hp,80); });
   check('sword hits deal 50 through the actual collision path', () => { const e=t.enemies[0]; t.shots.push({id:t.attack('sword'),kind:'sword',x:e.x,y:e.y,w:28,h:18,vx:0,vy:0,g:0,life:1,spin:0,hits:[]}); t.updateShots(); assert.equal(e.hp,30); });
+  t.coinDrops[0]=true;
   const victim=t.enemies[0]; t.loot(0,'gun'); t.hitEnemy(victim,30,0,t.attack('shell'));
-  check('each defeat drops one large SQK coin and the selected weapon', () => { assert.equal(t.pickups.filter(p=>p.kind==='coin').length,1); const coin=t.pickups.find(p=>p.kind==='coin'); assert.equal(coin.w,42); assert.equal(coin.h,36); assert.equal(t.pickups.find(p=>p.kind==='weapon').weapon,'gun'); });
+  check('an eligible defeat drops one smaller SQK coin and the selected weapon', () => { assert.equal(t.pickups.filter(p=>p.kind==='coin').length,1); const coin=t.pickups.find(p=>p.kind==='coin'); assert.equal(coin.w,36); assert.equal(coin.h,31); assert.equal(t.pickups.find(p=>p.kind==='weapon').weapon,'gun'); });
   let coin=t.pickups.find(p=>p.kind==='coin'); coin.phys=false; t.player.x=coin.x; t.player.y=coin.y; t.updatePickups();
   check('coins require collection, then persist in guest storage', () => { assert.equal(save.snapshot().profile.sqk,1); assert.equal(JSON.parse(storage.get('hamster-friendship-v2-guest')).sqk,1); });
   t.hitEnemy(t.enemies[1],100,0,t.attack('shell'));
@@ -63,16 +64,16 @@ async function run() {
   check('retry restarts the same map and all 30 enemies, retaining SQK', () => { assert.equal(t.game.state,'playing'); assert.equal(t.enemies.length,30); assert.equal(t.player.x,96); assert.equal(save.snapshot().profile.sqk,1); assert.equal(ctx.__hamster.snapshot().map,1); });
   check('lanterns supply shells without healing or changing the map restart point', () => { const hp=t.player.hp; const x=t.game.checkpoint.x; t.interact(t.things.find(o=>o.kind==='lantern')); assert.equal(t.player.hp,hp); assert.equal(t.game.checkpoint.x,x); assert.equal(t.player.shells,22); });
   await t.startGame(1,true);
-  check('shield facing an enemy blocks, while a hit from behind is fatal', () => { const e=t.enemies[0]; e.x=t.player.x+7; e.y=t.player.y; e.dir=-1; t.player.onGround=true;t.player.shield=true;t.player.dir=1;t.player.vy=0;t.updateEnemy(e); assert.equal(t.player.hp,1); e.x=t.player.x+2; t.player.dir=-1;t.updateEnemy(e); assert.equal(t.player.hp,0); });
+  check('shield facing an enemy blocks, while a hit from behind is fatal', () => { const e=t.enemies[0]; e.state='patrol'; e.x=t.player.x+7; e.y=t.player.y; e.dir=-1; t.player.onGround=true;t.player.shield=true;t.player.dir=1;t.player.vy=0;t.updateEnemy(e); assert.equal(t.player.hp,1); e.x=t.player.x+2; t.player.dir=-1;t.updateEnemy(e); assert.equal(t.player.hp,0); });
   await t.startGame(1,true);
   check('falling also ends the map immediately', () => { t.player.y=240;t.updatePlayer();assert.equal(t.game.state,'gameover'); });
   await t.startGame(2,true);
-  check('map 2 preserves the original world and scales enemies/boss to 120/600', () => { assert.equal(t.enemies.length,30);assert(t.enemies.every(e=>e.hp===120));assert.equal(t.boss.hp,600);t.render(); });
+  check('map 2 preserves the original world and scales randomized enemy HP and boss to 360', () => { assert.equal(t.enemies.length,30);assert(t.enemies.every(e=>[60,120].includes(e.hp)));assert.equal(t.boss.hp,360);t.render(); });
   await t.startGame(1,true);
-  check('grenades create an area; each enemy inside takes 5 damage per second, not an instant burst', () => { const a=t.enemies[0],b=t.enemies[1]; a.x=b.x=140;a.y=b.y=146;a.state=b.state='patrol'; t.burns.push({id:t.attack('grenade'),x:120,y:120,w:80,h:48,life:480,ticks:0});for(let i=0;i<59;i++)t.updateBurns();assert.equal(a.hp,100);t.updateBurns();assert.equal(a.hp,95);assert.equal(b.hp,95);for(let i=0;i<420;i++)t.updateBurns();assert.equal(a.hp,60);assert.equal(t.burns.length,0); });
+  check('grenades create an area; each enemy inside takes 5 damage per second, not an instant burst', () => { const a=t.enemies[0],b=t.enemies[1]; a.hp=b.hp=100; a.x=b.x=140;a.y=b.y=146;a.state=b.state='patrol'; t.burns.push({id:t.attack('grenade'),x:120,y:120,w:80,h:48,life:480,ticks:0});for(let i=0;i<59;i++)t.updateBurns();assert.equal(a.hp,100);t.updateBurns();assert.equal(a.hp,95);assert.equal(b.hp,95);for(let i=0;i<420;i++)t.updateBurns();assert.equal(a.hp,60);assert.equal(t.burns.length,0); });
   await t.startGame(1,true);
   check('charged chestnuts gain 50% damage', () => assert.equal(rules.damage('shell',['charged']),37.5));
-  check('piercing chestnuts stop after three different enemies', () => { t.skills(['piercing']);for(let i=0;i<4;i++){t.enemies[i].x=140;t.enemies[i].y=146;t.enemies[i].state='patrol';}t.shots.push({id:t.attack('shell'),kind:'shell',x:140,y:146,w:6,h:6,vx:0,vy:0,g:0,life:100,spin:0,hits:[],bounces:0});t.updateShots();assert.deepEqual(Array.from(t.enemies.slice(0,4),e=>e.hp),[75,75,75,100]);assert.equal(t.shots.length,0); });
+  check('piercing chestnuts stop after three different enemies', () => { t.skills(['piercing']);for(let i=0;i<4;i++){t.enemies[i].hp=100;t.enemies[i].x=140;t.enemies[i].y=146;t.enemies[i].state='patrol';}t.shots.push({id:t.attack('shell'),kind:'shell',x:140,y:146,w:6,h:6,vx:0,vy:0,g:0,life:100,spin:0,hits:[],bounces:0});t.updateShots();assert.deepEqual(Array.from(t.enemies.slice(0,4),e=>e.hp),[75,75,75,100]);assert.equal(t.shots.length,0); });
   check('ricochet chestnuts bounce exactly once on solid terrain', () => { t.skills(['ricochet']);const s={id:100,kind:'shell',x:70*16,y:8*16,w:6,h:6,vx:1,vy:0,g:0,life:100,spin:0,hits:[],bounces:0};t.shots.push(s);t.updateShots();assert.equal(s.bounces,1);t.updateShots();assert.equal(t.shots.length,0); });
   check('boss gate and fragment still require the regular enemies to be defeated', () => { t.game.bossDefeated=true; assert.equal(t.available(t.things.find(o=>o.kind==='fragment')),false); });
   check('pause freezes active time and resumes', () => { t.pauseGame();const f=t.game.frames;t.tick();assert.equal(t.game.frames,f);t.resumeGame();assert.equal(t.game.state,'playing'); });
@@ -128,9 +129,10 @@ async function run() {
   const complete=await fixture();await complete.t.startGame(1,true);
   await okComplete();
   async function okComplete() {
+    complete.t.coinDrops.fill(true);
     for(const e of complete.t.enemies) complete.t.hitEnemy(e,100,0,complete.t.attack('shell'));
     complete.t.boss.state='idle';complete.t.damageBoss(500,complete.t.attack('shell'));
-    check('all 31 defeated enemies including the boss drop exactly one SQK each',()=>assert.equal(complete.t.pickups.filter(p=>p.kind==='coin').length,31));
+    check('each of 31 eligible drops can be spawned once, including the boss',()=>assert.equal(complete.t.pickups.filter(p=>p.kind==='coin').length,31));
     for(let n=0;n<70;n++)complete.t.updateBoss();
     for(let n=0;n<4&&complete.t.game.state==='dialogue';n++)complete.t.advanceDialogue();
     const fragment=complete.t.things.find(o=>o.kind==='fragment');
@@ -138,7 +140,7 @@ async function run() {
     complete.t.interact(fragment);for(let n=0;n<6&&complete.t.game.state==='dialogue';n++)complete.t.advanceDialogue();
     check('the original story ending unlocks the next forest tier',()=>{assert.equal(complete.t.game.state,'ending');assert.equal(complete.ctx.HamsterSave.snapshot().profile.highest_map,2);});
     await complete.t.startGame(2,true);
-    check('the next tier clears old drops and starts 30 fresh enemies',()=>{assert.equal(complete.t.enemies.length,30);assert.equal(complete.t.pickups.filter(p=>p.kind==='coin').length,0);assert.equal(complete.t.boss.hp,600);});
+    check('the next tier clears old drops and starts 30 fresh enemies',()=>{assert.equal(complete.t.enemies.length,30);assert.equal(complete.t.pickups.filter(p=>p.kind==='coin').length,0);assert.equal(complete.t.boss.hp,360);});
   }
   console.log(`${count} gameplay/economy/save checks passed.`);
 }

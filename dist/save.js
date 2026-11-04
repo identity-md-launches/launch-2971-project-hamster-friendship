@@ -20,7 +20,27 @@
   var guest = Object.assign(empty(), read('-guest', {}));
   if (!Array.isArray(guest.purchases)) guest.purchases = [];
   if (!guest.cosmetics || typeof guest.cosmetics !== 'object') guest.cosmetics = {};
+  function upgrade(p) {
+    if (!p.dice) p.dice = { rounds: 0, correct: 0, wins: 0, draws: 0 };
+    if (!Array.isArray(p.badges)) p.badges = [];
+    if (!Array.isArray(p.exchanged)) p.exchanged = [];
+    if (!Array.isArray(p.diceReceipts)) p.diceReceipts = [];
+    return p;
+  }
+  upgrade(guest);
   var profile = guest;
+  var mutation = Promise.resolve(), rpcFlight = Promise.resolve();
+  /** @template T @param {() => T | PromiseLike<T>} fn @returns {Promise<T>} */
+  function serialized(fn) { var result = mutation.then(fn); mutation = result.then(function () {}, function () {}); return result; }
+  function guestAction(fn) {
+    var work = function () {
+      // Re-read inside the cross-tab lock. A badge removal and its SQK credit
+      // are one storage write, so a refresh cannot split the exchange.
+      guest = upgrade(Object.assign(empty(), read('-guest', guest))); profile = guest;
+      var result = fn(); write('-guest', guest); notify(); return result;
+    };
+    return navigator.locks ? navigator.locks.request(prefix + '-guest', work) : Promise.resolve(work());
+  }
   var session = read('-session', null);
   var outbox = read('-outbox', []);
   if (!Array.isArray(outbox)) outbox = [];
@@ -56,11 +76,20 @@
     }).finally(function () { refreshFlight = null; });
     return refreshFlight;
   }
-  async function rpc(name, body = {}) { return request('/rest/v1/rpc/' + name, body, await token()); }
+  function rpc(name, body = {}) {
+    var result = rpcFlight.then(async function () {
+      var data = await request('/rest/v1/rpc/' + name, body, await token());
+      // Apply snapshots in request order so a slow response cannot roll back SQK.
+      if (data.profile) accept(data.profile); else if (data.name) accept(data);
+      return data;
+    });
+    rpcFlight = result.catch(function () {}); return result;
+  }
   function accept(data) { profile = data; cloud = true; notify(); }
   function persistOutbox() { write('-outbox', outbox); notify(); }
   async function flush() {
-    if (!cloud || !outbox.length) return;
+    if (!cloud) { await mutation; return; }
+    if (!outbox.length) return;
     if (flushing) return flushing;
     flushing = (async function () {
       try {
@@ -71,7 +100,6 @@
           var result = await rpc('hf_progress', { p_run: run.id, p_events: events });
           run.events = run.events.filter(function (event) { return event.seq > result.ack; });
           if (!run.events.length) outbox.shift();
-          accept(result.profile);
           persistOutbox();
         }
         status = 'Cloud saved.';
@@ -93,7 +121,7 @@
         session = Object.assign(data, { expires_at: Date.now() / 1000 + data.expires_in });
         write('-session', session);
       }
-      accept(await rpc('hf_profile'));
+      await rpc('hf_profile');
       status = 'Cloud saved.';
       await flush();
     } catch (error) {
@@ -109,16 +137,20 @@
     if (active) record('death', {}, active.lastFrame || 0);
     await flush();
     var loot = Array.from({ length: 31 }, function () { return window.HamsterRules.drop(Math.random()); });
-    var ranked = false, id = uuid();
+    var coins = Array.from({ length: 31 }, function () { return window.HamsterRules.coinDrop(Math.random()); });
+    var monsters = Array.from({ length: 30 }, function () { return window.HamsterRules.monster(Math.random(), Math.random(), map); });
+    var ranked = false, id = uuid(), rulesVersion = 3;
     if (cloud) {
       if (outbox.length) throw new Error('Your last cloud save is pending. Retry it before starting a cloud map.');
-      var data = await rpc('hf_start_run', { p_map: map });
+      var data = await rpc(profile.dice ? 'hf_start_run_v3' : 'hf_start_run', { p_map: map });
       id = data.id; loot = data.loot; ranked = true;
-      accept(data.profile);
+      coins = data.coinDrops || Array(31).fill(true);
+      monsters = data.monsters || window.HamsterRules.spawns.map(function (spawn) { return { type: spawn[0], size: 'large', hp: Math.ceil(100 * Math.pow(1.2, map - 1)), damage: Math.pow(1.2, map - 1) }; });
+      rulesVersion = data.rulesVersion || 2;
     }
-    active = { id: id, seq: 0, ranked: ranked, lastFrame: 0, claimed: {}, loot: loot };
+    active = { id: id, seq: 0, ranked: ranked, lastFrame: 0, claimed: {}, defeated: {}, loot: loot, coins: coins };
     notify();
-    return { loot: loot, ranked: ranked, purchases: profile.purchases.slice() };
+    return { loot: loot, coinDrops: coins, monsters: monsters, rulesVersion: rulesVersion, ranked: ranked, purchases: profile.purchases.slice() };
   }
   function record(kind, data, frame) {
     if (!active) return null;
@@ -129,15 +161,25 @@
       if (!run) { run = { id: active.id, events: [] }; outbox.push(run); }
       run.events.push(event);
       persistOutbox();
-    } else if (kind === 'collect' && !active.claimed[data.target]) {
-      active.claimed[data.target] = true; guest.sqk++;
-      write('-guest', guest); notify();
-    } else if (kind === 'defeat') {
-      guest.total_score += data.target === 30 ? 500 : 100;
-      write('-guest', guest); notify();
-    } else if (kind === 'finish') {
-      guest.highest_map = Math.max(guest.highest_map, data.map + 1); guest.total_score += 1000;
-      write('-guest', guest); notify();
+    } else {
+      var apply = null;
+      if (kind === 'collect' && active.defeated[data.target] && active.coins[data.target] && !active.claimed[data.target]) {
+        active.claimed[data.target] = true; apply = function () { guest.sqk++; };
+      } else if (kind === 'defeat' && !active.defeated[data.target]) {
+        active.defeated[data.target] = true; apply = function () { guest.total_score += data.target === 30 ? 500 : 100; };
+      } else if (kind === 'finish') {
+        apply = function () {
+          guest.highest_map = Math.max(guest.highest_map, data.map + 1); guest.total_score += 1000;
+          window.HamsterRules.tiers.forEach(function (tier) {
+            var id = 'skill-' + tier.tier;
+            if (guest.highest_map - 1 >= tier.maps && !guest.badges.some(function (b) { return b.id === id; }) && !guest.exchanged.includes(id)) guest.badges.push({ id: id, tier: tier.tier, source: 'skill' });
+          });
+        };
+      }
+      if (apply) {
+        if (navigator.locks) void serialized(function () { return guestAction(apply); });
+        else void guestAction(apply);
+      }
     }
     if (kind === 'death' || kind === 'finish') { active = null; void flush(); }
     return event.seq;
@@ -145,8 +187,8 @@
   async function saveName(name) {
     name = name.trim();
     if (!window.HamsterRules.validName(name)) throw new Error('Use 2–20 letters, numbers, spaces, underscores or hyphens.');
-    if (cloud) accept(await rpc('hf_profile', { p_name: name }));
-    else { guest.name = name; write('-guest', guest); notify(); }
+    if (cloud) await rpc('hf_profile', { p_name: name });
+    else await guestAction(function () { guest.name = name; });
   }
   async function purchase(id) {
     var item = window.HamsterRules.catalogue.find(function (i) { return i.id === id; });
@@ -154,13 +196,13 @@
     if (cloud) {
       await flush();
       if (outbox.length) throw new Error('Retry your pending cloud save before purchasing.');
-      accept(await rpc('hf_purchase', { p_item: id }));
-    } else {
+      await rpc('hf_purchase', { p_item: id });
+    } else await guestAction(function () {
       if (!guest.purchases.includes(id)) {
         if (guest.sqk < item.price) throw new Error('Collect ' + (item.price - guest.sqk) + ' more SQK to buy this item.');
-        guest.sqk -= item.price; guest.purchases.push(id); write('-guest', guest); notify();
+        guest.sqk -= item.price; guest.purchases.push(id);
       }
-    }
+    });
   }
   async function equip(slot, id) {
     if (id && !profile.purchases.includes(id)) throw new Error('Buy this item before equipping it.');
@@ -168,8 +210,35 @@
       var item = window.HamsterRules.catalogue.find(function (i) { return i.id === id; });
       if (!item || item.slot !== slot || slot === 'skill') throw new Error('Choose a matching cosmetic.');
     }
-    if (cloud) accept(await rpc('hf_equip', { p_slot: slot, p_item: id || null }));
-    else { guest.cosmetics[slot] = id || null; write('-guest', guest); notify(); }
+    if (cloud) await rpc('hf_equip', { p_slot: slot, p_item: id || null });
+    else await guestAction(function () { guest.cosmetics[slot] = id || null; });
+  }
+  function requireUpgrade() { if (cloud && !profile.dice) throw new Error('SQK Dice and Badge Exchange need Supabase migration 002. Forest play and existing saves remain available.'); }
+  async function playDice(prediction, requestId) {
+    if (prediction !== 'HIGH' && prediction !== 'LOW') throw new Error('Choose HIGH or LOW before rolling.');
+    var id = requestId || uuid(); requireUpgrade();
+    if (cloud) return (await rpc('hf_dice', { p_prediction: prediction, p_request: id })).round;
+    return guestAction(function () {
+      var old = guest.diceReceipts.find(function (r) { return r.id === id; }); if (old) { if (old.prediction !== prediction) throw new Error('Retry with the original prediction for this request.'); return old; }
+      var rules = window.HamsterRules;
+      var round = Object.assign({ id: id }, rules.diceResult(rules.die(), rules.die(), prediction));
+      guest.dice.rounds++; if (round.correct) { guest.dice.correct++; guest.dice.wins++; }
+      if (round.outcome === 'DRAW') guest.dice.draws++;
+      rules.tiers.forEach(function (tier) { var bid = 'dice-' + tier.tier; if (guest.dice.correct >= tier.correct && !guest.badges.some(function (b) { return b.id === bid; })) guest.badges.push({ id: bid, tier: tier.tier, source: 'dice' }); });
+      guest.diceReceipts.push(round); return round;
+    });
+  }
+  async function exchangeBadge(id) {
+    requireUpgrade();
+    if (cloud) { await flush(); if (outbox.length) throw new Error('Retry your pending cloud save before exchanging.'); await rpc('hf_exchange_badge', { p_badge: id }); return; }
+    return guestAction(function () {
+      if (guest.exchanged.includes(id)) return;
+      var badge = guest.badges.find(function (b) { return b.id === id; });
+      if (!badge || (badge.source !== 'skill' && badge.source !== 'contribution')) throw new Error('Only earned skill or contribution badges can be exchanged. Dice achievements stay on display.');
+      var tier = window.HamsterRules.tiers.find(function (t) { return t.tier === badge.tier; });
+      if (!tier) throw new Error('This badge has no exchange value.');
+      guest.badges = guest.badges.filter(function (b) { return b.id !== id; }); guest.exchanged.push(id); guest.sqk += tier.sqk;
+    });
   }
   async function leaderboard() {
     if (!CLOUD) throw new Error('The global Top 100 opens after the owner connects Supabase. Guest scores stay on this device.');
@@ -177,11 +246,12 @@
     return request('/rest/v1/rpc/hf_top100', {});
   }
   window.HamsterSave = {
-    ready: ready, beginMap: beginMap, record: record, flush: flush, saveName: saveName, purchase: purchase, equip: equip, leaderboard: leaderboard,
+    ready: ready, beginMap: beginMap, record: record, flush: flush, saveName: function (name) { return serialized(function () { return saveName(name); }); }, purchase: function (id) { return serialized(function () { return purchase(id); }); }, equip: function (slot, id) { return serialized(function () { return equip(slot, id); }); }, playDice: function (prediction, id) { return serialized(function () { return playDice(prediction, id); }); }, exchangeBadge: function (id) { return serialized(function () { return exchangeBadge(id); }); }, leaderboard: leaderboard,
     subscribe: function (fn) { listeners.push(fn); },
     retry: async function () { if (!cloud) await connectCloud(); else await flush(); },
     snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, status: status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked) }; }
   };
+  window.addEventListener('storage', function (e) { if (e.key === prefix + '-guest' && !cloud && !active) { guest = upgrade(Object.assign(empty(), read('-guest', guest))); profile = guest; notify(); } });
   window.addEventListener('online', function () { if (cloud) void flush(); });
   // A short batching interval, not a dependency of guest play. Failed writes stay
   // in the durable outbox until the player retries or the browser comes online.

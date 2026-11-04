@@ -1,263 +1,270 @@
 {
-  "date": "2026-11-04",
-  "scope": "Revision of the accepted game: immediate grenade burn timing and paused dialogue. Owner activation of live Supabase and hosting aliases remains external.",
-  "productionBuild": {
-    "command": "npm run build",
-    "exitCode": 0,
-    "files": 12,
-    "bytes": 173566,
-    "assets": [
-      {
-        "path": "dist/config.js",
-        "bytes": 337,
-        "sha256": "9c4b94b2170b1c976befafaa5c563f68db70ac388b385972cce76c1f5d20d16c"
-      },
-      {
-        "path": "dist/favicon.svg",
-        "bytes": 856,
-        "sha256": "2e3ba25b9ea954cf8d6cff354cc1ea8abd612431fe990321f68aa38739c73309"
-      },
-      {
-        "path": "dist/game.js",
-        "bytes": 80528,
-        "sha256": "e011db1a52a5a655c903bfb086fef7bec520362028e16a54920809750dab5bef"
-      },
-      {
-        "path": "dist/index.html",
-        "bytes": 12128,
-        "sha256": "12735c901ef5f7cf49c222017e5347ff1bb89764ce733f544d6b1d0c7b0ab0f8"
-      },
-      {
-        "path": "dist/og-image.png",
-        "bytes": 23892,
-        "sha256": "22d0381bc4b2ec0dee3b2672691d47124ab45f579787d7a613beb6d750c7fc14"
-      },
-      {
-        "path": "dist/og-image.svg",
-        "bytes": 2578,
-        "sha256": "4ac734124d88523c5045b9ad03f1a9c026634705edbdf7738826cbd50df75deb"
-      },
-      {
-        "path": "dist/rules.js",
-        "bytes": 3540,
-        "sha256": "f96f142d32a4e9d7ab0ae60f1d9de0d59d80158e8ce807cbc6f74ef57e360576"
-      },
-      {
-        "path": "dist/save.js",
-        "bytes": 10013,
-        "sha256": "58fd2f3681271c20c2e3c95a0e4485d2e8e028ac8d4898062b2099b544d9a621"
-      },
-      {
-        "path": "dist/sqk.svg",
-        "bytes": 2544,
-        "sha256": "88a5de5bea90d81cde75551e72aeb31ce9869ea17bc92c917b58ffe2c5625e6e"
-      },
-      {
-        "path": "dist/styles.css",
-        "bytes": 16269,
-        "sha256": "94ccb29d5ea2daa738004efa2a4c26bef5c9f200c3bafb69ccbdb176b5e62776"
-      },
-      {
-        "path": "dist/ui.js",
-        "bytes": 12120,
-        "sha256": "b4d2e00e3ccc981cd681e1b65da206f9260ee6f442e3121efde3ab6590e5e196"
-      },
-      {
-        "path": "dist/wallet.js",
-        "bytes": 8761,
-        "sha256": "1924f5cbb6b4fe2ac5f6131f287dd3b5ea4d62e172e4b588f06192d05a71a14a"
-      }
-    ]
+  "schema": "hamster-friendship-upgrade-validation-1",
+  "verifiedAtUTC": "2026-11-04T19:46:24.770741+00:00",
+  "scope": "Existing project upgrade; production static export. Worker-reported checks, not independent certification.",
+  "build": {
+    "passed": true,
+    "files": 14,
+    "bytes": 222899,
+    "relativeURLs": true,
+    "sourceExportEquality": true
   },
-  "staticChecks": {
-    "commands": [
-      "npm run check",
-      "npm run typecheck"
-    ],
-    "exitCode": 0
+  "typecheck": {
+    "projectCheckJs": true,
+    "extendedAudioCheckJs": true,
+    "compiler": "TypeScript 7.0.2",
+    "dynamicCanvas": "syntax and behavioral checks; not fully typed"
   },
-  "javascriptTypecheck": {
-    "compiler": "TypeScript 5.9.3",
-    "command": "tsc -p jsconfig.json",
-    "exitCode": 0,
-    "scope": "Five added frontend JS modules plus declarations; original engine separately syntax/execution checked."
+  "functionalCounts": {
+    "gameplay": 32,
+    "upgrade": 16,
+    "sql-old": 43,
+    "sql-new": 24,
+    "client-old": 9,
+    "client-new": 7,
+    "browser-old": 28,
+    "browser-new": 16
   },
-  "gameplay": {
-    "command": "node scripts/test.mjs",
-    "exitCode": 0,
-    "passed": 32
-  },
-  "database": {
-    "command": "node supabase/tests/validation.mjs <PGlite module>",
-    "engine": "PostgreSQL 18.6 / PGlite 0.5.15",
-    "exitCode": 0,
-    "passed": 43
-  },
-  "browser": {
-    "command": "node scripts/validate-browser.mjs <Playwright> <PGlite> <WebKit launcher> <axe>",
-    "exitCode": 0,
-    "passed": 28,
-    "checks": [
-      {
-        "engine": "chromium",
-        "name": "390 first screen contains the game and visible Start action",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "profile validates names, saves and restores focus",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "marketplace lists all 10 items and blocks unaffordable purchases",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "unconfigured Top 100 tells the truth and has no seeded rankings",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "MetaMask has a mobile opening link when no extension is available",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "guest start and original story dialogue work",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "paused dialogue is hidden, untabbable and cannot resume gameplay through covered clicks",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "a player menu preserves suspended dialogue until explicit Resume",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "keyboard movement, original basket interaction and jump work",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "attack, shield and weapon swap controls work",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "pause/resume and menus freeze active gameplay",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "mobile pointer controls move and jump",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "reload preserves the player name",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "320, 768 and 1440 widths have no horizontal overflow",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "200% text enlargement keeps menu content reachable",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "reduced motion and keyboard focus states render",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "production page has no JavaScript errors or failed resource requests",
-        "passed": true
-      },
-      {
-        "engine": "chromium-wallet",
-        "name": "EIP-6963 MetaMask connection switches to Ethereum Mainnet without signing",
-        "passed": true
-      },
-      {
-        "engine": "chromium-wallet",
-        "name": "wallet reconnect on reload uses eth_accounts without a new permission prompt",
-        "passed": true
-      },
-      {
-        "engine": "chromium-wallet",
-        "name": "wrong-network recovery and account changes are handled",
-        "passed": true
-      },
-      {
-        "engine": "chromium-wallet",
-        "name": "rejected wallet request leaves guest gameplay available",
-        "passed": true
-      },
-      {
-        "engine": "chromium-cloud",
-        "name": "Supabase Auth and profile RPC connect through the real client",
-        "passed": true
-      },
-      {
-        "engine": "chromium-cloud",
-        "name": "a defeated enemy creates collectible SQK and a durable cloud outbox",
-        "passed": true
-      },
-      {
-        "engine": "chromium-cloud",
-        "name": "pending coins survive reload and retry credits them exactly once",
-        "passed": true
-      },
-      {
-        "engine": "chromium-cloud",
-        "name": "leaderboard loading failure has a working retry and real database results",
-        "passed": true
-      },
-      {
-        "engine": "chromium-cloud",
-        "name": "cloud purchase and cosmetic equipment use server-validated RPCs and persist",
-        "passed": true
-      },
-      {
-        "engine": "chromium-cloud",
-        "name": "equipped chestnut skin changes the actual projectile pixels",
-        "passed": true
-      },
-      {
-        "engine": "chromium-cloud",
-        "name": "cloud interaction sequence has no uncaught JavaScript errors",
-        "passed": true
-      }
-    ],
-    "limitations": [
-      {
-        "engine": "webkit",
-        "status": "not-run",
-        "reason": "Browser runtime unavailable; launch was attempted. No Safari pass is claimed."
-      }
-    ],
-    "liveWallet": false,
-    "liveSupabase": false
-  },
+  "functionalTotal": 175,
+  "browserChecks": [
+    {
+      "engine": "chromium",
+      "name": "390 first screen contains the game and visible Start action",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "profile validates names, saves and restores focus",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "marketplace lists all 10 items and blocks unaffordable purchases",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "unconfigured Top 100 tells the truth and has no seeded rankings",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "MetaMask has a mobile opening link when no extension is available",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "guest start and original story dialogue work",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "paused dialogue is hidden, untabbable and cannot resume gameplay through covered clicks",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "a player menu preserves suspended dialogue until explicit Resume",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "keyboard movement, original basket interaction and jump work",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "attack, shield and weapon swap controls work",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "pause/resume and menus freeze active gameplay",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "mobile pointer controls move and jump",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "reload preserves the player name",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "320, 768 and 1440 widths have no horizontal overflow",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "200% text enlargement keeps menu content reachable",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "reduced motion and keyboard focus states render",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "production page has no JavaScript errors or failed resource requests",
+      "passed": true
+    },
+    {
+      "engine": "chromium-wallet",
+      "name": "EIP-6963 MetaMask connection switches to Ethereum Mainnet without signing",
+      "passed": true
+    },
+    {
+      "engine": "chromium-wallet",
+      "name": "wallet reconnect on reload uses eth_accounts without a new permission prompt",
+      "passed": true
+    },
+    {
+      "engine": "chromium-wallet",
+      "name": "wrong-network recovery and account changes are handled",
+      "passed": true
+    },
+    {
+      "engine": "chromium-wallet",
+      "name": "rejected wallet request leaves guest gameplay available",
+      "passed": true
+    },
+    {
+      "engine": "chromium-cloud",
+      "name": "Supabase Auth and profile RPC connect through the real client",
+      "passed": true
+    },
+    {
+      "engine": "chromium-cloud",
+      "name": "a defeated enemy creates collectible SQK and a durable cloud outbox",
+      "passed": true
+    },
+    {
+      "engine": "chromium-cloud",
+      "name": "pending coins survive reload and retry credits them exactly once",
+      "passed": true
+    },
+    {
+      "engine": "chromium-cloud",
+      "name": "leaderboard loading failure has a working retry and real database results",
+      "passed": true
+    },
+    {
+      "engine": "chromium-cloud",
+      "name": "cloud purchase and cosmetic equipment use server-validated RPCs and persist",
+      "passed": true
+    },
+    {
+      "engine": "chromium-cloud",
+      "name": "equipped chestnut skin changes the actual projectile pixels",
+      "passed": true
+    },
+    {
+      "engine": "chromium-cloud",
+      "name": "cloud interaction sequence has no uncaught JavaScript errors",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "390 first screen has a usable Start action and compact controls",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "GUILD collapses controls, rules, combat, Dice and original story in one menu",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "music/SFX sliders and mutes control real audio and survive reload",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "Dice requires a prediction, rolls two faces, updates stats and never changes SQK",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "mobile joystick and three combat buttons support simultaneous pointers",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "landscape view fits at 844\u00d7390 and 667\u00d7375 with reachable controls",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "source uses user name as readable character label and exposes all four randomized types",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "new menus reflow at 320, 390, 768, 1440 and 200% text",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "no JavaScript errors or failed local resources on upgrade flows",
+      "passed": true
+    },
+    {
+      "engine": "chromium-fixtures",
+      "name": "20th correct prediction unlocks a visible, nonexchangeable Bronze Dice achievement",
+      "passed": true
+    },
+    {
+      "engine": "chromium-fixtures",
+      "name": "marketplace distinguishes Dice display badges and exchangeable skill badges",
+      "passed": true
+    },
+    {
+      "engine": "chromium-fixtures",
+      "name": "two tabs exchanging the same badge credit one reward with Web Locks",
+      "passed": true
+    },
+    {
+      "engine": "chromium-fixtures",
+      "name": "a coin reward and a purchase in different tabs preserve both balance and inventory",
+      "passed": true
+    },
+    {
+      "engine": "chromium-fixtures",
+      "name": "four seasonal environments render distinct canvas images",
+      "passed": true
+    },
+    {
+      "engine": "chromium-fixtures",
+      "name": "map victory shows the winking hamster, readable SQK, sound event and next-map progression",
+      "passed": true
+    },
+    {
+      "engine": "chromium-fixtures",
+      "name": "reduced motion removes seasonal movement and victory animation",
+      "passed": true
+    }
+  ],
+  "browserLimitations": [
+    {
+      "engine": "webkit",
+      "reason": "WebKit runtime could not launch; browser validation was not performed in this engine."
+    },
+    {
+      "engine": "webkit",
+      "reason": "WebKit runtime unavailable; this engine was not validated."
+    }
+  ],
   "designProbe": {
-    "passed": 16,
-    "total": 16,
     "checks": [
       {
         "name": "render",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 7958,
+        "durationMs": 8857,
         "output": "renders, no script errors or missing local files"
       },
       {
@@ -272,7 +279,7 @@
         "passed": true,
         "exitCode": 0,
         "durationMs": 0,
-        "output": "all 14 controls at least 24px or spaced at 390\n0 under the 44px comfortable size"
+        "output": "all 15 controls at least 24px or spaced at 390\n1 under the 44px comfortable size"
       },
       {
         "name": "contrast",
@@ -286,7 +293,7 @@
         "passed": true,
         "exitCode": 0,
         "durationMs": 0,
-        "output": "no all-caps text in content"
+        "output": "no all-caps text in content\n2 more in header, nav or footer (brand chrome, not counted)"
       },
       {
         "name": "tracking",
@@ -307,7 +314,7 @@
         "passed": true,
         "exitCode": 0,
         "durationMs": 0,
-        "output": "390: 3 sizes in use, 4 with one-offs (14px×30, 16px×36, 20px×3, 28px×1)\n1440: 3 sizes in use, 4 with one-offs (14px×34, 16px×31, 20px×3, 40px×1)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
+        "output": "390: 3 sizes in use, 3 with one-offs (14px\u00d733, 16px\u00d72, 20px\u00d72)\n1440: 2 sizes in use, 4 with one-offs (14px\u00d728, 16px\u00d72, 20px\u00d71, 28px\u00d71)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
       },
       {
         "name": "type-faces",
@@ -320,7 +327,7 @@
         "name": "glyphs",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 0,
+        "durationMs": 1,
         "output": "no em dashes or emoji in text"
       },
       {
@@ -342,7 +349,7 @@
         "passed": true,
         "exitCode": 0,
         "durationMs": 0,
-        "output": "prose on the first screen: 45 words at 390 (bar 60), 39 at 1440 (bar 90)\nall words on the first screen: 90 at 390, 83 at 1440\nwhole page: 417 words, 123 of them prose"
+        "output": "prose on the first screen: 32 words at 390 (bar 60), 32 at 1440 (bar 90)\nall words on the first screen: 83 at 390, 78 at 1440\nwhole page: 78 words, 32 of them prose"
       },
       {
         "name": "chrome",
@@ -365,254 +372,309 @@
         "durationMs": 0,
         "output": "title \"Hamster Friendship: The Lost Alice\", favicon, og:title, og:image, description"
       }
+    ],
+    "widths": [
+      320,
+      390,
+      1440
     ]
   },
-  "accessibility": {
-    "engine": "axe-core 4.14.0",
-    "surfaces": [
-      {
-        "surface": "chromium-cloud-leaderboard",
-        "violations": 0,
-        "passedRules": 18,
-        "manualReview": [
-          {
-            "id": "color-contrast",
-            "impact": "serious",
-            "nodes": 10
-          },
-          {
-            "id": "label-content-name-mismatch",
-            "impact": "serious",
-            "nodes": 1
-          }
-        ]
-      },
-      {
-        "surface": "chromium-entry",
-        "violations": 0,
-        "passedRules": 27,
-        "manualReview": [
-          {
-            "id": "color-contrast",
-            "impact": "serious",
-            "nodes": 6
-          }
-        ]
-      },
-      {
-        "surface": "chromium-paused-dialogue",
-        "violations": 0,
-        "passedRules": 27,
-        "manualReview": [
-          {
-            "id": "color-contrast",
-            "impact": "serious",
-            "nodes": 6
-          }
-        ]
-      },
-      {
-        "surface": "chromium-profile",
-        "violations": 0,
-        "passedRules": 21,
-        "manualReview": [
-          {
-            "id": "color-contrast",
-            "impact": "serious",
-            "nodes": 11
-          },
-          {
-            "id": "label-content-name-mismatch",
-            "impact": "serious",
-            "nodes": 1
-          }
-        ]
-      },
-      {
-        "surface": "chromium-shop",
-        "violations": 0,
-        "passedRules": 17,
-        "manualReview": [
-          {
-            "id": "color-contrast",
-            "impact": "serious",
-            "nodes": 19
-          },
-          {
-            "id": "label-content-name-mismatch",
-            "impact": "serious",
-            "nodes": 1
-          }
-        ]
-      },
-      {
-        "surface": "chromium-wallet",
-        "violations": 0,
-        "passedRules": 17,
-        "manualReview": [
-          {
-            "id": "color-contrast",
-            "impact": "serious",
-            "nodes": 4
-          },
-          {
-            "id": "label-content-name-mismatch",
-            "impact": "serious",
-            "nodes": 1
-          }
-        ]
-      }
-    ],
-    "screenReader": false,
-    "nativeZoom": false
-  },
-  "measuredSolidColors": {
-    "profile": {
-      "foreground": "rgb(230, 211, 181)",
-      "background": "rgb(38, 24, 15)",
-      "heading": "rgb(251, 243, 228)",
-      "ratio": 11.762256125506298
+  "axe": [
+    {
+      "surface": "chromium-cloud-leaderboard-axe",
+      "violations": 0,
+      "passes": 18,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 6
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 1
+        }
+      ]
     },
-    "error": {
-      "foreground": "rgb(233, 115, 95)",
-      "background": "rgb(38, 24, 15)",
-      "ratio": 5.805301050025857
+    {
+      "surface": "chromium-entry-axe",
+      "violations": 0,
+      "passes": 23,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 2
+        }
+      ]
+    },
+    {
+      "surface": "chromium-paused-dialogue-axe",
+      "violations": 0,
+      "passes": 24,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 2
+        }
+      ]
+    },
+    {
+      "surface": "chromium-profile-axe",
+      "violations": 0,
+      "passes": 21,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 11
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 1
+        }
+      ]
+    },
+    {
+      "surface": "chromium-shop-axe",
+      "violations": 0,
+      "passes": 17,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 15
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 1
+        }
+      ]
+    },
+    {
+      "surface": "chromium-wallet-axe",
+      "violations": 0,
+      "passes": 17,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 2
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 1
+        }
+      ]
+    },
+    {
+      "surface": "chromium-audio-axe",
+      "violations": 0,
+      "passes": 18,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "nodes": 5
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "nodes": 1
+        }
+      ]
+    },
+    {
+      "surface": "chromium-dice-axe",
+      "violations": 0,
+      "passes": 18,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "nodes": 9
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "nodes": 1
+        }
+      ]
+    },
+    {
+      "surface": "chromium-fixtures-badges-axe",
+      "violations": 0,
+      "passes": 17,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "nodes": 18
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "nodes": 1
+        }
+      ]
+    },
+    {
+      "surface": "chromium-fixtures-victory-axe",
+      "violations": 0,
+      "passes": 26,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "nodes": 8
+        }
+      ]
+    },
+    {
+      "surface": "chromium-guild-axe",
+      "violations": 0,
+      "passes": 18,
+      "manualReview": [
+        {
+          "id": "color-contrast",
+          "nodes": 37
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "nodes": 1
+        }
+      ]
     }
-  },
-  "sourcePreservation": [
+  ],
+  "screenshots": [
     {
-      "block": "original sprites",
-      "unchanged": true
+      "path": "docs/validation/screenshots/390-start.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": false,
+      "caption": "Fresh guest entry; primary action on the first screen."
     },
     {
-      "block": "forest tiles",
-      "unchanged": true
+      "path": "docs/validation/screenshots/390-playing.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": true,
+      "caption": "Interaction-test player name, original scene and controls."
     },
     {
-      "block": "collision movement",
-      "unchanged": true
+      "path": "docs/validation/screenshots/1440-start.png",
+      "size": [
+        1440,
+        900
+      ],
+      "testFixture": false,
+      "caption": "Desktop pointer layout."
     },
     {
-      "block": "forest art",
-      "unchanged": true
+      "path": "docs/validation/screenshots/guild.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": false,
+      "caption": "Collapsible instructions."
     },
     {
-      "block": "background and parallax",
-      "unchanged": true
+      "path": "docs/validation/screenshots/audio.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": false,
+      "caption": "Independent persisted music/SFX controls."
+    },
+    {
+      "path": "docs/validation/screenshots/dice.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": false,
+      "caption": "An actual guest roll, with no SQK stake or reward."
+    },
+    {
+      "path": "docs/validation/screenshots/badge-exchange.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": true,
+      "caption": "Explicit seeded test badges for exchange UI validation; not live player data."
+    },
+    {
+      "path": "docs/validation/screenshots/landscape-667.png",
+      "size": [
+        667,
+        375
+      ],
+      "testFixture": false,
+      "caption": "667\u00d7375 coarse-pointer controls and pause."
+    },
+    {
+      "path": "docs/validation/screenshots/victory.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": true,
+      "caption": "Forced test encounter completion for victory/progression inspection."
+    },
+    {
+      "path": "docs/validation/screenshots/paused-dialogue.png",
+      "size": [
+        390,
+        844
+      ],
+      "testFixture": true,
+      "caption": "Saved test player, dialogue safely hidden while paused."
     }
   ],
-  "protectedPathsChanged": [],
-  "ignoreFileChanged": false,
-  "runtimeDependencies": 0,
-  "retainedScreenshots": [
-    "docs/validation/screenshots/mobile-start.png",
-    "docs/validation/screenshots/marketplace.png",
-    "docs/validation/screenshots/mobile-coin.png",
-    "docs/validation/screenshots/desktop-coin.png",
-    "docs/validation/screenshots/mobile-paused-dialogue.png",
-    "docs/validation/screenshots/mobile-resumed-dialogue.png"
-  ],
-  "limitations": [
-    "Supabase project URL/public key and owner migration/Auth setup are not supplied; cloud features are explicitly disabled in the delivered configuration.",
-    "Server checks economic/event rules, not authoritative physics or bot prevention.",
-    "Anonymous profile access depends on retaining its browser session.",
-    "The requested .hamster public DNS ending is undelegated; hosting/domain aliases were not changed.",
-    "No real wallet app, physical device, screen-reader or Safari validation.",
-    "Canvas/background contrast cases remain outside automated certification."
-  ],
-  "bundle": {
-    "limitBytes": 8388608,
-    "addedOrModifiedFilesBytes": 440549,
-    "measurement": "Conservative full size of modified and new submission files for this revision, excluding ignored scratch and removed input files."
+  "sourceSHA256": {
+    "src/sqk.svg": "88a5de5bea90d81cde75551e72aeb31ce9869ea17bc92c917b58ffe2c5625e6e",
+    "src/rules.js": "1fe677b54987f76a597db6bd469cd1feb4a426fefc47dad870705f028dd78546",
+    "src/og-image.svg": "4ac734124d88523c5045b9ad03f1a9c026634705edbdf7738826cbd50df75deb",
+    "src/game.js": "79190d0540a5670d3f6233fdf8417361bf493d6541af52c2425fd14b01e01c79",
+    "src/styles.css": "c0b7b50983fe82070d1fc6bb6ed847a61245175a1d27baeb09ba6d1b823505b4",
+    "src/favicon.svg": "2e3ba25b9ea954cf8d6cff354cc1ea8abd612431fe990321f68aa38739c73309",
+    "src/types.d.ts": "d8f6fe93a35faa88d42d46d813f864d654344c9e5c3e2d1ba004ad371e0e77d3",
+    "src/wallet.js": "1924f5cbb6b4fe2ac5f6131f287dd3b5ea4d62e172e4b588f06192d05a71a14a",
+    "src/victory.svg": "301711622fb8c101015e6aa8d194dfa31564ab61bdcd5e6a40c0f597f85b26e2",
+    "src/ui.js": "1cca29bb98acdddd5cf3493fe84f53ce297ec6541936f9fe70d9c360b940c3c1",
+    "src/save.js": "f813129bd3807d0be82f28eea46ea8523449e41b39e6965daa34e8b0bb2de435",
+    "src/config.js": "9c4b94b2170b1c976befafaa5c563f68db70ac388b385972cce76c1f5d20d16c",
+    "src/audio.js": "32745d72da23bbd85960bcee62590c1f7aea8bdc1d2ac33e543d4873d3c78c38",
+    "src/og-image.png": "22d0381bc4b2ec0dee3b2672691d47124ab45f579787d7a613beb6d750c7fc14",
+    "src/index.html": "c921bf3c2dcf654ddc39344ef319b816739b8907ab69969be15221b39f44dec6",
+    "package.json": "b466291729936955dfaa3312cb190a9bce85303fea68c47db0ae4daf25779f6d",
+    "package-lock.json": "cd7466d6a78c9f41366286487fe6263981af58c29fb587e5c6f30e79dfc75e85",
+    "jsconfig.json": "8336e2d9bfe18b732060cf9c652b7041714946849988e4f05ea3d4e1194b94bd",
+    "supabase/migrations/001_friendship.sql": "9c4d86131671b7278a5236526cd84527df838c18ca1f32b539a2682733065b5e",
+    "supabase/migrations/002_seasons_dice_badges.sql": "c4921c02a0d33793bc9f37002b428c4ab7caedb305e82e96026b5e24e2d9374c",
+    ".gitignore": "166236144f3fb6828de255f9dc49680854459503c108db3c0cb5945d242ab141"
   },
-  "frontendDatabase": {
-    "command": "node supabase/tests/frontend.mjs <PGlite module>",
-    "exitCode": 0,
-    "passed": 9,
-    "engine": "PGlite 0.5.15, actual 001_friendship.sql and save.js",
-    "cases": [
-      {
-        "impact": "immediate wall",
-        "attackFrame": 64,
-        "explosionFrame": 64,
-        "firstHitFrame": 124,
-        "targets": 2,
-        "ticksPerTarget": 8,
-        "intervalFrames": 60,
-        "damagePerTick": 5,
-        "pendingEventsAfterSave": 0,
-        "retryAndReload": true,
-        "exactlyOnceCredit": true,
-        "purchase": true,
-        "freshCloudMap": true
-      },
-      {
-        "impact": "delayed wall",
-        "attackFrame": 64,
-        "explosionFrame": 78,
-        "firstHitFrame": 138,
-        "targets": 2,
-        "ticksPerTarget": 8,
-        "intervalFrames": 60,
-        "damagePerTick": 5,
-        "pendingEventsAfterSave": 0,
-        "retryAndReload": true,
-        "exactlyOnceCredit": true,
-        "purchase": true,
-        "freshCloudMap": true
-      },
-      {
-        "impact": "fuse expiry",
-        "attackFrame": 64,
-        "explosionFrame": 124,
-        "firstHitFrame": 184,
-        "targets": 2,
-        "ticksPerTarget": 8,
-        "intervalFrames": 60,
-        "damagePerTick": 5,
-        "pendingEventsAfterSave": 0,
-        "retryAndReload": true,
-        "exactlyOnceCredit": true,
-        "purchase": true,
-        "freshCloudMap": true
-      }
-    ],
-    "fixtures": [
-      "Auth and transport",
-      "deterministic loot",
-      "collision positions",
-      "elapsed server time",
-      "purchase funding after grenade validation"
-    ]
-  },
-  "revision": {
-    "findings": [
-      {
-        "id": "0371690f545bf7042727ee92d16b9f803ac8af6cab41eab4e50e168c00f5af47",
-        "verdict": "fixed"
-      },
-      {
-        "id": "edb5e8c3824e9d70d41b9113179b6a359597235994744e057e6e7639d6a2983e",
-        "verdict": "fixed"
-      }
-    ],
-    "baseline": {
-      "grenade": {
-        "attackFrame": 64,
-        "explosionFrame": 64,
-        "firstHitFrame": 123,
-        "sqlAccepted": false,
-        "outboxRemainedPending": true
-      },
-      "pause": {
-        "viewport": "390x844",
-        "tabTarget": "dlg-next",
-        "state": "playing",
-        "pauseScreenVisible": true,
-        "frameBefore": 0,
-        "frameAfter": 39
+  "remaining": [
+    "Owner Supabase URL/public key, migration activation and live service smoke test.",
+    "WebKit/Safari runtime could not launch; cross-browser validation incomplete.",
+    "Physical phones/notches/listening, screen readers, native zoom, no-Web-Locks concurrent tabs and long-duration play not verified.",
+    "No domain/DNS or hosting changes attempted; a replacement is unverified."
+  ],
+  "integrity": "No credentials, live records, domain ownership or verification results were fabricated. Test fixtures are explicitly labeled and are absent from the export.",
+  "packaging": {
+    "ignoredPathBudget": {
+      "/.cache/": {
+        "submittedFiles": 0,
+        "submittedBytes": 0,
+        "reason": "Tool-managed cache; a read-only lock prevented deletion."
       }
     },
-    "evidence": "The original coin scenes, solid-color measurements and original-source comparison are retained from the accepted round. Revision screenshots, build hashes, test counts, browser checks, axe and design-probe results are refreshed."
+    "scratchRemoved": true,
+    "requiredAssetsExcluded": false
   }
 }
