@@ -1,0 +1,17 @@
+{
+  "name": "hamster-friendship-the-lost-alice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hamster Friendship: The Lost Alice. A pixel-art browser adventure, chapter one.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "typecheck": "node scripts/check.mjs",
+    "preview": "node scripts/preview.mjs"
+  }
+}

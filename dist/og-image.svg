@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" shape-rendering="crispEdges">
+  <rect width="1200" height="630" fill="#2e2245"/>
+  <rect y="90" width="1200" height="70" fill="#552f55"/>
+  <rect y="160" width="1200" height="70" fill="#933f52"/>
+  <rect y="230" width="1200" height="70" fill="#cf6444"/>
+  <rect y="300" width="1200" height="80" fill="#f19c47"/>
+  <rect y="380" width="1200" height="250" fill="#f6b85a"/>
+  <circle cx="880" cy="400" r="110" fill="#f9c56a"/>
+  <circle cx="880" cy="400" r="70" fill="#ffe9b8"/>
+  <path d="M0 420 L200 380 L420 410 L640 370 L900 405 L1200 375 L1200 630 L0 630 Z" fill="#8e4a4c"/>
+  <rect x="120" y="120" width="44" height="430" fill="#5b3622"/>
+  <rect x="980" y="140" width="52" height="410" fill="#5b3622"/>
+  <ellipse cx="140" cy="110" rx="190" ry="80" fill="#b4532a"/>
+  <ellipse cx="1010" cy="120" rx="200" ry="85" fill="#d9782f"/>
+  <ellipse cx="60" cy="70" rx="120" ry="50" fill="#eda046"/>
+  <ellipse cx="1120" cy="80" rx="120" ry="50" fill="#8e3b22"/>
+  <rect y="540" width="1200" height="90" fill="#6b3f22"/>
+  <rect y="540" width="1200" height="14" fill="#a39a37"/>
+  <g transform="translate(520 380) scale(10)">
+    <rect x="4" y="0" width="2" height="1" fill="#3a2318"/><rect x="10" y="0" width="2" height="1" fill="#3a2318"/>
+    <rect x="3" y="1" width="4" height="1" fill="#3a2318"/><rect x="9" y="1" width="4" height="1" fill="#3a2318"/>
+    <rect x="4" y="1" width="1" height="1" fill="#eaa0a0"/><rect x="10" y="1" width="1" height="1" fill="#eaa0a0"/>
+    <rect x="2" y="2" width="12" height="1" fill="#3a2318"/>
+    <rect x="1" y="3" width="14" height="9" fill="#3a2318"/>
+    <rect x="0" y="5" width="16" height="5" fill="#3a2318"/>
+    <rect x="2" y="3" width="12" height="9" fill="#d9893b"/>
+    <rect x="1" y="5" width="14" height="5" fill="#d9893b"/>
+    <rect x="3" y="3" width="9" height="3" fill="#efae5c"/>
+    <rect x="11" y="4" width="2" height="2" fill="#1d120d"/><rect x="11" y="4" width="1" height="1" fill="#ffffff"/>
+    <rect x="14" y="6" width="1" height="1" fill="#e27f86"/>
+    <rect x="3" y="7" width="11" height="1" fill="#5e8c3e"/>
+    <rect x="7" y="8" width="7" height="3" fill="#f6e2bd"/>
+    <rect x="3" y="12" width="11" height="1" fill="#3a2318"/>
+    <rect x="3" y="13" width="3" height="2" fill="#3a2318"/><rect x="10" y="13" width="3" height="2" fill="#3a2318"/>
+  </g>
+  <text x="600" y="92" text-anchor="middle" font-family="Georgia, serif" font-size="64" font-weight="700" fill="#fbf3e4">Hamster Friendship: The Lost Alice</text>
+</svg>

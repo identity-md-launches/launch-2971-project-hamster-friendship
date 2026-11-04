@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hamster Friendship: The Lost Alice</title>
+  <meta name="description" content="A short pixel-art adventure in your browser. Guide Chang the hamster through an autumn chestnut forest to learn what happened to his friend Alice.">
+  <meta name="theme-color" content="#1a110b">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hamster Friendship: The Lost Alice">
+  <meta property="og:description" content="Guide Chang the hamster through an autumn chestnut forest to learn what happened to his friend Alice.">
+  <meta property="og:image" content="./og-image.svg">
+  <meta property="og:image:alt" content="Chang the hamster in a pixel-art chestnut forest at dusk">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./game.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#stage">Skip to the game</a>
+
+  <header class="site-header page">
+    <h1>Hamster Friendship: The Lost Alice</h1>
+    <p class="lede">A pixel-art adventure you play in the browser. Help Chang search the chestnut forest for his missing friend.</p>
+  </header>
+
+  <main>
+    <section class="game page" id="play" aria-label="Game">
+      <div class="hud" id="hud">
+        <p class="hud-item">
+          <svg class="hud-icon" viewBox="0 0 8 8" aria-hidden="true">
+            <rect x="3" y="0" width="2" height="1" fill="#3b1f12"/>
+            <rect x="2" y="1" width="4" height="1" fill="#8b4a22"/>
+            <rect x="1" y="2" width="6" height="3" fill="#8b4a22"/>
+            <rect x="2" y="2" width="1" height="2" fill="#d48a4e"/>
+            <rect x="1" y="5" width="6" height="1" fill="#e9cf9c"/>
+            <rect x="2" y="6" width="4" height="1" fill="#e9cf9c"/>
+          </svg>
+          <span>Shells</span>
+          <strong class="hud-value" id="hud-shells">0</strong>
+        </p>
+        <p class="hud-item">
+          <span>Health</span>
+          <span class="hearts" id="hud-hearts" aria-hidden="true"></span>
+          <strong class="hud-value" id="hud-health">3/3</strong>
+        </p>
+        <p class="hud-item">
+          <span>Clues</span>
+          <strong class="hud-value" id="hud-clues">0/3</strong>
+        </p>
+        <p class="hud-item" id="hud-boss" hidden>
+          <span>Cockroach</span>
+          <span class="hud-bar" role="img" id="hud-boss-bar" aria-label="Cockroach health full"><span class="hud-bar-fill" id="hud-boss-fill"></span></span>
+        </p>
+        <button class="btn btn-secondary btn-small hud-pause" id="btn-pause" type="button">Pause</button>
+      </div>
+
+      <div class="stage" id="stage" tabindex="-1">
+        <canvas id="game" width="320" height="192" tabindex="0" role="img" aria-label="Game view. Chang the hamster in the chestnut forest."></canvas>
+
+        <div class="overlay" id="screen-start">
+          <h2>Chapter one: The chestnut forest</h2>
+          <p class="overlay-text">Alice has vanished. Find out where she went.</p>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="btn-start" type="button">Start chapter</button>
+            <a class="btn btn-secondary" href="#how-to-play">How to play</a>
+          </div>
+        </div>
+
+        <div class="overlay" id="screen-pause" hidden>
+          <h2>Paused</h2>
+          <p class="overlay-text">Chang will wait right here.</p>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="btn-resume" type="button">Resume</button>
+            <button class="btn btn-secondary" id="btn-restart" type="button">Restart chapter</button>
+          </div>
+        </div>
+
+        <div class="overlay" id="screen-over" hidden>
+          <h2>Chang needs a rest</h2>
+          <p class="overlay-text">Try again from the last lantern you lit.</p>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="btn-retry" type="button">Try again</button>
+            <button class="btn btn-secondary" id="btn-restart-over" type="button">Restart chapter</button>
+          </div>
+        </div>
+
+        <div class="overlay" id="screen-end" hidden>
+          <h2>Chapter one complete</h2>
+          <p class="overlay-text">Chang holds a humming metal fragment. Alice is somewhere beyond the forest.</p>
+          <dl class="stats">
+            <div><dt>Shells collected</dt><dd id="end-shells">0</dd></div>
+            <div><dt>Clues found</dt><dd id="end-clues">0 of 3</dd></div>
+            <div><dt>Time</dt><dd id="end-time">0:00</dd></div>
+          </dl>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" id="btn-again" type="button">Play again</button>
+          </div>
+        </div>
+
+        <div class="dialogue" id="dialogue" hidden>
+          <p class="dialogue-name" id="dlg-name"></p>
+          <p class="dialogue-text" id="dlg-text" aria-live="polite"></p>
+          <div class="dialogue-actions">
+            <button class="btn btn-primary btn-small" id="dlg-next" type="button">Next</button>
+            <span class="dialogue-hint">or press <kbd>E</kbd></span>
+          </div>
+        </div>
+
+        <p class="toast" id="toast" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="touchpad" id="touchpad" aria-label="Touch controls" role="group">
+        <div class="pad-group">
+          <button class="btn btn-secondary pad-btn" type="button" data-action="left" aria-label="Move left">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 3 5 10l8 7z"/></svg>
+          </button>
+          <button class="btn btn-secondary pad-btn" type="button" data-action="right" aria-label="Move right">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 3 8 7-8 7z"/></svg>
+          </button>
+        </div>
+        <div class="pad-group pad-group-actions">
+          <button class="btn btn-secondary pad-btn" type="button" data-action="shield">Shield</button>
+          <button class="btn btn-secondary pad-btn" type="button" data-action="interact">Look</button>
+          <button class="btn btn-secondary pad-btn" type="button" data-action="throw">Throw</button>
+          <button class="btn btn-primary pad-btn" type="button" data-action="jump">Jump</button>
+        </div>
+      </div>
+      <p class="pad-hint pad-hint-keys">Arrow keys move, Space jumps, <kbd>X</kbd> throws a shell, hold <kbd>C</kbd> to shield, <kbd>E</kbd> looks and talks.</p>
+      <p class="pad-hint pad-hint-touch">Hold the arrows to walk. Hold Shield to block, tap Look near anything that sparkles.</p>
+    </section>
+
+    <section class="info page" id="how-to-play" aria-labelledby="how-title">
+      <div>
+        <h2 id="how-title">How to play</h2>
+        <dl class="controls">
+          <dt><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd></dt>
+          <dd>Walk left and right</dd>
+          <dt><kbd>Space</kbd><kbd>W</kbd><kbd>&uarr;</kbd></dt>
+          <dd>Jump. Hold for a higher jump.</dd>
+          <dt><kbd>X</kbd> or <kbd>J</kbd></dt>
+          <dd>Throw a chestnut shell</dd>
+          <dt><kbd>C</kbd><kbd>K</kbd><kbd>&darr;</kbd></dt>
+          <dd>Hold up a shell as a shield</dd>
+          <dt><kbd>E</kbd> or <kbd>Enter</kbd></dt>
+          <dd>Look, talk and read</dd>
+          <dt><kbd>Esc</kbd> or <kbd>P</kbd></dt>
+          <dd>Pause, resume or restart</dd>
+        </dl>
+        <ul class="tips">
+          <li>Jump on beetles, ants and larvae to knock them out.</li>
+          <li>Light the lanterns. You return to the last one if Chang runs out of health.</li>
+          <li>Raise your shield when the cockroach charges. A blocked charge leaves it dazed.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>The story so far</h2>
+        <div class="prose">
+          <p>In a peaceful village beneath a chestnut forest, two hamster friends, Alice and Chang, live together.</p>
+          <p>One evening a mysterious beam of light strikes the village. When Chang arrives, Alice is gone. All that is left is her overturned basket and a trail of scattered chestnut shells.</p>
+          <p>Follow the trail, look for clues and find what lies at the forest exit.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer page">
+    <p>Chapter one of Hamster Friendship. Free to play with a keyboard or touch screen, no account or wallet needed.</p>
+  </footer>
+</body>
+</html>
