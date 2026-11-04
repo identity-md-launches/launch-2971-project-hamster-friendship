@@ -7,7 +7,7 @@ import { webcrypto } from 'node:crypto';
 
 let count = 0;
 function check(name, fn) { fn(); count++; console.log('ok', name); }
-export async function fixture(seed = {}) {
+export async function fixture(seed = {}, options = {}) {
   const storage = new Map(Object.entries(seed));
   const nodes = new Map();
   const context2d = new Proxy({}, { get: (o,k) => k in o ? o[k] : k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : () => {}, set: (o,k,v) => (o[k]=v,true) });
@@ -15,9 +15,13 @@ export async function fixture(seed = {}) {
   const document = { hidden: false, getElementById(id) { if (!nodes.has(id)) nodes.set(id,node()); return nodes.get(id); }, createElement: node, querySelectorAll: () => [], querySelector: () => null, addEventListener() {} };
   let time = 1000;
   const world = { document, console, crypto: webcrypto, navigator: { onLine: true }, performance: { now: () => time += 200 }, Uint8Array, setTimeout, clearTimeout, setInterval() {}, addEventListener() {}, requestAnimationFrame() {}, matchMedia: () => ({ matches:false, addEventListener() {} }), localStorage: { getItem: k => storage.get(k) || null, setItem: (k,v) => storage.set(k,v) } };
+  Object.assign(world, options.globals);
   world.window = world;
   const ctx = vm.createContext(world);
-  for (const file of ['config','rules','save']) vm.runInContext(await readFile(new URL('../src/'+file+'.js', import.meta.url),'utf8'),ctx);
+  for (const file of ['config','rules','save']) {
+    vm.runInContext(await readFile(new URL('../src/'+file+'.js', import.meta.url),'utf8'),ctx);
+    if (file === 'config' && options.config) ctx.HAMSTER_CONFIG = options.config;
+  }
   let source = await readFile(new URL('../src/game.js',import.meta.url),'utf8');
   source = source.replace('  // Title state uses a fresh world', `
     window.testing = {
@@ -26,7 +30,7 @@ export async function fixture(seed = {}) {
       get burns() { return burns; }, get things() { return things; },
       startGame, respawn, gameOver, hurtPlayer, hitEnemy, damageBoss, updatePlayer, updateEnemy,
       updateBoss, updateShots, updateBurns, updatePickups, updateWorld, interact, available,
-      showEnding, advanceDialogue, tick, render, pauseGame, resumeGame,
+      showEnding, say, advanceDialogue, tick, render, pauseGame, resumeGame,
       press(action) { pressed[action]=true; }, hold(action,value) { held[action]=value; },
       loot(id,weapon) { mapLoot[id]=weapon; }, skills(values) { mapPurchases=values; },
       attack(kind) { var id=++attackId; event('attack',{attack:id,weapon:kind}); return id; }
@@ -72,6 +76,46 @@ async function run() {
   check('ricochet chestnuts bounce exactly once on solid terrain', () => { t.skills(['ricochet']);const s={id:100,kind:'shell',x:70*16,y:8*16,w:6,h:6,vx:1,vy:0,g:0,life:100,spin:0,hits:[],bounces:0};t.shots.push(s);t.updateShots();assert.equal(s.bounces,1);t.updateShots();assert.equal(t.shots.length,0); });
   check('boss gate and fragment still require the regular enemies to be defeated', () => { t.game.bossDefeated=true; assert.equal(t.available(t.things.find(o=>o.kind==='fragment')),false); });
   check('pause freezes active time and resumes', () => { t.pauseGame();const f=t.game.frames;t.tick();assert.equal(t.game.frames,f);t.resumeGame();assert.equal(t.game.state,'playing'); });
+  const dialogueFixture = await fixture();
+  const dt = dialogueFixture.t, dn = dialogueFixture.nodes;
+  let dialogueCallbacks = 0;
+  await dt.startGame(1, true);
+  dt.say([['Chang', 'A test line before the forest.'], ['Chang', 'The final line.']], () => dialogueCallbacks++);
+  const line = dn.get('dlg-text').textContent;
+  dt.pauseGame();
+  check('pausing dialogue hides its controls and freezes frames', () => {
+    assert.equal(dn.get('dialogue').hidden, true);
+    assert.equal(dt.game.prevState, 'dialogue');
+    const frame = dt.game.frames;
+    for (let i = 0; i < 60; i++) dt.tick();
+    assert.equal(dt.game.frames, frame);
+    assert.equal(dt.game.state, 'paused');
+  });
+  check('covered dialogue clicks cannot consume lines, finish callbacks or resume play', () => {
+    for (let i = 0; i < 8; i++) dt.advanceDialogue();
+    assert.equal(dt.game.state, 'paused');
+    assert.equal(dn.get('dlg-text').textContent, line);
+    assert.equal(dialogueCallbacks, 0);
+    assert.equal(dn.get('screen-pause').hidden, false);
+  });
+  check('Resume restores the same line and completing dialogue runs its callback once', () => {
+    dt.resumeGame();
+    assert.equal(dt.game.state, 'dialogue');
+    assert.equal(dn.get('dialogue').hidden, false);
+    assert.equal(dn.get('screen-pause').hidden, true);
+    assert.equal(dn.get('dlg-text').textContent, line);
+    dt.advanceDialogue();
+    dt.pauseGame();
+    dt.advanceDialogue();
+    assert.equal(dialogueCallbacks, 0);
+    dt.resumeGame();
+    dt.advanceDialogue();
+    assert.equal(dialogueCallbacks, 1);
+    assert.equal(dt.game.state, 'playing');
+    assert.equal(dn.get('dialogue').hidden, true);
+    dt.advanceDialogue();
+    assert.equal(dialogueCallbacks, 1);
+  });
   await save.saveName('Forest Friend');
   ({ctx,t}=await fixture(Object.fromEntries(storage)));
   check('name, coins and score survive a new browser context', () => {assert.equal(ctx.HamsterSave.snapshot().profile.name,'Forest Friend');assert.equal(ctx.HamsterSave.snapshot().profile.sqk,1);});

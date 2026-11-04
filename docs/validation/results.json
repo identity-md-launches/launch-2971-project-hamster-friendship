@@ -1,11 +1,11 @@
 {
   "date": "2026-11-04",
-  "scope": "Existing game upgrade; owner activates live Supabase and any hosting alias.",
+  "scope": "Revision of the accepted game: immediate grenade burn timing and paused dialogue. Owner activation of live Supabase and hosting aliases remains external.",
   "productionBuild": {
     "command": "npm run build",
     "exitCode": 0,
     "files": 12,
-    "bytes": 173221,
+    "bytes": 173566,
     "assets": [
       {
         "path": "dist/config.js",
@@ -19,8 +19,8 @@
       },
       {
         "path": "dist/game.js",
-        "bytes": 80183,
-        "sha256": "b6de7da1c6ceb48eb58d0dc40dad3f76dc344d0001608503a5fd90404a02931a"
+        "bytes": 80528,
+        "sha256": "e011db1a52a5a655c903bfb086fef7bec520362028e16a54920809750dab5bef"
       },
       {
         "path": "dist/index.html",
@@ -85,7 +85,7 @@
   "gameplay": {
     "command": "node scripts/test.mjs",
     "exitCode": 0,
-    "passed": 29
+    "passed": 32
   },
   "database": {
     "command": "node supabase/tests/validation.mjs <PGlite module>",
@@ -96,7 +96,7 @@
   "browser": {
     "command": "node scripts/validate-browser.mjs <Playwright> <PGlite> <WebKit launcher> <axe>",
     "exitCode": 0,
-    "passed": 26,
+    "passed": 28,
     "checks": [
       {
         "engine": "chromium",
@@ -126,6 +126,16 @@
       {
         "engine": "chromium",
         "name": "guest start and original story dialogue work",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "paused dialogue is hidden, untabbable and cannot resume gameplay through covered clicks",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "a player menu preserves suspended dialogue until explicit Resume",
         "passed": true
       },
       {
@@ -233,7 +243,7 @@
       {
         "engine": "webkit",
         "status": "not-run",
-        "reason": "Installed runtime could not start: missing system libraries, first reported liblcms2.so.2."
+        "reason": "Browser runtime unavailable; launch was attempted. No Safari pass is claimed."
       }
     ],
     "liveWallet": false,
@@ -247,14 +257,14 @@
         "name": "render",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 8379,
+        "durationMs": 7958,
         "output": "renders, no script errors or missing local files"
       },
       {
         "name": "layout",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 1,
+        "durationMs": 0,
         "output": "no horizontal scroll at 320, 390 or 1440\nno text box overlaps another\nno floating control covers text\nno text cut off by overflow: hidden"
       },
       {
@@ -289,14 +299,14 @@
         "name": "eyebrows",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 0,
+        "durationMs": 1,
         "output": "no kicker labels above headings"
       },
       {
         "name": "type-sizes",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 1,
+        "durationMs": 0,
         "output": "390: 3 sizes in use, 4 with one-offs (14px×30, 16px×36, 20px×3, 28px×1)\n1440: 3 sizes in use, 4 with one-offs (14px×34, 16px×31, 20px×3, 40px×1)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
       },
       {
@@ -390,6 +400,18 @@
         ]
       },
       {
+        "surface": "chromium-paused-dialogue",
+        "violations": 0,
+        "passedRules": 27,
+        "manualReview": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "nodes": 6
+          }
+        ]
+      },
+      {
         "surface": "chromium-profile",
         "violations": 0,
         "passedRules": 21,
@@ -414,7 +436,7 @@
           {
             "id": "color-contrast",
             "impact": "serious",
-            "nodes": 18
+            "nodes": 19
           },
           {
             "id": "label-content-name-mismatch",
@@ -486,7 +508,9 @@
     "docs/validation/screenshots/mobile-start.png",
     "docs/validation/screenshots/marketplace.png",
     "docs/validation/screenshots/mobile-coin.png",
-    "docs/validation/screenshots/desktop-coin.png"
+    "docs/validation/screenshots/desktop-coin.png",
+    "docs/validation/screenshots/mobile-paused-dialogue.png",
+    "docs/validation/screenshots/mobile-resumed-dialogue.png"
   ],
   "limitations": [
     "Supabase project URL/public key and owner migration/Auth setup are not supplied; cloud features are explicitly disabled in the delivered configuration.",
@@ -498,7 +522,97 @@
   ],
   "bundle": {
     "limitBytes": 8388608,
-    "addedOrModifiedFilesBytes": 723088,
-    "measurement": "Conservative full size of every added or modified Git submission file, excluding scratch and removed input files."
+    "addedOrModifiedFilesBytes": 440549,
+    "measurement": "Conservative full size of modified and new submission files for this revision, excluding ignored scratch and removed input files."
+  },
+  "frontendDatabase": {
+    "command": "node supabase/tests/frontend.mjs <PGlite module>",
+    "exitCode": 0,
+    "passed": 9,
+    "engine": "PGlite 0.5.15, actual 001_friendship.sql and save.js",
+    "cases": [
+      {
+        "impact": "immediate wall",
+        "attackFrame": 64,
+        "explosionFrame": 64,
+        "firstHitFrame": 124,
+        "targets": 2,
+        "ticksPerTarget": 8,
+        "intervalFrames": 60,
+        "damagePerTick": 5,
+        "pendingEventsAfterSave": 0,
+        "retryAndReload": true,
+        "exactlyOnceCredit": true,
+        "purchase": true,
+        "freshCloudMap": true
+      },
+      {
+        "impact": "delayed wall",
+        "attackFrame": 64,
+        "explosionFrame": 78,
+        "firstHitFrame": 138,
+        "targets": 2,
+        "ticksPerTarget": 8,
+        "intervalFrames": 60,
+        "damagePerTick": 5,
+        "pendingEventsAfterSave": 0,
+        "retryAndReload": true,
+        "exactlyOnceCredit": true,
+        "purchase": true,
+        "freshCloudMap": true
+      },
+      {
+        "impact": "fuse expiry",
+        "attackFrame": 64,
+        "explosionFrame": 124,
+        "firstHitFrame": 184,
+        "targets": 2,
+        "ticksPerTarget": 8,
+        "intervalFrames": 60,
+        "damagePerTick": 5,
+        "pendingEventsAfterSave": 0,
+        "retryAndReload": true,
+        "exactlyOnceCredit": true,
+        "purchase": true,
+        "freshCloudMap": true
+      }
+    ],
+    "fixtures": [
+      "Auth and transport",
+      "deterministic loot",
+      "collision positions",
+      "elapsed server time",
+      "purchase funding after grenade validation"
+    ]
+  },
+  "revision": {
+    "findings": [
+      {
+        "id": "0371690f545bf7042727ee92d16b9f803ac8af6cab41eab4e50e168c00f5af47",
+        "verdict": "fixed"
+      },
+      {
+        "id": "edb5e8c3824e9d70d41b9113179b6a359597235994744e057e6e7639d6a2983e",
+        "verdict": "fixed"
+      }
+    ],
+    "baseline": {
+      "grenade": {
+        "attackFrame": 64,
+        "explosionFrame": 64,
+        "firstHitFrame": 123,
+        "sqlAccepted": false,
+        "outboxRemainedPending": true
+      },
+      "pause": {
+        "viewport": "390x844",
+        "tabTarget": "dlg-next",
+        "state": "playing",
+        "pauseScreenVisible": true,
+        "frameBefore": 0,
+        "frameAfter": 39
+      }
+    },
+    "evidence": "The original coin scenes, solid-color measurements and original-source comparison are retained from the accepted round. Revision screenshots, build hashes, test counts, browser checks, axe and design-probe results are refreshed."
   }
 }

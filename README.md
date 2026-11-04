@@ -87,14 +87,15 @@ The existing project retains `hamster-friendship-the-lost-alic.identitymd.eth`. 
 
 ## Validation and maintenance
 
-Results and limitations are in [VALIDATION.md](./VALIDATION.md); the implemented design system is in [DESIGN.md](./DESIGN.md).
+Results and limitations are in [VALIDATION.md](./VALIDATION.md); the implemented design system is in [DESIGN.md](./DESIGN.md). The revision delays the first grenade burn tick until 60 active frames after its explosion and prevents dialogue from advancing while paused. Resume restores the same story line.
 
 - `npm run build` and `npm run check`: passed.
 - TypeScript `checkJs` for the five added modules: passed.
-- `node scripts/test.mjs`: 29 gameplay/save checks passed.
+- `node scripts/test.mjs`: 32 gameplay/save checks passed, including suspended dialogue and callback guards.
 - `node supabase/tests/validation.mjs /path/to/pglite/dist/index.js`: 43 PostgreSQL checks passed with PGlite 0.5.15.
-- `node scripts/validate-browser.mjs /path/to/playwright/index.mjs /path/to/pglite/dist/index.js [webkit-launcher] [axe.min.js]`: 26 Chromium checks passed, including a local browser-to-PostgreSQL bridge. WebKit was attempted but could not start because system libraries were unavailable.
-- The pinned design probe passed 16/16. Axe 4.14.0 found no violations on five inspected surfaces; manual-review items remain documented.
+- `node supabase/tests/frontend.mjs /path/to/pglite/dist/index.js`: 9 engine → save client → PostgreSQL regression checks passed. Immediate wall impact, delayed wall impact and fuse expiry each produce eight legal burn ticks, survive offline retry/reload, save SQK/score and allow purchases and a fresh map.
+- `node scripts/validate-browser.mjs /path/to/playwright/index.mjs /path/to/pglite/dist/index.js [webkit-launcher] [axe.min.js]`: 28 Chromium checks passed, including a local browser-to-PostgreSQL bridge. WebKit was attempted but its browser runtime was unavailable.
+- The pinned design probe passed 16/16. Axe 4.14.0 found no violations on six inspected surfaces, including paused dialogue; manual-review items remain documented.
 
 Optional test tools (TypeScript, Playwright, PGlite and axe-core) belong in a separate tools installation, not the static export. None are game dependencies. Test-only state injection stays in verification scripts; production exposes only a read-only gameplay snapshot and the pause method used by menus.
 

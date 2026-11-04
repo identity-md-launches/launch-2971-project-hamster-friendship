@@ -602,6 +602,7 @@
     ui.dlgNext.textContent = dlgQueue.length ? 'Next' : 'Continue';
   }
   function advanceDialogue() {
+    if (game.state !== 'dialogue') return;
     var now = performance.now();
     if (now - dlgLast < 120) return;
     dlgLast = now;
@@ -620,6 +621,7 @@
     game.prevState = game.state;
     game.state = 'paused';
     clearInput();
+    ui.dialogue.hidden = true;
     showScreen(ui.pause, 'btn-resume');
     ui.btnPause.textContent = 'Resume';
   }
@@ -628,6 +630,7 @@
     showScreen(null);
     ui.btnPause.textContent = 'Pause';
     game.state = game.prevState === 'dialogue' ? 'dialogue' : 'playing';
+    ui.dialogue.hidden = game.state !== 'dialogue';
     if (game.state === 'dialogue') ui.dlgNext.focus({ preventScroll: true }); else focusStage();
   }
 
@@ -1093,7 +1096,7 @@
       }
       var hit = (s.life < 0) || (wall && s.kind !== 'sword');
       if (s.kind === 'grenade' && (hit || s.life < 40)) {
-        burns.push({ id: s.id, x: s.x - 38, y: s.y - 24, w: 80, h: 48, life: 480, ticks: 0 });
+        burns.push({ id: s.id, x: s.x - 38, y: s.y - 24, w: 80, h: 48, frame: game.frames, life: 480, ticks: 0 });
         burst(s.x, s.y, 18, ['#f2a93b', '#e9735f', '#ffe28c'], 4);
         shots.splice(i, 1); continue;
       }
@@ -1126,6 +1129,9 @@
   function updateBurns() {
     for (var i = burns.length - 1; i >= 0; i--) {
       var fire = burns[i];
+      // updateShots can create fire in this same frame. Only elapsed frames
+      // count toward the 60-frame tick interval enforced by hf_progress.
+      if (game.frames === fire.frame) continue;
       fire.life--; fire.ticks++;
       if (fire.ticks % 60 === 0) {
         for (var j = 0; j < enemies.length; j++) {

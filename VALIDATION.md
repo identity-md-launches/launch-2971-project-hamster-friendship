@@ -2,6 +2,21 @@
 
 Worker results, 2026-11-04. These are reproducible local checks, not an independent certification or a claim that a live backend was deployed.
 
+## Revision: grenade timing and paused dialogue
+
+Both reported defects reproduced before editing runtime source; both are fixed in `src/game.js` and the rebuilt `dist/game.js`.
+
+| Finding | Reproduction | Fix and recheck |
+| --- | --- | --- |
+| High, `0371690f545bf7042727ee92d16b9f803ac8af6cab41eab4e50e168c00f5af47` | Actual `updatePlayer` → `updateShots` → `updateBurns`, x=1108/y=146: attack and explosion at frame 64, first hit at 123 (59 elapsed). The actual SQL RPC rejected the save and the durable outbox stayed pending. | `src/game.js:1099` stamps each burn's creation frame; `:1134` skips that frame. First hit is now 124. No SQL limits were loosened. `supabase/tests/frontend.mjs` passes all 9 checks through the real save client and actual migration/RPCs: immediate impact 64→124, delayed impact 78→138, fuse expiry 124→184; two targets each receive exactly eight 5-damage ticks spaced 60 frames apart. Offline retry/reload credits SQK/score exactly once, a server-priced purchase succeeds and a fresh cloud map starts. |
+| Medium, `edb5e8c3824e9d70d41b9113179b6a359597235994744e057e6e7639d6a2983e` | Chromium at 390×844: Start chapter, Pause, Tab twice focused `dlg-next`; five Enter presses advanced the story. State became `playing` and frame 0→39 while the pause screen remained visible. | `src/game.js:604` guards dialogue advancement by state. `:619` hides dialogue on pause; `:628` restores it only when resuming dialogue. Chromium repeats the keyboard sequence and synthetic covered clicks: state stays paused and frames freeze, then Resume restores the same line/focus. Profile-menu pause and Escape resume also pass. Three added engine checks cover frozen frames, preserved lines and a final-line callback running only once after Resume. |
+
+Revision checks: build/check and TypeScript checkJs pass; **32** gameplay/save checks, **43** PostgreSQL checks, **9** frontend-to-PostgreSQL checks and **28** Chromium interaction checks pass. The pinned design probe passes **16/16**; axe reports no violations on six surfaces. The integration fixtures do not connect a live Supabase project. WebKit was attempted but its runtime was unavailable; Safari remains unverified.
+
+Changed-surface Better Interface coverage: accessibility checked hidden-control removal, keyboard focus, guarded activation and Resume; layout checked the paused and restored 390px screens visually and entry reflow at 320/390/1440; writing checked Pause/Resume/Next labels against their behavior; typography and colors retain the existing tokens and pass the probe's measured checks; UI checked pause, menu dismissal and dialogue restoration. Screenshots `docs/validation/screenshots/mobile-paused-dialogue.png` and `mobile-resumed-dialogue.png` were inspected. No new layout, font or palette was introduced. Screen-reader, physical-device, native zoom, forced-colors and animation-panel checks remain unperformed. Original coin-scene screenshots and color measurements below are retained evidence from the accepted round, not new measurements in this revision.
+
+Complete for the two reported findings and available local checks. Live backend activation and hosting/domain ownership remain external requirements already documented below; this revision does not publish a new project.
+
 ## Delivery and scope
 
 The existing game was upgraded in place. `dist/` is a generated, complete static export with relative runtime assets. Guest play works without configuration. Supabase client, migration, access rules, economic validation and global board are implemented; **live activation remains deferred to the owner**, because the project URL, public key and project management access were not supplied. The blank configuration intentionally disables cloud features with explicit UI copy. No replacement project, seeded global leaderboard, domain reservation or publication was made.
@@ -33,18 +48,19 @@ All listed passing checks were run after the final runtime source changes.
 
 | Command / method | Actual result |
 | --- | --- |
-| `npm run build` | Exit 0; 12 runtime files; `dist/` 173,221 bytes |
+| `npm run build` | Exit 0; 12 runtime files; `dist/` 173,566 bytes |
 | `npm run check` | Exit 0; six scripts parse, metadata/relative paths/45 static element references checked, all 12 export files match source |
 | `npm run typecheck` | Exit 0; the unchanged package's alias performs the same static checks |
 | TypeScript 5.9.3 `tsc -p jsconfig.json` | Exit 0; actual `checkJs` on five added JS modules and their declaration file. Original engine checked by syntax and execution, not claimed fully typed |
-| `node scripts/test.mjs` | Exit 0; **29** dependency-free game/save checks |
+| `node scripts/test.mjs` | Exit 0; **32** dependency-free game/save checks |
 | `node supabase/tests/validation.mjs` with PGlite 0.5.15 | Exit 0; **43** checks on the actual migration/RPCs in PostgreSQL 18.6 |
-| `node scripts/validate-browser.mjs` with installed Playwright, PGlite and axe paths | Exit 0; **26** Chromium interaction checks, including real client → local HTTP bridge → actual PostgreSQL functions |
+| `node supabase/tests/frontend.mjs` with PGlite 0.5.15 | Exit 0; **9** engine/save-client/SQL regressions, including same-frame wall impacts, eight burn ticks and retry/reload |
+| `node scripts/validate-browser.mjs` with installed Playwright, PGlite and axe paths | Exit 0; **28** Chromium interaction checks, including real client → local HTTP bridge → actual PostgreSQL functions |
 | `node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste` using installed Playwright and browser locations | Exit 0; **16/16** checks passed at 320, 390 and 1440, plus reduced motion |
-| Axe 4.14.0, WCAG A/AA tags through 2.2 | **0 violations** on entry, profile, marketplace, no-wallet sheet and database-backed leaderboard; contrast and label cases returned for manual review |
+| Axe 4.14.0, WCAG A/AA tags through 2.2 | **0 violations** on entry, profile, marketplace, paused dialogue, no-wallet sheet and database-backed leaderboard; contrast and label cases returned for manual review |
 | Controlled coin scene and computed-color inspection | Actual 358×214.8 and 960×576 canvases inspected; profile hint contrast **11.76:1**, purchase error **5.81:1** |
 
-The initial managed browser connection failed because its expected Chrome distribution was unavailable. Installed Playwright Chromium provided the successful rendered/interaction checks. WebKit was attempted both through default discovery and the installed launcher; it could not start because system libraries were missing (first reported `liblcms2.so.2`). Safari is therefore **not verified**. No substitute screenshots or passes are claimed for it.
+In the original round, the managed browser could not launch, while installed Playwright Chromium provided the successful rendered checks. This revision again used installed Playwright Chromium. WebKit was attempted through default discovery but its runtime was unavailable. Safari is therefore **not verified**. No substitute screenshots or passes are claimed for it.
 
 The final browser tests include: first-screen Start, invalid and valid names, focus restoration, all marketplace entries and unaffordable purchases, sticky Close after scrolling, honest unavailable rankings, MetaMask mobile opening link, original intro/basket dialogue, keyboard movement/jump/attack/shield/swap, pause/resume, pointer controls, reload, 320/390/768/1440 reflow, 200% text enlargement and reduced motion. They also cover wrong-chain recovery, rejection, reconnect without a new prompt, account changes, cloud pending/reload/retry, exactly-once coin credit, updated on-screen profile values, leaderboard failure/retry, server-priced purchase and persisted cosmetics. The equipped chestnut's actual canvas pixels were checked as RGB `242,196,91`.
 
@@ -56,7 +72,7 @@ The pinned workflow and core principles of accessibility, layout, writing, typog
 
 | Domain | Coverage | Unperformed or limited |
 | --- | --- | --- |
-| Accessibility | Native buttons/form/dialog/table semantics; labels, inline errors, disabled/pending state; keyboard flow, Escape and opener focus; visible focus screenshot; >=44px entry controls; axe on five surfaces | No screen-reader session, physical touch device or full WCAG compliance claim; axe manual-review items remain |
+| Accessibility | Native buttons/form/dialog/table semantics; labels, inline errors, disabled/pending state; keyboard flow, Escape and opener focus; visible focus screenshot; >=44px entry controls; axe on six surfaces | No screen-reader session, physical touch device or full WCAG compliance claim; axe manual-review items remain |
 | Layout | Actual screenshots and overflow assertions at 320, 390, 768, 1440; first 390 screen includes product and action; enlarged text and scrollable dialogs; Close reachable at shop bottom | Native browser 200% zoom and RTL mirror not tested; no localized variant requested |
 | Writing | Accurate guest/cloud/pending states, prices/effects, recoverable errors next to item/name, verb actions, no fake global data, directions beside controls | Live-service operator errors not exercised against a real project |
 | Typography | Two stacks/weights, four entry sizes per width, descending title hierarchy, 16px inputs, wrapping, tabular numbers; coin lettering viewed at both sizes | Native font substitutions vary by platform; no custom font download is intended |
