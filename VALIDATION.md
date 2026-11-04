@@ -1,71 +1,88 @@
-# Validation record
+# Upgrade validation
 
-Worker's report for the chapter one build. It is not an independent certification.
+Worker results, 2026-11-04. These are reproducible local checks, not an independent certification or a claim that a live backend was deployed.
 
-## Completion: Incomplete (useful, unverified delivery)
+## Delivery and scope
 
-The game, source, export, README and DESIGN.md are complete for the stated scope. **Nothing was executed.** In this session:
+The existing game was upgraded in place. `dist/` is a generated, complete static export with relative runtime assets. Guest play works without configuration. Supabase client, migration, access rules, economic validation and global board are implemented; **live activation remains deferred to the owner**, because the project URL, public key and project management access were not supplied. The blank configuration intentionally disables cloud features with explicit UI copy. No replacement project, seeded global leaderboard, domain reservation or publication was made.
 
-- The Bash tool failed on every call with: `Sandbox is required but failed to initialize: Failed to create bridge sockets after 5 attempts.` No shell command could run: no `npm install`, `npm run build`, `npm run check`, `node`, `git`, or the design probe.
-- The browser tool failed to navigate with: `Browser "chrome-for-testing" is not installed; ... Run npx @playwright/mcp install-browser chrome-for-testing`. That install needs the shell, which was unavailable.
+The original GitHub HEAD was accessible and matched checkout commit `6fe0476cf3c4da8a61321e06312aac3b9b1815d9`. A byte comparison against that source confirmed unchanged original sprite definitions, tile map, collision movement, environment drawing and background/parallax functions. Original favicon and share SVG are unchanged; a PNG copy of the share SVG was added. Existing package manifest and lockfile are unchanged.
 
-So the required build, typecheck, interaction validation and rendered review **did not run**. Everything below that is marked as checked was done by reading the source.
+Choices where the brief left details open: deeper maps reuse the original forest; boss time counts active frames; vest is cosmetic; all purchased skills stack from map start; Ricochet bounces off terrain once; grenade burning lasts eight seconds; default chestnuts do 25 damage and stomps 50; leaderboard score is lifetime verified points (100 regular / 500 boss / 1,000 map). The original retry screen remains, and Try again rebuilds the current map rather than restoring a lantern checkpoint.
 
-## 1. Scope and assumptions
+## Requirement coverage
 
-- One page: `src/index.html`, exported to `dist/index.html` with `styles.css`, `game.js`, `favicon.svg` and `og-image.svg`. Relative URLs only.
-- Stack: plain HTML/CSS/JavaScript with no dependencies, instead of the default Vite + React + TypeScript. Reason: no package could be installed or built in this session, and a dependency-free classic script needs no build to run. The build step (`scripts/build.mjs`) is a copy from `src/` to `dist/`.
-- `dist/` was written by hand as copies of `src/` because the build script could not run. Line counts were compared with the search tool and match for all five files (index.html 171, styles.css 621, game.js 1668, og-image.svg 37, favicon.svg 15). A byte-for-byte comparison was not possible; `npm run check` does that.
-- No wallet code: the brief asks for a game playable without a wallet, and the site is not a dapp.
-- `og:image` is an SVG (`og-image.svg`), because no PNG could be generated without a shell. Some link-unfurl services do not render SVG images.
-- Inferred choices: Chang's green scarf and Alice's red ribbon as identifying details; Mrs. Pebble the snail as the hint-giving character; lanterns as checkpoints; the cockroach being dazed by a shield block as the boss's weak point.
-
-## 2. Coverage by Better Interface domain
-
-| Domain | Status | What was done | Unperformed |
-| --- | --- | --- | --- |
-| Accessibility | Checked (source only) | Native `button`s for every action; one `h1`; `main` landmark; skip link to the stage; `:focus-visible` 3px outline token; focus moves to the primary button on every game screen and to **Next** in dialogue, then back to the canvas; full keyboard path for start, play, dialogue, pause, retry, restart and ending; touch buttons are at least 48px tall; icon-only pad buttons have `aria-label`; decorative SVGs `aria-hidden`; dialogue text and toast are polite live regions; health shown as hearts plus a number; reduced motion turns off falling leaves, fireflies, screen shake, the intro flash and beam, idle bob and particle density | Screen-reader session; rendered focus ring visibility over each background; 200% zoom; forced-colors rendering; physical touch device |
-| Layout | Checked (source only) | First screen order at 390px: title, one-line lede, HUD, stage with **Start chapter**, touchpad. Stage is a one-cell grid so tall screens grow instead of clipping. Inline margins of 16px; controls grouped; Pause sits at the HUD's trailing edge | Rendered check at 320, 390 and 1440 for overflow, overlap and the first screen |
-| Writing | Checked | Verb-first labels (Start chapter, Resume, Restart chapter, Try again, Play again); sentence case throughout; directions next to their controls (keyboard hint under the stage, "or press E" beside Next); one term per thing (shells, clues, lanterns); empty-ammo message says what to do ("No shells left. Look for more.") | None beyond rendered review |
-| Typography | Checked (source only) | Two system font stacks, weights 400 and 700, four sizes per width (14, 16, 20, 28 or 40px); heading line-height 1.1 with `text-wrap: balance`; body 1.5; prose capped at 60 to 62ch; `tabular-nums` on changing values; no letter-spacing; no all-caps; no em dashes or emoji in copy | Rendered wrapping and measured line lengths |
-| Colors | Checked (source only) | Two-tier tokens (hue primitives, role semantics); one amber filled action per view; health colour paired with a number | **Contrast not measured.** No ratio is claimed. Pairs to measure: `--color-text-muted` on `--color-surface`; `--color-text` on `--color-overlay` over the canvas; `--color-on-accent` on `--color-accent` |
-| UI | Checked (source only) | Concentric radii on nested elements are not used (no nesting of rounded surfaces); inset rings instead of border-plus-shadow; transitions name their properties (150ms, `cubic-bezier(0.2, 0, 0, 1)`); press scale 0.96; no `transition: all`; no endless CSS animation | Rendered motion review; reduced-motion run |
-
-## 3. Findings and fixes (from source review)
-
-| # | Severity | Location | Evidence | Fix | Recheck |
-| --- | --- | --- | --- | --- | --- |
-| 1 | High | `src/styles.css:260` (`.hud-item { display: inline-flex }`) | The `hidden` attribute on `#hud-boss` would be overridden by the class's `display`, so the cockroach bar would show before the fight | Added a global `[hidden] { display: none !important; }` at `src/styles.css:63` | Source reread; not rendered |
-| 2 | Medium | `src/styles.css:357` and `:404` | The dialogue box (`z-index: 3`) was above game screens (`z-index: 2`), so pausing during dialogue would show the dialogue on top of the pause screen | Game screens raised to `z-index: 5` | Source reread; not rendered |
-| 3 | Medium | `src/game.js:786` | The variable-jump rule cut any upward speed when Jump was not held, which would also cut the bounce after stomping an enemy | Added a `noCut` flag set on stomp bounces (`src/game.js:899`, `:1007`), cleared once falling | Source reread; not played |
-| 4 | Low | `src/game.js:1341` (`drawHamster`) | Idle pose drew a stray 14px dark line every 40 frames | Removed; idle now bobs the body by 1px instead | Source reread |
-| 5 | Low | `src/game.js:1015` | A shield block pushed the boss 6px with no bound, which could place it inside a gate column | Push is clamped to the arena | Source reread |
-
-Remaining limitations, not fixed:
-
-- `og:image` is SVG (see scope).
-- The canvas is scaled to the container width, so at non-integer scales (for example 390px wide is about 1.22x) pixels are not all the same size. At 960px it is an exact 3x.
-- No audio.
-- Progress is not saved between page loads.
-
-## 4. Verification
-
-| Check | Command or method | Result |
+| Requirement | Implementation and verification | Limit |
 | --- | --- | --- |
-| Production build | `npm run build` | **Not run** (shell unavailable). `dist/` written as copies of `src/` |
-| Typecheck / syntax | `npm run typecheck` (`scripts/check.mjs`, V8 parse) | **Not run**. Source was read through once in full for syntax and logic |
-| dist matches src | `npm run check` | **Not run**. Line counts compared with the search tool: all five files match |
-| Share metadata | Source read | `title`, `meta description`, `link rel=icon`, `og:title`, `og:image` present in `src/index.html` and `dist/index.html` |
-| Relative asset URLs | Source read | `./styles.css`, `./game.js`, `./favicon.svg`, `./og-image.svg`; no root-absolute URLs |
-| Element ids used by `game.js` | Source read | Every `byId(...)` id exists in `index.html` |
-| Design probe | `node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste` | **Not run** (shell unavailable). No screenshots exist |
-| Browser inspection at 320, 390, 1440 | Browser tool | **Not run** (browser not installed) |
-| Primary interactions (start, move, jump, throw, shield, interact, dialogue, pause, resume, restart, game over, retry, boss, ending) | Browser or Playwright | **Not run**. Logic traced by reading only. `window.__hamster.snapshot()` is exposed so a future Playwright check can assert state |
+| MetaMask, Ethereum Mainnet, connect only, guest play | EIP-6963 discovery, legacy fallback, mobile link, chain switch, account/network events, disconnect and strict four-method allowlist; provider-fixture browser tests | No real wallet grant or physical wallet app used |
+| Player profile and global Top 100 | Validated name, anonymous Auth session, SQL profile and sorted public Top 100 RPC; browser-to-database bridge and 110-profile limit test | Owner must activate the real Supabase project |
+| 30% weapon drops, 30/30/40 split | 100,000 quantile distribution test; server-generated loot; gun 20, sword 50, grenade 5 per second tested in game and PostgreSQL | Random play samples need not have exactly that distribution |
+| 30 regular enemies and one boss per map, around 60 seconds | Original 12 positions retained plus 18; boss absent at frame 3599, waiting at 3600 | Active play time, not wall-clock time while paused |
+| 100/500 HP, +20% per map | Shared rules and independent SQL formula; 100/500, 120/600, later tier tests | Values round up |
+| No healing; one-hit death; current-map restart | Failed shield/contact and falls end run; retry reconstructs all enemies and boss; lanterns supply shells | Retry is the existing explicit action |
+| SQK per defeated enemy, collection and persistence | Exactly 31 coin drops including boss; pickup and reload; pending-outbox/retry; duplicate and post-death claims rejected | Guest saves depend on browser storage; cloud access depends on its Auth session |
+| Large readable gold SQK coin | 42×36 art, centered 34×14 pixel lettering, separated weapon/ammo drops; viewed in actual canvas at 390 and 1440 | Non-integer mobile pixel scaling follows the original game |
+| Marketplace and skills | All ten catalogue entries; prices checked against SQL; ownership, insufficient credit, equip, recoloring, stacking, piercing and one bounce tested | Skills start on a fresh map; temporary drops reset on death |
+| Supabase persistence and server validation | Private schema, RLS, auth identity, locked purchases, causal damage/claims, replay protection, SQL-derived points | Event validation is not authoritative movement/position simulation or bot prevention |
+| Preserve source/game and build both trees | Original source blocks compared; production build, syntax/export checks, additional JS typecheck, engine/SQL/browser tests | Exact mid-map position is not resumed after reload |
+| Requested domain | Unsupported public DNS ending explained with alternatives in README | No DNS/ENS ownership or alias changes performed |
 
-### Suggested commands for the next run
+## Executed checks
 
-```sh
-npm run build && npm run check
-node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste
-npm run preview   # then play: start, read intro, collect shells, light a lantern, beat the cockroach, read the ending
-```
+All listed passing checks were run after the final runtime source changes.
+
+| Command / method | Actual result |
+| --- | --- |
+| `npm run build` | Exit 0; 12 runtime files; `dist/` 173,221 bytes |
+| `npm run check` | Exit 0; six scripts parse, metadata/relative paths/45 static element references checked, all 12 export files match source |
+| `npm run typecheck` | Exit 0; the unchanged package's alias performs the same static checks |
+| TypeScript 5.9.3 `tsc -p jsconfig.json` | Exit 0; actual `checkJs` on five added JS modules and their declaration file. Original engine checked by syntax and execution, not claimed fully typed |
+| `node scripts/test.mjs` | Exit 0; **29** dependency-free game/save checks |
+| `node supabase/tests/validation.mjs` with PGlite 0.5.15 | Exit 0; **43** checks on the actual migration/RPCs in PostgreSQL 18.6 |
+| `node scripts/validate-browser.mjs` with installed Playwright, PGlite and axe paths | Exit 0; **26** Chromium interaction checks, including real client → local HTTP bridge → actual PostgreSQL functions |
+| `node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste` using installed Playwright and browser locations | Exit 0; **16/16** checks passed at 320, 390 and 1440, plus reduced motion |
+| Axe 4.14.0, WCAG A/AA tags through 2.2 | **0 violations** on entry, profile, marketplace, no-wallet sheet and database-backed leaderboard; contrast and label cases returned for manual review |
+| Controlled coin scene and computed-color inspection | Actual 358×214.8 and 960×576 canvases inspected; profile hint contrast **11.76:1**, purchase error **5.81:1** |
+
+The initial managed browser connection failed because its expected Chrome distribution was unavailable. Installed Playwright Chromium provided the successful rendered/interaction checks. WebKit was attempted both through default discovery and the installed launcher; it could not start because system libraries were missing (first reported `liblcms2.so.2`). Safari is therefore **not verified**. No substitute screenshots or passes are claimed for it.
+
+The final browser tests include: first-screen Start, invalid and valid names, focus restoration, all marketplace entries and unaffordable purchases, sticky Close after scrolling, honest unavailable rankings, MetaMask mobile opening link, original intro/basket dialogue, keyboard movement/jump/attack/shield/swap, pause/resume, pointer controls, reload, 320/390/768/1440 reflow, 200% text enlargement and reduced motion. They also cover wrong-chain recovery, rejection, reconnect without a new prompt, account changes, cloud pending/reload/retry, exactly-once coin credit, updated on-screen profile values, leaderboard failure/retry, server-priced purchase and persisted cosmetics. The equipped chestnut's actual canvas pixels were checked as RGB `242,196,91`.
+
+PostgreSQL tests exercise denied direct table updates, profile isolation, unauthenticated calls, unknown/unaffordable items, unowned cosmetics, locked maps, fabricated score events, live-enemy coin claims, missing/expired/repeated attacks, cooldowns, ammunition, early boss hits, grenade tick limits, duplicate acknowledgements/claims, terminal death, completion, all 31 legitimate kills, tier unlock and public Top 100 ordering/limit. Auth roles/session identity in that isolated engine are fixtures; this is not a live Supabase Auth test.
+
+## Better Interface review
+
+The pinned workflow and core principles of accessibility, layout, writing, typography, colors and UI were read and applied while building. The final source is documented in DESIGN.md. Deliberate original game art/animations and the brief's uppercase coin lettering take priority over general styling preferences.
+
+| Domain | Coverage | Unperformed or limited |
+| --- | --- | --- |
+| Accessibility | Native buttons/form/dialog/table semantics; labels, inline errors, disabled/pending state; keyboard flow, Escape and opener focus; visible focus screenshot; >=44px entry controls; axe on five surfaces | No screen-reader session, physical touch device or full WCAG compliance claim; axe manual-review items remain |
+| Layout | Actual screenshots and overflow assertions at 320, 390, 768, 1440; first 390 screen includes product and action; enlarged text and scrollable dialogs; Close reachable at shop bottom | Native browser 200% zoom and RTL mirror not tested; no localized variant requested |
+| Writing | Accurate guest/cloud/pending states, prices/effects, recoverable errors next to item/name, verb actions, no fake global data, directions beside controls | Live-service operator errors not exercised against a real project |
+| Typography | Two stacks/weights, four entry sizes per width, descending title hierarchy, 16px inputs, wrapping, tabular numbers; coin lettering viewed at both sizes | Native font substitutions vary by platform; no custom font download is intended |
+| Colors | Existing semantic tokens retained; rendered solid pairs measured; probe passes its measured pairs; errors have text/ARIA cues | Probe leaves eight canvas/image text boxes unmeasured; axe also returns contrast cases for manual review. No all-background contrast certification |
+| UI | Hover/focus/active/disabled/loading/empty/error/retry/success states; existing inset outlines and radii; sticky dialog Close; reduced-motion styles; game pauses behind menus | No physical wallet app, WebKit, forced-colors session or animation-panel slow playback |
+
+### Findings and corrections
+
+| Severity | Source and evidence | Change and recheck |
+| --- | --- | --- |
+| Medium | `src/styles.css:553`, `.controls`: rendered 200% text widened a 390px page to 455px | Shrinkable definition-list tracks and wrapping. Recheck: width 390, menus reachable |
+| Medium | `src/styles.css:634`, touch groups: first mobile screenshot stretched arrow buttons across several action rows | Align groups to start; content-sized action columns. New mobile screenshot has discrete 48px controls |
+| Medium | `src/ui.js:13`, save subscription: first retry screenshot showed old 0/0 profile stats beside successful cloud save | Refresh stats/status from notifications without rebuilding the name field. Rechecked both DOM values (1 SQK / 100 points) and screenshot |
+| Medium | `src/game.js:237`, wardrobe: initial purchase implementation did not recolor thrown/held shells | Cache equipped palette; apply to projectiles and shield. Canvas RGB check and persisted-equip browser checks pass |
+| Medium | `src/game.js:1086`, sword lifetime: the initial slash was removed before rendering | Keep its visual for eight frames but permit one collision evaluation. Damage and lifetime source/engine paths rechecked |
+| Medium | `src/game.js:246` and `:870`, SQK: mobile review found small glyphs and overlapping secondary drops | 5×7 bold glyphs at 2× scale; 42×36 coin; move weapon/ammo drops apart. Actual mobile/desktop scene re-inspected |
+| Medium | `src/ui.js:81`, purchase error: a shared error at the top would be offscreen after buying a lower item | Stable item-level alert with `aria-describedby`. Browser unaffordable-purchase and axe checks pass |
+| Low | `src/styles.css:670`, long marketplace: Close could scroll away with content | Sticky header; browser scroll-to-bottom verifies Close remains in viewport |
+| Low | `src/game.js:1722`, burning visual: source placed floor-impact flames below the grass baseline | Clamp visible baseline to the impact surface. Damage/tick/area checks remain passing |
+
+No confirmed blocking source findings remain from these checks. Scope limits are not presented as passes. The close glyph's descriptive accessible name was reviewed as an icon-only control; automatic label matching does not establish screen-reader behavior. No further design changes were made beyond the assigned game/player systems.
+
+## Evidence and delivery integrity
+
+Retained screenshots are under `docs/validation/screenshots/`; review result data is `docs/validation/results.json`. The coin scenes use a controlled test drop in the real canvas; they are visual fixtures, not a claim that a live global score was earned. Test state hooks are injected into isolated VM or intercepted browser responses and never copied into the production export.
+
+Detailed temporary evidence originally lives under `test/scratch/taste/` and `test/scratch/browser-checks/`; that directory is deliberately excluded from delivery. Source, runtime assets, SQL, tests and documentation are retained. No package cache, `node_modules`, dependency archive, registry mirror or submodule is part of the delivery. No ignore file was changed. Protected configuration/dependency paths were checked for changes and are untouched. The final bundle byte total is recorded in `docs/validation/results.json`.
+
+Repository implementation and available local checks are complete. Live Supabase activation, host alias/ownership configuration, real wallet/device validation and Safari validation remain outstanding as described above. The unsupported `squeek.hamster` DNS request and compatible alias options are documented in README; the existing project is preserved.

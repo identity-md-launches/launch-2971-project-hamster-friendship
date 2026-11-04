@@ -1,0 +1,504 @@
+{
+  "date": "2026-11-04",
+  "scope": "Existing game upgrade; owner activates live Supabase and any hosting alias.",
+  "productionBuild": {
+    "command": "npm run build",
+    "exitCode": 0,
+    "files": 12,
+    "bytes": 173221,
+    "assets": [
+      {
+        "path": "dist/config.js",
+        "bytes": 337,
+        "sha256": "9c4b94b2170b1c976befafaa5c563f68db70ac388b385972cce76c1f5d20d16c"
+      },
+      {
+        "path": "dist/favicon.svg",
+        "bytes": 856,
+        "sha256": "2e3ba25b9ea954cf8d6cff354cc1ea8abd612431fe990321f68aa38739c73309"
+      },
+      {
+        "path": "dist/game.js",
+        "bytes": 80183,
+        "sha256": "b6de7da1c6ceb48eb58d0dc40dad3f76dc344d0001608503a5fd90404a02931a"
+      },
+      {
+        "path": "dist/index.html",
+        "bytes": 12128,
+        "sha256": "12735c901ef5f7cf49c222017e5347ff1bb89764ce733f544d6b1d0c7b0ab0f8"
+      },
+      {
+        "path": "dist/og-image.png",
+        "bytes": 23892,
+        "sha256": "22d0381bc4b2ec0dee3b2672691d47124ab45f579787d7a613beb6d750c7fc14"
+      },
+      {
+        "path": "dist/og-image.svg",
+        "bytes": 2578,
+        "sha256": "4ac734124d88523c5045b9ad03f1a9c026634705edbdf7738826cbd50df75deb"
+      },
+      {
+        "path": "dist/rules.js",
+        "bytes": 3540,
+        "sha256": "f96f142d32a4e9d7ab0ae60f1d9de0d59d80158e8ce807cbc6f74ef57e360576"
+      },
+      {
+        "path": "dist/save.js",
+        "bytes": 10013,
+        "sha256": "58fd2f3681271c20c2e3c95a0e4485d2e8e028ac8d4898062b2099b544d9a621"
+      },
+      {
+        "path": "dist/sqk.svg",
+        "bytes": 2544,
+        "sha256": "88a5de5bea90d81cde75551e72aeb31ce9869ea17bc92c917b58ffe2c5625e6e"
+      },
+      {
+        "path": "dist/styles.css",
+        "bytes": 16269,
+        "sha256": "94ccb29d5ea2daa738004efa2a4c26bef5c9f200c3bafb69ccbdb176b5e62776"
+      },
+      {
+        "path": "dist/ui.js",
+        "bytes": 12120,
+        "sha256": "b4d2e00e3ccc981cd681e1b65da206f9260ee6f442e3121efde3ab6590e5e196"
+      },
+      {
+        "path": "dist/wallet.js",
+        "bytes": 8761,
+        "sha256": "1924f5cbb6b4fe2ac5f6131f287dd3b5ea4d62e172e4b588f06192d05a71a14a"
+      }
+    ]
+  },
+  "staticChecks": {
+    "commands": [
+      "npm run check",
+      "npm run typecheck"
+    ],
+    "exitCode": 0
+  },
+  "javascriptTypecheck": {
+    "compiler": "TypeScript 5.9.3",
+    "command": "tsc -p jsconfig.json",
+    "exitCode": 0,
+    "scope": "Five added frontend JS modules plus declarations; original engine separately syntax/execution checked."
+  },
+  "gameplay": {
+    "command": "node scripts/test.mjs",
+    "exitCode": 0,
+    "passed": 29
+  },
+  "database": {
+    "command": "node supabase/tests/validation.mjs <PGlite module>",
+    "engine": "PostgreSQL 18.6 / PGlite 0.5.15",
+    "exitCode": 0,
+    "passed": 43
+  },
+  "browser": {
+    "command": "node scripts/validate-browser.mjs <Playwright> <PGlite> <WebKit launcher> <axe>",
+    "exitCode": 0,
+    "passed": 26,
+    "checks": [
+      {
+        "engine": "chromium",
+        "name": "390 first screen contains the game and visible Start action",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "profile validates names, saves and restores focus",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "marketplace lists all 10 items and blocks unaffordable purchases",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "unconfigured Top 100 tells the truth and has no seeded rankings",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "MetaMask has a mobile opening link when no extension is available",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "guest start and original story dialogue work",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "keyboard movement, original basket interaction and jump work",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "attack, shield and weapon swap controls work",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "pause/resume and menus freeze active gameplay",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "mobile pointer controls move and jump",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "reload preserves the player name",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "320, 768 and 1440 widths have no horizontal overflow",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "200% text enlargement keeps menu content reachable",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "reduced motion and keyboard focus states render",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "production page has no JavaScript errors or failed resource requests",
+        "passed": true
+      },
+      {
+        "engine": "chromium-wallet",
+        "name": "EIP-6963 MetaMask connection switches to Ethereum Mainnet without signing",
+        "passed": true
+      },
+      {
+        "engine": "chromium-wallet",
+        "name": "wallet reconnect on reload uses eth_accounts without a new permission prompt",
+        "passed": true
+      },
+      {
+        "engine": "chromium-wallet",
+        "name": "wrong-network recovery and account changes are handled",
+        "passed": true
+      },
+      {
+        "engine": "chromium-wallet",
+        "name": "rejected wallet request leaves guest gameplay available",
+        "passed": true
+      },
+      {
+        "engine": "chromium-cloud",
+        "name": "Supabase Auth and profile RPC connect through the real client",
+        "passed": true
+      },
+      {
+        "engine": "chromium-cloud",
+        "name": "a defeated enemy creates collectible SQK and a durable cloud outbox",
+        "passed": true
+      },
+      {
+        "engine": "chromium-cloud",
+        "name": "pending coins survive reload and retry credits them exactly once",
+        "passed": true
+      },
+      {
+        "engine": "chromium-cloud",
+        "name": "leaderboard loading failure has a working retry and real database results",
+        "passed": true
+      },
+      {
+        "engine": "chromium-cloud",
+        "name": "cloud purchase and cosmetic equipment use server-validated RPCs and persist",
+        "passed": true
+      },
+      {
+        "engine": "chromium-cloud",
+        "name": "equipped chestnut skin changes the actual projectile pixels",
+        "passed": true
+      },
+      {
+        "engine": "chromium-cloud",
+        "name": "cloud interaction sequence has no uncaught JavaScript errors",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      {
+        "engine": "webkit",
+        "status": "not-run",
+        "reason": "Installed runtime could not start: missing system libraries, first reported liblcms2.so.2."
+      }
+    ],
+    "liveWallet": false,
+    "liveSupabase": false
+  },
+  "designProbe": {
+    "passed": 16,
+    "total": 16,
+    "checks": [
+      {
+        "name": "render",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 8379,
+        "output": "renders, no script errors or missing local files"
+      },
+      {
+        "name": "layout",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "no horizontal scroll at 320, 390 or 1440\nno text box overlaps another\nno floating control covers text\nno text cut off by overflow: hidden"
+      },
+      {
+        "name": "targets",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "all 14 controls at least 24px or spaced at 390\n0 under the 44px comfortable size"
+      },
+      {
+        "name": "contrast",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "all measured text meets 4.5:1 (3:1 large)\n8 text boxes over images, video, canvas or gradients not measured"
+      },
+      {
+        "name": "casing",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no all-caps text in content"
+      },
+      {
+        "name": "tracking",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "letter-spacing natural in content (display type may run tight)"
+      },
+      {
+        "name": "eyebrows",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no kicker labels above headings"
+      },
+      {
+        "name": "type-sizes",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "390: 3 sizes in use, 4 with one-offs (14px×30, 16px×36, 20px×3, 28px×1)\n1440: 3 sizes in use, 4 with one-offs (14px×34, 16px×31, 20px×3, 40px×1)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
+      },
+      {
+        "name": "type-faces",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "families (2): georgia, system-ui\nweights (2): 400, 700"
+      },
+      {
+        "name": "glyphs",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no em dashes or emoji in text"
+      },
+      {
+        "name": "slogans",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no two-beat taglines"
+      },
+      {
+        "name": "repetition",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "no repeated lines"
+      },
+      {
+        "name": "copy-budget",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "prose on the first screen: 45 words at 390 (bar 60), 39 at 1440 (bar 90)\nall words on the first screen: 90 at 390, 83 at 1440\nwhole page: 417 words, 123 of them prose"
+      },
+      {
+        "name": "chrome",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "border and shadow together: 0\ncards inside cards: 0\ngradient text: 0"
+      },
+      {
+        "name": "motion",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "transition: all on 0 elements\nendless animations: 0; still running with reduced motion: 0"
+      },
+      {
+        "name": "share",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "title \"Hamster Friendship: The Lost Alice\", favicon, og:title, og:image, description"
+      }
+    ]
+  },
+  "accessibility": {
+    "engine": "axe-core 4.14.0",
+    "surfaces": [
+      {
+        "surface": "chromium-cloud-leaderboard",
+        "violations": 0,
+        "passedRules": 18,
+        "manualReview": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "nodes": 10
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "nodes": 1
+          }
+        ]
+      },
+      {
+        "surface": "chromium-entry",
+        "violations": 0,
+        "passedRules": 27,
+        "manualReview": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "nodes": 6
+          }
+        ]
+      },
+      {
+        "surface": "chromium-profile",
+        "violations": 0,
+        "passedRules": 21,
+        "manualReview": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "nodes": 11
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "nodes": 1
+          }
+        ]
+      },
+      {
+        "surface": "chromium-shop",
+        "violations": 0,
+        "passedRules": 17,
+        "manualReview": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "nodes": 18
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "nodes": 1
+          }
+        ]
+      },
+      {
+        "surface": "chromium-wallet",
+        "violations": 0,
+        "passedRules": 17,
+        "manualReview": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "nodes": 4
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "nodes": 1
+          }
+        ]
+      }
+    ],
+    "screenReader": false,
+    "nativeZoom": false
+  },
+  "measuredSolidColors": {
+    "profile": {
+      "foreground": "rgb(230, 211, 181)",
+      "background": "rgb(38, 24, 15)",
+      "heading": "rgb(251, 243, 228)",
+      "ratio": 11.762256125506298
+    },
+    "error": {
+      "foreground": "rgb(233, 115, 95)",
+      "background": "rgb(38, 24, 15)",
+      "ratio": 5.805301050025857
+    }
+  },
+  "sourcePreservation": [
+    {
+      "block": "original sprites",
+      "unchanged": true
+    },
+    {
+      "block": "forest tiles",
+      "unchanged": true
+    },
+    {
+      "block": "collision movement",
+      "unchanged": true
+    },
+    {
+      "block": "forest art",
+      "unchanged": true
+    },
+    {
+      "block": "background and parallax",
+      "unchanged": true
+    }
+  ],
+  "protectedPathsChanged": [],
+  "ignoreFileChanged": false,
+  "runtimeDependencies": 0,
+  "retainedScreenshots": [
+    "docs/validation/screenshots/mobile-start.png",
+    "docs/validation/screenshots/marketplace.png",
+    "docs/validation/screenshots/mobile-coin.png",
+    "docs/validation/screenshots/desktop-coin.png"
+  ],
+  "limitations": [
+    "Supabase project URL/public key and owner migration/Auth setup are not supplied; cloud features are explicitly disabled in the delivered configuration.",
+    "Server checks economic/event rules, not authoritative physics or bot prevention.",
+    "Anonymous profile access depends on retaining its browser session.",
+    "The requested .hamster public DNS ending is undelegated; hosting/domain aliases were not changed.",
+    "No real wallet app, physical device, screen-reader or Safari validation.",
+    "Canvas/background contrast cases remain outside automated certification."
+  ],
+  "bundle": {
+    "limitBytes": 8388608,
+    "addedOrModifiedFilesBytes": 723088,
+    "measurement": "Conservative full size of every added or modified Git submission file, excluding scratch and removed input files."
+  }
+}

@@ -10,11 +10,18 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hamster Friendship: The Lost Alice">
   <meta property="og:description" content="Guide Chang the hamster through an autumn chestnut forest to learn what happened to his friend Alice.">
-  <meta property="og:image" content="./og-image.svg">
+  <meta property="og:image" content="./og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Chang the hamster in a pixel-art chestnut forest at dusk">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="./styles.css">
+  <script src="./config.js" defer></script>
+  <script src="./rules.js" defer></script>
+  <script src="./save.js" defer></script>
   <script src="./game.js" defer></script>
+  <script src="./wallet.js" defer></script>
+  <script src="./ui.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#stage">Skip to the game</a>
@@ -22,11 +29,20 @@
   <header class="site-header page">
     <h1>Hamster Friendship: The Lost Alice</h1>
     <p class="lede">A pixel-art adventure you play in the browser. Help Chang search the chestnut forest for his missing friend.</p>
+    <nav class="game-utilities" aria-label="Player menu">
+      <button class="btn btn-secondary btn-small" id="btn-profile" type="button">Profile</button>
+      <button class="btn btn-secondary btn-small" id="btn-shop" type="button">Marketplace</button>
+      <button class="btn btn-secondary btn-small" id="btn-leaderboard" type="button">Top 100</button>
+      <button class="btn btn-secondary btn-small" id="btn-wallet" type="button">Connect MetaMask</button>
+    </nav>
   </header>
 
   <main>
     <section class="game page" id="play" aria-label="Game">
       <div class="hud" id="hud">
+        <p class="hud-item"><img class="sqk-icon" src="./sqk.svg" alt="SQK" width="32" height="28"><strong class="hud-value" id="hud-sqk">0</strong><span id="hud-pending"></span></p>
+        <p class="hud-item"><span>Map</span><strong class="hud-value" id="hud-map">1</strong></p>
+        <p class="hud-item"><span>Defeated</span><strong class="hud-value" id="hud-enemies">0/30</strong></p>
         <p class="hud-item">
           <svg class="hud-icon" viewBox="0 0 8 8" aria-hidden="true">
             <rect x="3" y="0" width="2" height="1" fill="#3b1f12"/>
@@ -42,7 +58,7 @@
         <p class="hud-item">
           <span>Health</span>
           <span class="hearts" id="hud-hearts" aria-hidden="true"></span>
-          <strong class="hud-value" id="hud-health">3/3</strong>
+          <strong class="hud-value" id="hud-health">1/1</strong>
         </p>
         <p class="hud-item">
           <span>Clues</span>
@@ -54,6 +70,7 @@
         </p>
         <button class="btn btn-secondary btn-small hud-pause" id="btn-pause" type="button">Pause</button>
       </div>
+      <div class="map-status"><p><strong id="hud-weapon">Chestnut</strong><span id="hud-ammo"></span></p><p id="hud-timer">Boss in 60s</p></div>
 
       <div class="stage" id="stage" tabindex="-1">
         <canvas id="game" width="320" height="192" tabindex="0" role="img" aria-label="Game view. Chang the hamster in the chestnut forest."></canvas>
@@ -77,8 +94,8 @@
         </div>
 
         <div class="overlay" id="screen-over" hidden>
-          <h2>Chang needs a rest</h2>
-          <p class="overlay-text">Try again from the last lantern you lit.</p>
+          <h2>Back to the forest</h2>
+          <p class="overlay-text">Restart this map. Collected SQK and purchases are kept; coins left behind are lost.</p>
           <div class="overlay-actions">
             <button class="btn btn-primary" id="btn-retry" type="button">Try again</button>
             <button class="btn btn-secondary" id="btn-restart-over" type="button">Restart chapter</button>
@@ -86,7 +103,7 @@
         </div>
 
         <div class="overlay" id="screen-end" hidden>
-          <h2>Chapter one complete</h2>
+          <h2>Forest map complete</h2>
           <p class="overlay-text">Chang holds a humming metal fragment. Alice is somewhere beyond the forest.</p>
           <dl class="stats">
             <div><dt>Shells collected</dt><dd id="end-shells">0</dd></div>
@@ -94,7 +111,7 @@
             <div><dt>Time</dt><dd id="end-time">0:00</dd></div>
           </dl>
           <div class="overlay-actions">
-            <button class="btn btn-primary" id="btn-again" type="button">Play again</button>
+            <button class="btn btn-primary" id="btn-again" type="button">Explore next map</button>
           </div>
         </div>
 
@@ -110,6 +127,7 @@
         <p class="toast" id="toast" role="status" aria-live="polite"></p>
       </div>
 
+      <p id="game-error" class="error" role="alert"></p>
       <div class="touchpad" id="touchpad" aria-label="Touch controls" role="group">
         <div class="pad-group">
           <button class="btn btn-secondary pad-btn" type="button" data-action="left" aria-label="Move left">
@@ -122,12 +140,14 @@
         <div class="pad-group pad-group-actions">
           <button class="btn btn-secondary pad-btn" type="button" data-action="shield">Shield</button>
           <button class="btn btn-secondary pad-btn" type="button" data-action="interact">Look</button>
-          <button class="btn btn-secondary pad-btn" type="button" data-action="throw">Throw</button>
+          <button class="btn btn-secondary pad-btn" type="button" data-action="swap">Swap</button>
+          <button class="btn btn-secondary pad-btn" type="button" data-action="throw">Attack</button>
           <button class="btn btn-primary pad-btn" type="button" data-action="jump">Jump</button>
         </div>
       </div>
-      <p class="pad-hint pad-hint-keys">Arrow keys move, Space jumps, <kbd>X</kbd> throws a shell, hold <kbd>C</kbd> to shield, <kbd>E</kbd> looks and talks.</p>
-      <p class="pad-hint pad-hint-touch">Hold the arrows to walk. Hold Shield to block, tap Look near anything that sparkles.</p>
+      <p class="pad-hint pad-hint-keys">Arrows move, Space jumps, <kbd>X</kbd> attacks, <kbd>Q</kbd> swaps weapons, hold <kbd>C</kbd> to shield, <kbd>E</kbd> looks and talks.</p>
+      <p class="pad-hint pad-hint-touch">Hold arrows to walk and Shield to block. Attack uses your equipped weapon.</p>
+      <p class="save-summary" id="save-summary">Guest · saved on this device</p>
     </section>
 
     <section class="info page" id="how-to-play" aria-labelledby="how-title">
@@ -139,7 +159,9 @@
           <dt><kbd>Space</kbd><kbd>W</kbd><kbd>&uarr;</kbd></dt>
           <dd>Jump. Hold for a higher jump.</dd>
           <dt><kbd>X</kbd> or <kbd>J</kbd></dt>
-          <dd>Throw a chestnut shell</dd>
+          <dd>Attack with your equipped weapon</dd>
+          <dt><kbd>Q</kbd></dt>
+          <dd>Swap between chestnuts and collected weapons</dd>
           <dt><kbd>C</kbd><kbd>K</kbd><kbd>&darr;</kbd></dt>
           <dd>Hold up a shell as a shield</dd>
           <dt><kbd>E</kbd> or <kbd>Enter</kbd></dt>
@@ -148,9 +170,15 @@
           <dd>Pause, resume or restart</dd>
         </dl>
         <ul class="tips">
-          <li>Jump on beetles, ants and larvae to knock them out.</li>
-          <li>Light the lanterns. You return to the last one if Chang runs out of health.</li>
+          <li>Each map has 30 enemies and one boss. The boss appears at the forest exit after 60 seconds of active play.</li>
+          <li>One unblocked enemy hit or a fall restarts the current map. There is no healing. Shield blocks and stomps still work.</li>
+          <li>Every defeated enemy drops one gold SQK coin. Walk over it to keep it. Coins left behind disappear when you die.</li>
+          <li>Map 1 enemies have 100 HP; its boss has 500 HP. Each deeper map has 20% more HP, rounded up.</li>
+          <li>Weapon drop chance: 30%. Of drops, 30% are guns (20 damage), 30% swords (50 damage), 40% grenades (5 burning damage per second in an area for 8 seconds).</li>
+          <li>Chestnuts deal 25 damage; stomps deal 50. Shells fall from the canopy when supplies run low. Lanterns give spare shells.</li>
           <li>Raise your shield when the cockroach charges. A blocked charge leaves it dazed.</li>
+          <li>Defeat all 30 enemies and the boss, then inspect the metal fragment beyond the gate to reach the next map.</li>
+          <li>Score: 100 per regular enemy, 500 per boss, 1,000 per map cleared. Cloud scores are checked by the server. Guest scores stay on this device.</li>
         </ul>
       </div>
       <div>
@@ -164,8 +192,19 @@
     </section>
   </main>
 
+  <dialog id="player-dialog" class="player-dialog" aria-labelledby="panel-title">
+    <div class="panel-header"><h2 id="panel-title">Profile</h2><button class="btn btn-secondary close-dialog" id="close-panel" type="button" aria-label="Close player menu">×</button></div>
+    <div id="panel-content"></div>
+  </dialog>
+  <dialog id="wallet-dialog" class="player-dialog wallet-dialog" aria-labelledby="wallet-title">
+    <div class="panel-header"><h2 id="wallet-title">Connect a wallet</h2><button class="btn btn-secondary close-dialog" id="close-wallet" type="button" aria-label="Close wallet menu">×</button></div>
+    <p class="panel-note">Ethereum Mainnet · connect only. No signatures, transactions or approvals.</p>
+    <div id="wallet-options" class="wallet-options"></div>
+    <p id="wallet-status" class="panel-note" role="status"></p>
+  </dialog>
+
   <footer class="site-footer page">
-    <p>Chapter one of Hamster Friendship. Free to play with a keyboard or touch screen, no account or wallet needed.</p>
+    <p>Hamster Friendship. Free to play with a keyboard or touch screen. Guest play never needs a wallet.</p>
   </footer>
 </body>
 </html>

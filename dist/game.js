@@ -12,6 +12,11 @@
   var ARENA_L = 184, ARENA_R = 207;
   var GRAVITY = 0.25, JUMP_V = 5.6, MAX_FALL = 5;
   var EMPTY = 0, DIRT = 1, BRANCH = 2, STONE = 3, WOOD = 4;
+  var rules = window.HamsterRules, saves = window.HamsterSave;
+  var mapNumber = 1, mapLoot = [], mapPurchases = [], attackId = 0;
+  var defeatedCount = 0, burns = [], starting = false;
+  function event(kind, data) { return saves.record(kind, data || {}, game.frames); }
+  function hasSkill(id) { return mapPurchases.indexOf(id) !== -1; }
 
   function byId(id) { return document.getElementById(id); }
   var canvas = byId('game');
@@ -228,6 +233,31 @@
     roach: [pair(makeRoach(0)), pair(makeRoach(1))]
   };
   SPR.roachDead = pair(flipV(makeRoach(0)));
+  var wardrobe = {}, equippedShellColor = '#8b4a22', lastShellSkin;
+  function refreshWardrobe() {
+    wardrobe = saves.snapshot().profile.cosmetics;
+    if (lastShellSkin === wardrobe.shell && SPR.equippedShell) return;
+    lastShellSkin = wardrobe.shell;
+    var skin = rules.catalogue.find(function (item) { return item.id === wardrobe.shell; });
+    equippedShellColor = skin ? skin.color : PAL_CHESTNUT.b;
+    SPR.equippedShell = skin ? sprite(CHESTNUT_ROWS, { o: PAL_CHESTNUT.o, b: skin.color, h: '#fff2bd', c: PAL_CHESTNUT.c }) : SPR.shell;
+  }
+  saves.subscribe(refreshWardrobe); refreshWardrobe();
+  var coinArt = makeLayer(42, 36);
+  oval(coinArt.g, 21, 18, 21, 17, '#6d3d07');
+  oval(coinArt.g, 21, 17, 20, 16, '#d78a16');
+  oval(coinArt.g, 21, 16, 18, 14, '#ffe28c');
+  oval(coinArt.g, 21, 17, 16, 12, '#f6c343');
+  var coinLetters = [
+    ['.####','#....','#....','.###.','....#','....#','####.'],
+    ['.###.','#...#','#...#','#...#','#.#.#','#..#.','.##.#'],
+    ['#...#','#..#.','#.#..','##...','#.#..','#..#.','#...#']
+  ];
+  for (var letter = 0; letter < 3; letter++) for (var row = 0; row < 7; row++) for (var col = 0; col < 5; col++) {
+    if (coinLetters[letter][row][col] === '#') rect(coinArt.g, 4 + letter * 12 + col * 2, 9 + row * 2, 2, 2, '#543006');
+  }
+  rect(coinArt.g, 11, 4, 9, 1, '#fff2bd');
+  SPR.coin = coinArt.c;
 
   // ---------------------------------------------------------------------------
   // Level tiles
@@ -321,7 +351,7 @@
       [C, 'Alice? I brought the tea leaves you wanted… Alice?'],
       [N, 'Her basket lies overturned. Chestnut shells are scattered along the path.'],
       [C, 'She would never leave her basket behind. Something happened here.'],
-      [N, 'Gather shells as you go. Throw them with X, or hold C to raise one as a shield.']
+      [N, 'Attack with X. Hold C to shield. One unblocked hit restarts this map. Collect gold SQK before you fall.']
     ],
     basket: [
       [C, 'Her favourite basket. Two shells are still tucked inside.'],
@@ -343,10 +373,10 @@
       ['Mrs. Pebble', 'Oh, young Chang. I saw a light skim the canopy, heading for the forest exit.'],
       ['Mrs. Pebble', 'The old cockroach guards that gate. He hoards anything shiny.'],
       [C, 'Then that’s where I’m going.'],
-      ['Mrs. Pebble', 'Light the lanterns on your way, dear. They will bring you back if you stumble.']
+      ['Mrs. Pebble', 'Light the lanterns on your way, dear. They hold spare shells, but cannot heal you.']
     ],
     snailAgain: [['Mrs. Pebble', 'Mind the soldier ants. They charge when they spot you, so jump over them.']],
-    lantern: [[N, 'The lantern flickers to life. Chang feels rested, and this spot is saved.']],
+    lantern: [[N, 'The lantern flickers to life. You gather ten spare shells. Every fall still returns you to the start of this map.']],
     log: [
       [N, 'Inside the hollow log: a trail of oily prints, too round and even for any bug.'],
       [C, 'Metal feet? And two shells someone dropped in a hurry.']
@@ -379,8 +409,8 @@
     return {
       x: game.checkpoint.x, y: game.checkpoint.y, w: 12, h: 14, vx: 0, vy: 0, dir: 1,
       onGround: false, coyote: 0, jumpBuf: 0, inv: 0, hurt: 0, throwCd: 0, throwAnim: 0,
-      shield: false, hp: 3, maxHp: 3, shells: 0, safeX: game.checkpoint.x, safeY: game.checkpoint.y,
-      runT: 0, wasGround: true
+      shield: false, hp: 1, maxHp: 1, shells: 12, safeX: game.checkpoint.x, safeY: game.checkpoint.y,
+      runT: 0, wasGround: true, weapon: 'shell', weapons: ['shell'], ammo: { gun: 0, grenade: 0 }, attackIds: {}
     };
   }
 
@@ -395,7 +425,7 @@
     var sizes = { beetle: [14, 10, 1], ant: [14, 13, 2], larva: [16, 8, 1] };
     var s = sizes[type];
     enemies.push({
-      type: type, x: c * T, y: row * T - s[1], w: s[0], h: s[1], vx: 0, vy: 0, dir: -1, hp: s[2],
+      id: enemies.length, type: type, x: c * T, y: row * T - s[1], w: s[0], h: s[1], vx: 0, vy: 0, dir: -1, hp: rules.hp(mapNumber), maxHp: rules.hp(mapNumber),
       homeX: c * T, range: 56, state: type === 'larva' ? 'buried' : 'patrol', t: 0, knock: 0, flash: 0,
       dead: false, anim: 0, onGround: false, hitWall: false
     });
@@ -409,7 +439,7 @@
   }
 
   function newBoss() {
-    return { x: 198 * T, y: 10 * T - 20, w: 40, h: 20, vx: 0, vy: 0, dir: -1, hp: 10, maxHp: 10,
+    return { id: 30, x: 198 * T, y: 10 * T - 20, w: 40, h: 20, vx: 0, vy: 0, dir: -1, hp: rules.hp(mapNumber, true), maxHp: rules.hp(mapNumber, true),
       state: 'sleep', t: 0, flash: 0, anim: 0, onGround: true, solidOnly: true, hitWall: false, moves: 0 };
   }
 
@@ -422,21 +452,11 @@
       [168, 8], [171, 10], [173, 10], [178, 10], [180, 10]
     ];
     for (var i = 0; i < shellSpots.length; i++) addPickup('shell', shellSpots[i][0], shellSpots[i][1]);
-    addPickup('berry', 110, 8);
-    addPickup('berry', 155, 4);
-
-    addEnemy('beetle', 45, 10);
-    addEnemy('beetle', 75, 10);
-    addEnemy('beetle', 98, 10);
-    addEnemy('beetle', 108, 8);
-    addEnemy('ant', 102, 10);
-    addEnemy('ant', 117, 10);
-    addEnemy('ant', 131, 10);
-    addEnemy('larva', 141, 10);
-    addEnemy('larva', 150, 10);
-    addEnemy('ant', 160, 10);
-    addEnemy('larva', 163, 10);
-    addEnemy('beetle', 166, 10);
+    // The original twelve enemies keep their places and animations. Eighteen
+    // more inhabit the same authored forest; no art or tile map is replaced.
+    for (var e = 0; e < rules.spawns.length; e++) {
+      var spawn = rules.spawns[e]; addEnemy(spawn[0], spawn[1], spawn[2]);
+    }
 
     addThing('basket', 8, 10, 14, 10);
     addThing('scorch', 20, 10, 28, 6, { clue: true });
@@ -462,7 +482,7 @@
     ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
     ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump',
     KeyX: 'throw', KeyJ: 'throw', KeyC: 'shield', KeyK: 'shield', ArrowDown: 'shield', KeyS: 'shield',
-    KeyE: 'interact', Enter: 'interact'
+    KeyE: 'interact', Enter: 'interact', KeyQ: 'swap'
   };
   function clearInput() {
     held = {}; pressed = {};
@@ -471,6 +491,7 @@
   }
 
   window.addEventListener('keydown', function (e) {
+    if (document.querySelector('dialog[open]') || (e.target && e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) return;
     var code = e.code;
     if (code === 'Escape' || code === 'KeyP') {
       if (game.state === 'playing' || game.state === 'dialogue') { e.preventDefault(); pauseGame(); return; }
@@ -544,7 +565,12 @@
     ui.hearts.innerHTML = html;
     ui.health.textContent = player.hp + '/' + player.maxHp;
     ui.clues.textContent = game.clues + '/3';
-    var showBoss = game.arenaLocked && !game.bossDefeated && boss.state !== 'sleep';
+    byId('hud-map').textContent = String(mapNumber);
+    byId('hud-enemies').textContent = defeatedCount + '/30';
+    byId('hud-weapon').textContent = player.weapon === 'shell' ? 'Chestnut' : player.weapon.charAt(0).toUpperCase() + player.weapon.slice(1);
+    byId('hud-ammo').textContent = player.weapon === 'gun' || player.weapon === 'grenade' ? ' · ' + player.ammo[player.weapon] : '';
+    byId('hud-timer').textContent = game.frames < 3600 ? 'Boss in ' + Math.max(0, 60 - Math.floor(game.frames / 60)) + 's' : game.bossDefeated ? 'Boss defeated' : 'Boss at forest exit';
+    var showBoss = !game.bossDefeated && boss.state !== 'sleep';
     ui.boss.hidden = !showBoss;
     if (showBoss) {
       ui.bossFill.style.width = Math.round((boss.hp / boss.maxHp) * 100) + '%';
@@ -605,7 +631,25 @@
     if (game.state === 'dialogue') ui.dlgNext.focus({ preventScroll: true }); else focusStage();
   }
 
-  function startGame() {
+  async function startGame(nextMap, skipIntro) {
+    if (starting) return;
+    starting = true;
+    var desiredMap = typeof nextMap === 'number' ? nextMap : mapNumber;
+    var activeStart = byId(game.state === 'gameover' ? 'btn-retry' : game.state === 'ending' ? 'btn-again' : game.state === 'paused' ? 'btn-restart' : 'btn-start');
+    var originalLabel = activeStart.textContent;
+    activeStart.disabled = true; activeStart.textContent = 'Preparing map…';
+    var setup;
+    try { setup = await saves.beginMap(desiredMap); }
+    catch (error) {
+      starting = false; activeStart.disabled = false; activeStart.textContent = originalLabel;
+      byId('game-error').textContent = error.message;
+      return;
+    }
+    byId('game-error').textContent = '';
+    mapNumber = desiredMap;
+    mapLoot = setup.loot; mapPurchases = setup.purchases;
+    defeatedCount = 0; attackId = 0; burns = [];
+    starting = false; activeStart.disabled = false; activeStart.textContent = originalLabel;
     game.checkpoint = { x: 6 * T, y: 10 * T - 14 };
     game.arenaLocked = false; game.bossDefeated = false; game.gateL = 0; game.gateR = 1;
     game.clues = 0; game.collected = 0; game.frames = 0; game.shake = 0;
@@ -619,31 +663,24 @@
     game.beam = reduceMotion ? 0 : 90;
     game.flash = reduceMotion ? 0 : 16;
     updateHud();
-    say(LINES.intro);
+    if (!skipIntro && mapNumber === 1) say(LINES.intro); else focusStage();
   }
 
   function gameOver() {
+    if (game.state === 'gameover') return;
+    event('death');
+    pickups = pickups.filter(function (p) { return p.kind !== 'coin' && p.kind !== 'weapon'; });
+    shots = []; burns = [];
     game.state = 'gameover';
     clearInput();
     ui.dialogue.hidden = true;
     showScreen(ui.over, 'btn-retry');
   }
 
-  function respawn() {
-    var shells = player.shells;
-    player = newPlayer();
-    player.shells = Math.max(shells, 5);
-    player.inv = 90;
-    shots = [];
-    if (!game.bossDefeated) { boss = newBoss(); game.arenaLocked = false; game.gateL = 0; }
-    game.camX = clamp(player.x - W / 2, 0, WORLD_W - W);
-    showScreen(null);
-    game.state = 'playing';
-    updateHud();
-    focusStage();
-  }
+  function respawn() { return startGame(mapNumber, true); }
 
   function showEnding() {
+    event('finish', { map: mapNumber });
     game.state = 'ending';
     clearInput();
     var secs = Math.floor(game.frames / 60);
@@ -654,7 +691,7 @@
   }
 
   byId('btn-start').addEventListener('click', startGame);
-  byId('btn-again').addEventListener('click', startGame);
+  byId('btn-again').addEventListener('click', function () { void startGame(mapNumber + 1, true); });
   byId('btn-restart').addEventListener('click', startGame);
   byId('btn-restart-over').addEventListener('click', startGame);
   byId('btn-retry').addEventListener('click', respawn);
@@ -688,8 +725,8 @@
 
   function hurtPlayer(dmg, fromX) {
     var p = player;
-    if (p.inv > 0 || game.state !== 'playing') return;
-    p.hp -= dmg; p.inv = 90; p.hurt = 16;
+    if (game.state !== 'playing') return;
+    p.hp = 0; p.hurt = 16;
     var d = fromX === undefined ? -p.dir : (sign(cx(p) - fromX) || -p.dir);
     p.vx = d * 2.2; p.vy = -2.6; p.onGround = false;
     game.shake = 8;
@@ -710,7 +747,7 @@
     return best;
   }
   function available(o) {
-    if (o.kind === 'fragment') return game.bossDefeated && !o.done;
+    if (o.kind === 'fragment') return game.bossDefeated && defeatedCount === 30 && !o.done;
     if (o.kind === 'sign' || o.kind === 'snail' || o.kind === 'bush') return true;
     return !o.done;
   }
@@ -740,10 +777,9 @@
         o.done = true; say(LINES.ribbon, findClue); break;
       case 'lantern':
         o.done = true; o.anim = 1;
-        game.checkpoint = { x: o.x, y: 10 * T - 14 };
-        player.hp = player.maxHp; updateHud();
+        addShells(10);
         burst(cx(o), o.y + 4, 10, ['#ffd27a', '#ffefb8']);
-        say(LINES.lantern, function () { toast('Lantern lit. Health restored.'); }); break;
+        say(LINES.lantern, function () { toast('Lantern lit. +10 shells.'); }); break;
       case 'snail':
         if (o.done) { say(LINES.snailAgain); break; }
         o.done = true; say(LINES.snail); break;
@@ -793,14 +829,25 @@
 
     if (p.throwCd > 0) p.throwCd--;
     if (p.throwAnim > 0) p.throwAnim--;
+    if (pressed.swap) {
+      var weaponIndex = p.weapons.indexOf(p.weapon);
+      p.weapon = p.weapons[(weaponIndex + 1) % p.weapons.length]; updateHud();
+      toast(p.weapons.length === 1 ? 'Find a weapon drop to add another weapon.' : 'Equipped ' + p.weapon + '.');
+    }
     if (pressed.throw && p.throwCd === 0 && p.hurt === 0) {
-      if (p.shells > 0) {
-        p.shells--; p.throwCd = 16; p.throwAnim = 10;
-        shots.push({ kind: 'shell', x: cx(p) + p.dir * 6 - 3, y: p.y + 3, w: 6, h: 6,
-          vx: p.dir * 3.4 + p.vx * 0.3, vy: -1.5, g: 0.14, life: 100, spin: 0 });
+      var kind = p.weapon;
+      if ((kind === 'shell' && p.shells > 0) || kind === 'sword' || p.ammo[kind] > 0) {
+        if (kind === 'shell') p.shells--; else if (kind !== 'sword') p.ammo[kind]--;
+        p.throwCd = rules.cooldown(kind); p.throwAnim = 10;
+        var aid = ++attackId;
+        event('attack', { attack: aid, weapon: kind });
+        shots.push({ id: aid, kind: kind, x: cx(p) + p.dir * 6 - 3, y: p.y + 3, w: kind === 'sword' ? 28 : 6, h: kind === 'sword' ? 18 : 6,
+          vx: kind === 'sword' ? 0 : p.dir * (kind === 'gun' ? 5 : 3.4) + p.vx * 0.3, vy: kind === 'gun' || kind === 'sword' ? 0 : -1.5,
+          g: kind === 'gun' || kind === 'sword' ? 0 : 0.14, life: kind === 'sword' ? 8 : 100, spin: 0, hits: [], bounces: 0, dir: p.dir });
+        if (kind === 'sword') shots[shots.length - 1].x = p.dir > 0 ? p.x + p.w : p.x - 28;
         updateHud();
       } else {
-        toast('No shells left. Look for more.');
+        toast(kind === 'shell' ? 'No shells left. More fall from the canopy; you can also stomp.' : 'Out of ammo. Press Q or Swap to use chestnuts.');
         p.throwCd = 30;
       }
     }
@@ -814,23 +861,28 @@
       p.safeX = p.x; p.safeY = p.y;
     }
     if (p.y > H + 24) {
-      p.hp -= 1;
-      updateHud();
-      if (p.hp <= 0) { p.hp = 0; updateHud(); gameOver(); return; }
-      p.x = p.safeX; p.y = p.safeY; p.vx = 0; p.vy = 0; p.inv = 90;
-      toast('Ouch. Chang climbs back out.');
+      p.hp = 0; updateHud(); gameOver(); return;
     }
     if (p.inv > 0) p.inv--;
     if (Math.abs(p.vx) > 0.2 && p.onGround) p.runT++; else p.runT = 0;
   }
 
-  function hitEnemy(e, dmg, fromX) {
+  function dropLoot(e) {
+    addPickup('coin', 0, 0, { target: e.id, x: cx(e) - 21, y: e.y - 28, w: 42, h: 36, vx: 0, vy: -1.6, phys: true });
+    var drop = mapLoot[e.id];
+    if (drop) addPickup('weapon', 0, 0, { target: e.id, weapon: drop, x: cx(e) + 32, y: e.y - 10, w: 12, h: 10, vx: 0.5, vy: -2.4, phys: true });
+  }
+
+  function hitEnemy(e, dmg, fromX, aid) {
+    if (e.dead) return;
+    if (aid) event('hit', { target: e.id, attack: aid });
     e.hp -= dmg; e.flash = 8;
     if (e.type === 'larva' && e.state === 'buried') e.state = 'active';
     if (e.hp <= 0) {
       e.dead = true;
+      defeatedCount++; event('defeat', { target: e.id }); dropLoot(e); updateHud();
       burst(cx(e), e.y + e.h / 2, 10, e.type === 'beetle' ? ['#3f6b4a', '#b9dc95'] : e.type === 'ant' ? ['#8e3324', '#c85a3c'] : ['#efe2c2', '#c9b282']);
-      if (Math.random() < 0.5) addPickup('shell', 0, 0, { x: cx(e) - 4, y: e.y - 4, vx: 0, vy: -2.4, phys: true });
+      if (Math.random() < 0.5) addPickup('shell', 0, 0, { x: cx(e) - 36, y: e.y - 4, vx: 0, vy: -2.4, phys: true });
     } else {
       e.vx = sign(cx(e) - fromX) * 1.6; e.knock = 10;
       if (e.state === 'charge') { e.state = 'patrol'; e.t = 50; }
@@ -888,13 +940,15 @@
         else { e.dir = -e.dir; if (e.state === 'charge') { e.state = 'patrol'; e.t = 40; } }
       }
     }
-    if (e.y > H + 40) e.dead = true;
+    if (e.y > H + 40) { e.x = e.homeX; e.y = 120; e.vy = 0; }
 
     if (e.state === 'buried' || e.dead) return;
     if (!overlap(p, e) || game.state !== 'playing') return;
     var stomp = p.vy > 0.5 && (p.y + p.h - p.vy) <= e.y + 5;
     if (stomp) {
-      hitEnemy(e, 2, cx(p));
+      var stompId = ++attackId;
+      event('attack', { attack: stompId, weapon: 'stomp' });
+      hitEnemy(e, 50, cx(p), stompId);
       p.vy = held.jump ? -5 : -3.6;
       p.noCut = true;
       dust(cx(p), p.y + p.h);
@@ -916,21 +970,26 @@
     burst(cx(boss), boss.y + 4, 8, ['#d9c08a', '#8a6a4a'], 3);
   }
 
-  function damageBoss(n) {
-    if (boss.state === 'sleep' || boss.state === 'intro' || boss.state === 'defeated' || boss.state === 'flee') return;
+  function damageBoss(n, aid) {
+    if (boss.state === 'sleep' || boss.state === 'waiting' || boss.state === 'intro' || boss.state === 'defeated' || boss.state === 'flee' || boss.state === 'gone') return;
+    if (aid) event('hit', { target: 30, attack: aid });
     boss.hp = Math.max(0, boss.hp - n); boss.flash = 8;
     updateHud();
     if (boss.hp <= 0) {
       boss.state = 'defeated'; boss.t = 70; boss.vx = 0;
+      event('defeat', { target: 30 }); dropLoot(boss);
       game.shake = 16;
       burst(cx(boss), boss.y + 8, 16, ['#6e3b1c', '#b8743a', '#ffd27a'], 3);
-      shots = shots.filter(function (s) { return s.kind === 'shell'; });
     }
   }
 
   function updateBoss() {
     var b = boss, p = player;
     if (b.state === 'sleep') {
+      if (game.frames < 3600) return;
+      b.state = 'waiting'; toast('The cockroach has appeared at the forest exit.'); updateHud();
+    }
+    if (b.state === 'waiting') {
       if (!game.bossDefeated && p.x > (ARENA_L + 2) * T) {
         game.arenaLocked = true;
         b.state = 'intro';
@@ -942,7 +1001,7 @@
     if (b.state === 'intro') return;
     b.anim++;
     if (b.flash > 0) b.flash--;
-    var enraged = b.hp <= 5;
+    var enraged = b.hp <= b.maxHp / 2;
     var toward = sign(cx(p) - cx(b)) || b.dir;
 
     switch (b.state) {
@@ -993,7 +1052,7 @@
     // shells fall from the old chestnut tree while the fight is on
     if (game.arenaLocked) {
       var inArena = 0;
-      for (var i = 0; i < pickups.length; i++) if (!pickups[i].taken && pickups[i].x > ARENA_L * T) inArena++;
+      for (var i = 0; i < pickups.length; i++) if (!pickups[i].taken && pickups[i].kind === 'shell' && pickups[i].x > ARENA_L * T) inArena++;
       if (--game.dropTimer <= 0) {
         game.dropTimer = p.shells === 0 ? 80 : 200;
         if (inArena < 4) addPickup('shell', 0, 0, { x: (ARENA_L + 3 + Math.floor(Math.random() * 18)) * T, y: -10, phys: true });
@@ -1005,7 +1064,10 @@
     if (stomp) {
       p.vy = held.jump ? -5.2 : -4;
       p.noCut = true;
-      if (b.state === 'stunned') { damageBoss(2); burst(cx(p), p.y + p.h, 6, ['#ffd27a', '#ffffff']); }
+      if (b.state === 'stunned') {
+        var stompId = ++attackId; event('attack', { attack: stompId, weapon: 'stomp' });
+        damageBoss(50, stompId); burst(cx(p), p.y + p.h, 6, ['#ffd27a', '#ffffff']);
+      }
       else dust(cx(p), p.y + p.h);
       return;
     }
@@ -1025,25 +1087,54 @@
     for (var i = shots.length - 1; i >= 0; i--) {
       var s = shots[i];
       s.vy += s.g; s.x += s.vx; s.y += s.vy; s.life--; s.spin++;
-      var hit = s.life <= 0 || isSolid(Math.floor((s.x + s.w / 2) / T), Math.floor((s.y + s.h / 2) / T));
-      if (!hit && s.kind === 'shell') {
+      var wall = isSolid(Math.floor((s.x + s.w / 2) / T), Math.floor((s.y + s.h / 2) / T));
+      if (wall && s.kind === 'shell' && hasSkill('ricochet') && s.bounces === 0) {
+        s.x -= s.vx; s.y -= s.vy; s.vx *= -1; s.vy = -Math.abs(s.vy) * 0.7; s.bounces++; wall = false;
+      }
+      var hit = (s.life < 0) || (wall && s.kind !== 'sword');
+      if (s.kind === 'grenade' && (hit || s.life < 40)) {
+        burns.push({ id: s.id, x: s.x - 38, y: s.y - 24, w: 80, h: 48, life: 480, ticks: 0 });
+        burst(s.x, s.y, 18, ['#f2a93b', '#e9735f', '#ffe28c'], 4);
+        shots.splice(i, 1); continue;
+      }
+      if (!hit && (s.kind === 'shell' || s.kind === 'gun' || (s.kind === 'sword' && !s.checked))) {
         for (var j = 0; j < enemies.length; j++) {
           var e = enemies[j];
-          if (!e.dead && e.state !== 'buried' && overlap(s, e)) { hitEnemy(e, 1, s.x - s.vx * 4); hit = true; break; }
+          if (!e.dead && e.state !== 'buried' && s.hits.indexOf(e.id) === -1 && overlap(s, e)) {
+            hitEnemy(e, rules.damage(s.kind, mapPurchases), s.x - s.vx * 4, s.id); s.hits.push(e.id);
+            hit = s.kind !== 'shell' || !hasSkill('piercing') || s.hits.length >= 3;
+            if (hit) break;
+          }
         }
-        if (!hit && boss.state !== 'sleep' && boss.state !== 'flee' && boss.state !== 'gone' && overlap(s, boss)) {
-          damageBoss(1); hit = true;
+        if (!hit && boss.state !== 'sleep' && boss.state !== 'waiting' && boss.state !== 'intro' && boss.state !== 'defeated' && boss.state !== 'flee' && boss.state !== 'gone' && s.hits.indexOf(30) === -1 && overlap(s, boss)) {
+          damageBoss(rules.damage(s.kind, mapPurchases), s.id); s.hits.push(30); hit = true;
           burst(s.x, s.y, 5, ['#ffd27a', '#8b4a22']);
         }
       } else if (!hit && s.kind === 'chip' && overlap(s, player)) {
         hit = true;
         if (player.shield && sign(s.vx) === -player.dir) burst(s.x, s.y, 4, ['#ffe6a6', '#ffffff'], 1.4);
-        else hurtPlayer(1, s.x);
+        else { hurtPlayer(1, s.x); if (game.state !== 'playing') return; }
       }
+      if (s.kind === 'sword') { s.checked = true; if (s.life <= 0) shots.splice(i, 1); continue; }
       if (hit) {
         burst(s.x + s.w / 2, s.y + s.h / 2, 5, s.kind === 'shell' ? ['#8b4a22', '#e9cf9c'] : ['#c9a77a', '#8a6a4a']);
         shots.splice(i, 1);
       }
+    }
+  }
+
+  function updateBurns() {
+    for (var i = burns.length - 1; i >= 0; i--) {
+      var fire = burns[i];
+      fire.life--; fire.ticks++;
+      if (fire.ticks % 60 === 0) {
+        for (var j = 0; j < enemies.length; j++) {
+          var e = enemies[j];
+          if (!e.dead && e.state !== 'buried' && overlap(e, fire)) hitEnemy(e, 5, fire.x, fire.id);
+        }
+        if (overlap(boss, fire)) damageBoss(5, fire.id);
+      }
+      if (fire.life <= 0) burns.splice(i, 1);
     }
   }
 
@@ -1056,7 +1147,7 @@
         k.vy = Math.min(k.vy + 0.2, 4);
         k.x += k.vx; k.vx *= 0.96;
         k.y += k.vy;
-        var c = Math.floor((k.x + 4) / T), r = Math.floor((k.y + k.h) / T);
+        var c = Math.floor((k.x + k.w / 2) / T), r = Math.floor((k.y + k.h) / T);
         if (k.vy > 0 && (isSolid(c, r) || tileAt(c, r) === BRANCH)) { k.y = r * T - k.h - 2; k.vy = 0; k.vx = 0; k.phys = false; }
         if (k.y > H + 20) { k.taken = true; continue; }
       }
@@ -1064,11 +1155,17 @@
       if (overlap(player, box)) {
         k.taken = true;
         if (k.kind === 'shell') { addShells(1); burst(k.x + 4, k.y + 4, 4, ['#e9cf9c', '#d48a4e']); }
-        else {
-          player.hp = Math.min(player.maxHp, player.hp + 1);
-          updateHud();
-          toast('A rosehip berry. Health restored by one.');
-          burst(k.x + 4, k.y + 4, 6, ['#d8383a', '#ffb3a8']);
+        else if (k.kind === 'coin') {
+          event('collect', { target: k.target });
+          burst(k.x + 21, k.y + 18, 6, ['#ffe28c', '#f2a93b']);
+          toast(saves.snapshot().ranked ? '+1 SQK pending cloud save' : '+1 SQK saved on this device');
+        } else if (k.kind === 'weapon') {
+          event('weapon', { target: k.target });
+          if (player.weapons.indexOf(k.weapon) === -1) player.weapons.push(k.weapon);
+          if (k.weapon === 'gun') player.ammo.gun += 30;
+          if (k.weapon === 'grenade') player.ammo.grenade += 3;
+          player.weapon = k.weapon; updateHud();
+          toast('Equipped ' + k.weapon + '. Press Q or Swap to change weapons.');
         }
       }
     }
@@ -1090,10 +1187,20 @@
       var e = enemies[i];
       if (Math.abs(e.x - player.x) < 420) updateEnemy(e);
       if (e.dead) enemies.splice(i, 1);
+      if (game.state !== 'playing') return;
     }
     updateBoss();
+    if (game.state !== 'playing') return;
     updateShots();
+    if (game.state !== 'playing') return;
+    updateBurns();
     updatePickups();
+    // The original arena's falling-shell mechanic now also supplies the forest,
+    // so the larger enemy population cannot exhaust the player's ammunition.
+    if (!game.arenaLocked && game.frames % 240 === 0 && player.shells < 8) {
+      for (var n = 0; n < 3; n++) addPickup('shell', 0, 0, { x: player.x + 16 + n * 10, y: player.y - 42, phys: true });
+    }
+    if (game.frames % 60 === 0) updateHud();
     updateCamera();
     for (var t = 0; t < things.length; t++) if (things[t].anim > 0 && things[t].kind === 'bush') things[t].anim--;
   }
@@ -1350,7 +1457,13 @@
     rect(ctx, fx_(-2, 2), y + 8 + sw + bob, 2, 2, scarf);
     rect(ctx, fx_(-3, 1), y + 9 + sw + bob, 1, 1, scarf);
     ctx.drawImage(facing(body, dir), x, y + bob);
-    if (pose === 'shield') ctx.drawImage(SPR.shell, fx_(11, 8), y + 5);
+    if (kind === 'chang') {
+      var cosmetics = wardrobe;
+      var shirt = rules.catalogue.find(function (item) { return item.id === cosmetics.shirt; });
+      if (shirt) { rect(ctx, fx_(5, 8), y + 9 + bob, 8, 3, shirt.color); rect(ctx, fx_(4, 2), y + 8 + bob, 2, 2, shirt.color); }
+      if (cosmetics.vest) { rect(ctx, fx_(4, 3), y + 8 + bob, 3, 4, '#687a60'); rect(ctx, fx_(11, 2), y + 8 + bob, 2, 4, '#687a60'); rect(ctx, fx_(5, 1), y + 9 + bob, 1, 1, '#f2c45b'); }
+    }
+    if (pose === 'shield') ctx.drawImage(SPR.equippedShell, fx_(11, 8), y + 5);
     if (pose === 'throw') rect(ctx, fx_(15, 2), y + 7, 2, 2, kind === 'alice' ? '#e6cfb3' : '#d9893b');
   }
 
@@ -1493,11 +1606,15 @@
       }
     }
     ctx.globalAlpha = 1;
+    if (e.hp < e.maxHp) {
+      rect(ctx, x, y - 4, e.w, 2, '#3a2318');
+      rect(ctx, x, y - 4, Math.max(1, Math.round(e.w * e.hp / e.maxHp)), 1, '#e9735f');
+    }
   }
 
   function drawBoss(cam) {
     var b = boss;
-    if (b.state === 'gone') return;
+    if (b.state === 'gone' || b.state === 'sleep') return;
     var x = Math.round(b.x - cam) - 4, y = Math.round(b.y) - 6;
     if (x < -60 || x > W + 60) return;
     var shakeX = b.state === 'windup' && !reduceMotion ? (b.t % 4 < 2 ? 1 : -1) : 0;
@@ -1522,12 +1639,24 @@
       var s = shots[i], x = Math.round(s.x - cam), y = Math.round(s.y);
       if (s.kind === 'shell') {
         var f = (s.spin >> 2) % 4;
-        rect(ctx, x, y + 1, 6, 4, '#8b4a22'); rect(ctx, x + 1, y, 4, 6, '#8b4a22');
+        rect(ctx, x, y + 1, 6, 4, equippedShellColor); rect(ctx, x + 1, y, 4, 6, equippedShellColor);
         rect(ctx, x + (f < 2 ? 1 : 3), y + (f % 2 ? 1 : 3), 2, 2, '#e9cf9c');
+      } else if (s.kind === 'gun') {
+        rect(ctx, x, y + 2, 6, 2, '#ffe28c'); rect(ctx, x + 4, y + 1, 2, 1, '#fff2bd');
+      } else if (s.kind === 'sword') {
+        rect(ctx, x, y + 5, 24, 3, '#dce7e6'); rect(ctx, x + 5, y + 3, 2, 7, '#f2c45b');
+      } else if (s.kind === 'grenade') {
+        rect(ctx, x + 1, y + 1, 5, 5, '#687a60'); rect(ctx, x + 3, y - 1, 2, 2, '#e9735f');
       } else {
         rect(ctx, x, y, 4, 4, '#c9a77a'); rect(ctx, x + 1, y + 1, 2, 2, '#8a6a4a');
       }
     }
+  }
+  function drawWeapon(kind, x, y) {
+    rect(ctx, x - 2, y - 2, 17, 14, '#26180f');
+    if (kind === 'gun') { rect(ctx, x, y + 2, 12, 4, '#b8c4cc'); rect(ctx, x + 2, y + 5, 3, 5, '#687a60'); }
+    else if (kind === 'sword') { rect(ctx, x + 5, y - 1, 3, 9, '#dce7e6'); rect(ctx, x + 2, y + 6, 9, 2, '#f2c45b'); rect(ctx, x + 5, y + 8, 3, 3, '#8b4a22'); }
+    else { rect(ctx, x + 2, y + 2, 8, 8, '#687a60'); rect(ctx, x + 5, y - 1, 2, 3, '#e9735f'); }
   }
 
   function drawPlayer(cam) {
@@ -1581,9 +1710,19 @@
       for (i = 0; i < things.length; i++) drawThing(things[i], cam);
       for (i = 0; i < pickups.length; i++) {
         var k = pickups[i], kx = Math.round(k.x - cam);
-        if (kx < -10 || kx > W + 10) continue;
+        if (kx < -40 || kx > W + 40) continue;
         var by = k.phys || reduceMotion ? 0 : Math.round(Math.sin(k.bob / 14) * 1.5);
-        ctx.drawImage(k.kind === 'shell' ? SPR.shell : SPR.berry, kx, Math.round(k.y) + by);
+        if (k.kind === 'weapon') drawWeapon(k.weapon, kx, Math.round(k.y) + by);
+        else ctx.drawImage(k.kind === 'coin' ? SPR.coin : SPR.shell, kx, Math.round(k.y) + by);
+      }
+      for (i = 0; i < burns.length; i++) {
+        var fire = burns[i];
+        for (var flame = 0; flame < 10; flame++) {
+          var height = reduceMotion ? 5 : 4 + ((game.t + flame * 7) % 12);
+          var fireBase = Math.min(160, fire.y + 30);
+          rect(ctx, fire.x - cam + flame * 8, fireBase - height, 5, height, '#e9735f');
+          rect(ctx, fire.x - cam + flame * 8 + 1, fireBase - height + 3, 3, Math.max(2, height - 3), '#f2a93b');
+        }
       }
       for (i = 0; i < enemies.length; i++) drawEnemy(enemies[i], cam);
       drawBoss(cam);
@@ -1658,11 +1797,16 @@
   updateHud();
   window.requestAnimationFrame(frame);
 
-  // Exposed for automated checks in test tooling; read-only snapshot.
+  // Player menus can pause the game. All gameplay diagnostics are read-only.
   window.__hamster = {
+    pause: pauseGame,
     snapshot: function () {
-      return { state: game.state, shells: player.shells, hp: player.hp, clues: game.clues, x: Math.round(player.x),
-        bossHp: boss.hp, bossState: boss.state, arenaLocked: game.arenaLocked, bossDefeated: game.bossDefeated };
+      return { state: game.state, shells: player.shells, hp: player.hp, clues: game.clues, x: Math.round(player.x), y: Math.round(player.y), shield: player.shield,
+        bossHp: boss.hp, bossState: boss.state, arenaLocked: game.arenaLocked, bossDefeated: game.bossDefeated,
+        map: mapNumber, enemyCount: enemies.length, defeated: defeatedCount, frame: game.frames,
+        weapon: player.weapon, ammo: Object.assign({}, player.ammo), weapons: player.weapons.slice(),
+        coinCount: pickups.filter(function (p) { return p.kind === 'coin'; }).length, burningAreas: burns.length,
+        regularHp: rules.hp(mapNumber), purchases: mapPurchases.slice() };
     }
   };
 })();

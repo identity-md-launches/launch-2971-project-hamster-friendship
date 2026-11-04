@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "strict": false
+  },
+  "files": ["src/types.d.ts", "src/config.js", "src/rules.js", "src/save.js", "src/wallet.js", "src/ui.js"]
+}

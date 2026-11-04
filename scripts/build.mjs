@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'src');
 const dist = join(root, 'dist');
-const FILES = ['index.html', 'styles.css', 'game.js', 'favicon.svg', 'og-image.svg'];
+const FILES = ['index.html', 'styles.css', 'game.js', 'config.js', 'rules.js', 'save.js', 'wallet.js', 'ui.js', 'sqk.svg', 'favicon.svg', 'og-image.svg', 'og-image.png'];
 
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });

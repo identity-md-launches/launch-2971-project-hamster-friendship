@@ -8,14 +8,16 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const FILES = ['index.html', 'styles.css', 'game.js', 'favicon.svg', 'og-image.svg'];
+const FILES = ['index.html', 'styles.css', 'game.js', 'config.js', 'rules.js', 'save.js', 'wallet.js', 'ui.js', 'sqk.svg', 'favicon.svg', 'og-image.svg', 'og-image.png'];
 let failures = 0;
 const fail = (msg) => { failures++; console.error(`FAIL ${msg}`); };
 const pass = (msg) => console.log(`ok   ${msg}`);
 
 const game = await readFile(join(root, 'src/game.js'), 'utf8');
-try { new vm.Script(game, { filename: 'src/game.js' }); pass('src/game.js parses'); }
-catch (err) { fail(`src/game.js does not parse: ${err.message}`); }
+for (const name of FILES.filter(name => name.endsWith('.js'))) {
+  try { new vm.Script(await readFile(join(root, 'src', name), 'utf8'), { filename: 'src/' + name }); pass('src/' + name + ' parses'); }
+  catch (err) { fail(`src/${name} does not parse: ${err.message}`); }
+}
 
 const html = await readFile(join(root, 'src/index.html'), 'utf8');
 const required = [
@@ -30,6 +32,11 @@ const absolute = html.match(/(?:src|href)="\/(?!\/)[^"]*"/g);
 if (absolute) fail(`root-absolute asset URLs: ${absolute.join(', ')}`); else pass('asset URLs are relative');
 
 const ids = [...game.matchAll(/byId\('([^']+)'\)/g)].map((m) => m[1]);
+for (const name of ['wallet.js','ui.js']) {
+  const source = await readFile(join(root,'src',name),'utf8');
+  const dynamicIds = [...source.matchAll(/\.id\s*=\s*'([^']+)'/g)].map(m => m[1]);
+  ids.push(...[...source.matchAll(/getElementById\('([^']+)'\)/g)].map(m => m[1]).filter(id => !dynamicIds.includes(id)));
+}
 for (const id of new Set(ids)) if (!html.includes(`id="${id}"`)) fail(`game.js expects #${id} in index.html`);
 pass(`${new Set(ids).size} element ids referenced by game.js checked`);
 
