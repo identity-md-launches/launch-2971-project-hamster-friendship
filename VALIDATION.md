@@ -1,5 +1,22 @@
 # Squeek validation
 
+## Revision · forged forage credit (migration 008)
+
+**Finding** `d5076665…` (high): `hf_progress` in `supabase/migrations/006_four_worlds.sql:154` credited any known forest collectible at frame 0, checking only its identifier and once-per-run duplication. `supabase/migrations/007_concurrent_runs.sql:12` (`hf_start_run_v6`) allowed unlimited simultaneous runs, so the same 70 points could be repeated per run and reached the public Lifetime Top 100 through the checkpoint trigger.
+
+**Reproduction in this revision:** confirmed by reading the source only. The forage branch (`006:154–158`) has no time or position check; the only timing bound (`006:98`) is `frame ≥ previous frame` and `frame ≤ elapsed·60+120`, which frame 0 always satisfies; 007 removed the abandon-other-runs step for v6. The disposable-PostgreSQL replay could **not** be run here: every shell command in this session failed with `Sandbox is required but failed to initialize: Failed to create bridge sockets after 5 attempts`, so no `node`, build, typecheck, browser or SQL command ran in this revision.
+
+**Fix:** new `supabase/migrations/008_reward_guard.sql`. 001–007 are unchanged.
+- `hf_private.forage_column` maps each collectible to its authored column, taken from `src/game.js:506–529`. `hf_private.travel_frames` gives the fewest frames needed to cover that distance at 2 px/frame (the game's maximum is 1.7, or 1.9 airborne on map 4; `src/game.js:925,949`), with 64 px of reach/interaction slack.
+- `hf_progress` rejects a collectible earlier than the frames needed from the spawn (column 6, `src/game.js:358`) or from the run's previous collectible. The reviewer's frame-0 batch is rejected at `trail-0`, so nothing is credited and the queue fails before any change.
+- Every ranked point (forage or drop, v4 or v6) is drawn from one per-wallet budget in `hf_private.profiles` (`reward_tokens`, `reward_at`): up to 150 held, refilled at 1 point per real second, shared across all runs and devices. Over-budget events are still acknowledged (with `withheld` in the reply), so legitimate device queues never jam. Existing profiles start with a full budget.
+- `hf_start_run_v6` keeps at most four open v6 runs per wallet. A fifth start closes the oldest, and points that run already checkpointed stay credited.
+- `hf_service_status` adds `"migration":8` and keeps `schemaVersion 7` / `rulesVersion 6`, so the committed `dist/` and `src/save.js:50` still match without a rebuild.
+
+**Tooling updated:** `scripts/prepare-supabase.mjs` bundles 008 (an `--after 7` database receives 008, and the version guard reads `migration` first). `scripts/verify-production.mjs`, `supabase/verify_production.sql` and `supabase/verify_major.sql` now require migration 8. `supabase/tests/production-handoff.mjs` expects the 008 status and replay rejection for every start version. `supabase/tests/major-harness.mjs` can load 008, but its default stays 7. New `supabase/tests/reward-guard.mjs` (`createHarness(8)`) replays the finding exactly and also checks honest traversal (70 points credited), teleport rejection, the shared budget across four concurrent runs, the four-run cap and the elapsed-time bound.
+
+**Not run in this revision:** `node supabase/tests/reward-guard.mjs`, `node supabase/tests/production-handoff.mjs`, the other suites, `npm run build`/`check`, the typecheck and `taste.mjs`. No runtime source or `dist/` file changed, so the earlier build, typecheck, browser and probe results below still describe the shipped export. The older suites that send `chest`/`lantern` forage at frame 0 (`major.mjs`, `concurrent-runs.mjs`, the client fixtures) were verified against 001–007 and would need realistic frames before they can run against 008. Production still needs 008 applied through `supabase/SQL_EDITOR.md`.
+
 ## Production integration · 2026-11-05
 
 **Incomplete in production.** The supplied original-project public URL/key are configured in source and export. Auth connectivity returned 200; service, player, progress and lifetime-ranking RPCs returned 404/PGRST202. No production migration, authenticated record write, score save, refresh recovery or real wallet signature is claimed. Actual tables and policies remain uninspected. See the [complete production report](docs/SUPABASE_REPORT.md), [raw HTTP results](docs/validation/supabase-production.json) and [exact SQL Editor procedure](supabase/SQL_EDITOR.md).

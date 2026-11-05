@@ -1,7 +1,9 @@
 -- Run AFTER only the missing migrations, in the same production SQL Editor.
 -- Read-only metadata/aggregate checks. Every boolean should be true.
 begin read only;
-select public.hf_service_status() = '{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime"}'::jsonb as current_service;
+select public.hf_service_status() = '{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime","migration":8}'::jsonb as current_service;
+select to_regprocedure('hf_private.forage_column(text)') is not null
+   and exists(select 1 from information_schema.columns where table_schema='hf_private' and table_name='profiles' and column_name='reward_tokens') as reward_guard_installed;
 
 select count(*) filter(where c.relname=any(array['profiles','catalogue','purchases','runs','attacks','badges','dice_receipts','wallet_profiles','legacy_tickets','settings','daily_scores','lifetime_entries']))=12 as expected_tables_present,
        coalesce(bool_and(c.relrowsecurity),false) as all_private_tables_have_rls,

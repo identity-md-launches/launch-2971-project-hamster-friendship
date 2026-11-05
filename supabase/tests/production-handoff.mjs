@@ -19,15 +19,15 @@ for(const version of [0,1,2,3,4,5,6,7]){
    before=(await h.admin('select user_id,name,sqk,total_score,cosmetics from hf_private.profiles')).rows;
   }
   await h.db.exec(await prepare(version));
-  assert.deepEqual((await h.admin('select public.hf_service_status() as s')).rows[0].s,{schemaVersion:7,rulesVersion:6,leaderboard:'lifetime'});
+  assert.deepEqual((await h.admin('select public.hf_service_status() as s')).rows[0].s,{schemaVersion:7,rulesVersion:6,leaderboard:'lifetime',migration:8});
   if(before)assert.deepEqual((await h.admin('select user_id,name,sqk,total_score,cosmetics from hf_private.profiles')).rows,before);
   for(const file of ['supabase/verify_major.sql','supabase/verify_production.sql']){
    const checks=await h.db.exec(await readFile(file,'utf8'));
    for(const result of checks)for(const row of result.rows)for(const value of Object.values(row))if(typeof value==='boolean')assert.equal(value,true,file+' '+JSON.stringify(row));
   }
   await h.db.exec(await readFile('supabase/test_access.sql','utf8'));
-  if(version<7){const replay=await prepare(version);await assert.rejects(()=>h.db.exec(replay),/Expected|differs/);await h.db.exec('rollback');}
-  results.push({name:'Inspect and upgrade schema '+version+' → 7; preserve existing records; reject replay',passed:true});console.log('ok',results.at(-1).name);
+  {const replay=await prepare(version);await assert.rejects(()=>h.db.exec(replay),/Expected|differs/);await h.db.exec('rollback');}
+  results.push({name:'Inspect and upgrade schema '+version+' → 8; preserve existing records; reject replay',passed:true});console.log('ok',results.at(-1).name);
  }finally{await h.close();}
 }
 const h=await createHarness(2);
