@@ -39,9 +39,9 @@
     if (backendReady) return;
     try {
       var data = await request('/rest/v1/rpc/hf_service_status', {});
-      if (data.schemaVersion !== 6 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime') throw new Error('The four-world persistence migration is not installed.');
+      if (data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime') throw new Error('The concurrent-run persistence migration is not installed.');
       backendReady = true;
-    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 006. ' + error.message); }
+    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 007. ' + error.message); }
   }
   async function access(auth, key) {
     if (!auth) throw new Error('Sign in with MetaMask to save.');

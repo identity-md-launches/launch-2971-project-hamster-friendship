@@ -45,6 +45,10 @@ Wallet connect itself requests no transaction. **Sign in to save** separately re
 
 Pending ranked events are written before transmission, partitioned by wallet and run, merged by acknowledgement sequence across tabs and retried after refresh/online/exit. `fetch` uses keepalive for progress. A browser can still terminate networking; an unsent event requires that original browser's retained queue to reconnect. A run ended on another device keeps rejected events in a downloadable recovery record and offers Restart from cloud profile. A different device can retrieve only progress already acknowledged by Supabase.
 
+Revision: migration **007** allows independent version-6 runs for the same wallet. Starting a run on another device no longer ends the first device's run or rejects its queued rewards. Each run closes through its own ordered death/finish event; profile locking and the existing event validator checkpoint both devices' valid points exactly once. Legacy starts also leave version-6 runs intact. Previously ended runs are not automatically reopened or credited from unverified recovery files. The frontend requires schema **7**, game rules **6**, before signed login/ranked play.
+
+The revision also fixes the offered weapon pickup range on PC and mobile. Pointer selection of a weapon slot returns focus to the canvas so Space jumps and Enter fires; deliberate keyboard activation retains native slot focus and toggling. See the [revision validation record](VALIDATION.md#revision-validation) and [review responses](.imd-responses.json).
+
 Existing legacy cloud profiles can be linked through their authenticated, expiring server ticket. An existing verified wallet profile always wins. Older **unverified browser-only totals** are left untouched and offered as a download in Profile for owner review; they cannot overwrite or mint a verified score. Guests remain memory-only and unranked. See [Supabase migration and security details](supabase/README.md).
 
 ## After launch: original-project owner configuration
@@ -52,9 +56,9 @@ Existing legacy cloud profiles can be linked through their authenticated, expiri
 These are owner-settable settings, not invented credentials or a request to replace the backend:
 
 1. Identify the existing Supabase project. Set its public URL and browser-safe publishable/anon key in `src/config.js`. Keep private/service-role keys out of source and `dist/`.
-2. Back up the original database and inspect its installed migration versions. Keep installed migrations unchanged. A project already on 005 applies **only `supabase/migrations/006_four_worlds.sql`**, once. Earlier projects first apply only their missing historical migrations, in order. Never reset the database or replay installed migrations.
-3. Run `supabase/preservation_snapshot.sql` before and after 006 during a maintenance window; compare every historical count/fingerprint/SQK/lifetime sum. Enable Ethereum Web3 Auth and allow the actual HTTPS origin/URI in Auth redirect URLs. Expose `public`, never `hf_private`, through the Data API.
-4. Run `supabase/verify_major.sql`, rebuild the export and verify actual signed login, score save, refresh, a second device, Top 100 and unauthorized access against that **same** hosted database. The frontend expects schema/rules version 6 before requesting a signature.
+2. Back up the original database and inspect its installed migration versions. Keep installed migrations unchanged. A project already on 006 applies **only `supabase/migrations/007_concurrent_runs.sql`**, once. A project on 005 applies 006 then 007. Earlier projects first apply only their missing historical migrations, in order. Never reset the database or replay installed migrations.
+3. Run `supabase/preservation_snapshot.sql` before and after the upgrade during a maintenance window; compare every historical count/fingerprint/SQK/lifetime sum. Enable Ethereum Web3 Auth and allow the actual HTTPS origin/URI in Auth redirect URLs. Expose `public`, never `hf_private`, through the Data API.
+4. Run `supabase/verify_major.sql`, rebuild the export and verify actual signed login, score save, refresh, two devices with an interrupted upload, Top 100 and unauthorized access against that **same** hosted database. The frontend expects schema 7 and rules 6 before requesting a signature.
 
 No production database was inspected, migrated or reset here. No live signature, real-device wallet or hosted Supabase result is claimed. The browser remains the authority for positions/collisions; server event validation is not a fully authoritative multiplayer anti-cheat engine.
 
@@ -65,7 +69,7 @@ The final production build, existing check script and actual JavaScript typechec
 To reproduce the additional checks without changing the root dependency/build files:
 
 ```sh
-npm install --prefix test/scratch --no-audit --no-fund --ignore-scripts @electric-sql/pglite typescript playwright @axe-core/playwright
+npm install --prefix test/scratch --cache test/scratch/npm-cache --no-audit --no-fund --package-lock=false @electric-sql/pglite@0.3.14 typescript@7.0.2 playwright@1.56.1 @axe-core/playwright@4.11.0
 PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node test/scratch/node_modules/playwright/cli.js install chromium webkit
 node scripts/typecheck-major.mjs
 node scripts/test-major.mjs
@@ -73,8 +77,10 @@ node scripts/test-major-audio.mjs
 node supabase/tests/major.mjs
 node supabase/tests/major-client.mjs
 node supabase/tests/major-engine.mjs
+node supabase/tests/concurrent-runs.mjs
 PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-major.mjs
 PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-major-cloud.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-revision.mjs
 ```
 
 Historical migration regressions also ran with `node supabase/tests/verified-wallet.mjs` and `node supabase/tests/lifetime.mjs`; they intentionally test schemas up to 005. Older v1–v3 gameplay scripts describe superseded rules and are retained as history, not presented as current passing checks. Test dependencies and browser downloads stay in disposable `test/scratch/`; they are not part of the site/submission. The pinned taste probe passed 16/16 after the final layout fix. See [VALIDATION.md](VALIDATION.md), [machine-readable results](docs/validation/major-results.json), [DESIGN.md](DESIGN.md) and [the pre-edit plan](WORKPLAN.md) for coverage, findings and limitations.

@@ -1,0 +1,2031 @@
+{
+  "date": "2026-11-05",
+  "scope": "Three reported revision findings; original engine, backend structure, economy, artwork and hosting retained.",
+  "production": {
+    "connected": false,
+    "migrated": false,
+    "reason": "Original Supabase URL/public key and authorized migration/Auth access are not supplied; existing public configuration is empty. No replacement backend or guessed values."
+  },
+  "baselineReproduction": {
+    "concurrent": {
+      "pendingEvents": 1,
+      "runConflict": true,
+      "recoveryEvents": 1,
+      "serverScore": 0
+    },
+    "pickup": {
+      "visible": true,
+      "weapons": [
+        "shell"
+      ],
+      "taken": false
+    },
+    "focus": {
+      "before": {
+        "focus": "slot-1",
+        "weapon": "gun",
+        "y": 146,
+        "attacks": 0
+      },
+      "after": {
+        "focus": "slot-1",
+        "weapon": "gun",
+        "y": 146,
+        "attacks": 0
+      }
+    }
+  },
+  "verification": {
+    "productionBuild": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "fileCount": 18,
+      "bytes": 261421
+    },
+    "exportCheck": {
+      "command": "npm run check",
+      "exitCode": 0,
+      "elementIds": 69
+    },
+    "typecheckAlias": {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "note": "Existing syntax/export checker"
+    },
+    "actualTypecheck": {
+      "command": "node scripts/typecheck-major.mjs",
+      "exitCode": 0,
+      "typescript": "7.0.2",
+      "scripts": 8
+    }
+  },
+  "tools": {
+    "pglite": "0.3.14",
+    "playwright": "1.56.1",
+    "chromium": "141.0.7390.37",
+    "axe": "4.11.0"
+  },
+  "suites": [
+    {
+      "command": "node scripts/test-major.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "all four map durations, bosses and increasing HP are shared deterministic rules",
+          "passed": true
+        },
+        {
+          "name": "all maps instantiate 30 matching enemies, correct bosses and exact appearance thresholds",
+          "passed": true
+        },
+        {
+          "name": "forest enemies remain airborne, with visible windup and swoop states instead of burrowing",
+          "passed": true
+        },
+        {
+          "name": "glacier, caldera and reef enemies fire only matching ice, fire and water attacks",
+          "passed": true
+        },
+        {
+          "name": "elemental bosses have different timed volley, breath, slide and rush patterns",
+          "passed": true
+        },
+        {
+          "name": "boss defeat advances maps automatically while ordinary enemies remain alive",
+          "passed": true
+        },
+        {
+          "name": "victory cannot be cancelled by a lingering attack or a fall during the defeat animation",
+          "passed": true
+        },
+        {
+          "name": "page exit during a boss celebration records completion once before the next visit",
+          "passed": true
+        },
+        {
+          "name": "fruit and vegetables auto-collect on desktop, once, without any key",
+          "passed": true
+        },
+        {
+          "name": "weapons stay on the ground until E, on desktop and touch; only nearest weapon is claimed",
+          "passed": true
+        },
+        {
+          "name": "every offered weapon in the outer pickup range can be collected by one explicit action",
+          "passed": true
+        },
+        {
+          "name": "one action takes the nearest eligible weapon even if a farther drop is processed first",
+          "passed": true
+        },
+        {
+          "name": "growth triggers at every 20-point boundary and leaves collision dimensions/footing stable",
+          "passed": true
+        },
+        {
+          "name": "SQK world size is exactly 70% of the prior dimensions, and defeat remains idempotent",
+          "passed": true
+        },
+        {
+          "name": "each weapon dispatches its own sound and retains original damage and ammo rules",
+          "passed": true
+        },
+        {
+          "name": "guest scores never become a global board and existing local data stays untouched",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "command": "node scripts/test-major-audio.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "existing device volume and mute settings survive the upgrade",
+          "passed": true
+        },
+        {
+          "name": "each weapon builds a distinct oscillator/sweep/envelope signature",
+          "passed": true
+        },
+        {
+          "name": "the master compressor, conservative gain, per-effect rate limit and 24-voice ceiling bound overlap",
+          "passed": true
+        },
+        {
+          "name": "SFX mute suppresses every weapon, and changing settings writes the original storage key",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Graph/envelope checks use a Web Audio fixture. Speaker loudness and subjective listening have not been measured."
+      ]
+    },
+    {
+      "command": "node supabase/tests/major.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "006 and 007 preserve every profile, wallet, balance, inventory and historical score fingerprint",
+          "passed": true
+        },
+        {
+          "name": "pre-upgrade pending events still settle once through the original v4 protocol",
+          "passed": true
+        },
+        {
+          "name": "same verified wallet and concurrent profile opens return one original profile",
+          "passed": true
+        },
+        {
+          "name": "unverified users, forged metadata and anonymous clients cannot create ranked profiles",
+          "passed": true
+        },
+        {
+          "name": "acknowledged produce points checkpoint immediately and replay cannot double-credit",
+          "passed": true
+        },
+        {
+          "name": "second-device start leaves the first run active; its own death settles points only once",
+          "passed": true
+        },
+        {
+          "name": "all four SQL maps match their duration, enemy families, HP and boss-only progression",
+          "passed": true
+        },
+        {
+          "name": "RLS and grants deny direct writes; event validators reject arbitrary totals, repeats and foreign runs",
+          "passed": true
+        },
+        {
+          "name": "Top 100 is global, capped and ordered by permanent SQL totals without wallet disclosure",
+          "passed": true
+        },
+        {
+          "name": "legacy ticket migration retains a verified server balance; existing wallet always wins",
+          "passed": true
+        },
+        {
+          "name": "the delivered read-only owner verification SQL passes every permission and checkpoint assertion",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Auth identity fixtures; no hosted Supabase/signature validation.",
+        "Single PostgreSQL connection; independent-connection lock contention not exercised."
+      ]
+    },
+    {
+      "command": "node supabase/tests/major-client.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "client restores authoritative wallet profile and starts version-6 ranked play",
+          "passed": true
+        },
+        {
+          "name": "lost network acknowledgement replays safely and lifetime score is saved during play",
+          "passed": true
+        },
+        {
+          "name": "offline events survive refresh in per-run durable storage and sync without totals from the browser",
+          "passed": true
+        },
+        {
+          "name": "malformed acknowledgement retains events and retry cannot increase an already committed score",
+          "passed": true
+        },
+        {
+          "name": "switching wallets isolates pending queues, profiles and later acknowledgements",
+          "passed": true
+        },
+        {
+          "name": "two tabs retain separate queues, and ended-map recovery keeps rejected events downloadable",
+          "passed": true
+        },
+        {
+          "name": "a stale tab acknowledgement cannot erase a newer durable event from another tab",
+          "passed": true
+        },
+        {
+          "name": "signed login binds host, URI, nonce and expiry, uses personal_sign only, and does not import local totals",
+          "passed": true
+        },
+        {
+          "name": "an incompatible backend fails before asking for a signature, and a declined signature leaves the guest intact",
+          "passed": true
+        },
+        {
+          "name": "secret API keys and service-role JWTs fail closed before a network or signing call",
+          "passed": true
+        },
+        {
+          "name": "the leaderboard client reads only the Supabase public RPC, never local scores",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Auth/token and transport fixtures; signatures are not cryptographically verified by this harness."
+      ]
+    },
+    {
+      "command": "node supabase/tests/major-engine.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "all four maps play through legal engine combat, pickups and automatic SQL-backed progression",
+          "passed": true
+        },
+        {
+          "name": "score, SQK, produce growth, progression and purchased cosmetics survive refresh and reconnect",
+          "passed": true
+        },
+        {
+          "name": "no test path submits a score total, and every accepted score comes through hf_progress",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Position/time/Auth/HTTP fixtures. Actual damage, server validation, loot, scoring and save client execute unchanged."
+      ]
+    },
+    {
+      "command": "node supabase/tests/concurrent-runs.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "007 preserves populated records, pending legacy run, validator and RLS/grants",
+          "passed": true
+        },
+        {
+          "name": "another device starting and saving cannot abandon an offline run or strand its actual fruit event",
+          "passed": true
+        },
+        {
+          "name": "independent run retries and lost replies credit each source once into the shared lifetime ledger",
+          "passed": true
+        },
+        {
+          "name": "another run finishing leaves a refreshed offline queue uploadable and both totals permanent",
+          "passed": true
+        },
+        {
+          "name": "legacy starts preserve new devices while retaining legacy settlement and its single-active-run constraint",
+          "passed": true
+        },
+        {
+          "name": "interleaved runs retain ownership, timing, ordered sequence, score and terminal checks",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Auth, HTTP, position and time fixtures; actual engine/save/SQL functions.",
+        "Single PostgreSQL connection: interleaving tested, independent connection lock contention not exercised."
+      ]
+    },
+    {
+      "command": "node scripts/validate-major.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "production export loads at a subpath with complete metadata and no console/resource errors",
+          "passed": true
+        },
+        {
+          "name": "keyboard Tab reaches the game and Connect, and closing the wallet returns focus",
+          "passed": true
+        },
+        {
+          "name": "entry and profile pass automated WCAG A/AA checks",
+          "passed": true
+        },
+        {
+          "name": "desktop start, story, keyboard movement, jump, pause and resume work on the unmodified export",
+          "passed": true
+        },
+        {
+          "name": "profile validation, wardrobe, audio settings and real unavailable-leaderboard state are usable",
+          "passed": true
+        },
+        {
+          "name": "390-wide first screen includes game, Start and Connect with no horizontal overflow",
+          "passed": true
+        },
+        {
+          "name": "phone start, rotate fallback, portrait opt-in and landscape resize preserve the run",
+          "passed": true
+        },
+        {
+          "name": "all four worlds render their own scenery and bosses from the actual engine",
+          "passed": true
+        },
+        {
+          "name": "touch weapon pickup requires a visible PICK UP action; walking near it alone does not claim it",
+          "passed": true
+        },
+        {
+          "name": "one action owns one pointer; a second press cannot release the first held action",
+          "passed": true
+        },
+        {
+          "name": "growth is visible at 20 and 40 points with unchanged collision body",
+          "passed": true
+        },
+        {
+          "name": "rendered map progression is automatic and final boss reaches the ending",
+          "passed": true
+        },
+        {
+          "name": "320-wide modal and entry layout stays within viewport",
+          "passed": true
+        },
+        {
+          "name": "390-wide modal and entry layout stays within viewport",
+          "passed": true
+        },
+        {
+          "name": "1440-wide modal and entry layout stays within viewport",
+          "passed": true
+        },
+        {
+          "name": "200% text and an RTL mirror keep the primary controls and dialogs usable",
+          "passed": true
+        },
+        {
+          "name": "no runtime errors occurred during production and instrumented flows",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "WebKit could not launch: missing system libraries (GTK4, GStreamer and related WebKit runtime dependencies). No Safari interaction result is claimed."
+      ],
+      "errors": [],
+      "failures": []
+    },
+    {
+      "command": "node scripts/validate-major-cloud.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "EIP-6963 MetaMask connects, switches network and signs an explicit gas-free login",
+          "passed": true
+        },
+        {
+          "name": "real engine produce events save through HTTP/RPC and the lifetime HUD updates during play",
+          "passed": true
+        },
+        {
+          "name": "leaderboard displays SQL rankings and a transport failure retains them with a working retry",
+          "passed": true
+        },
+        {
+          "name": "marketplace purchase and equip preserve a permanent SQK balance and inventory",
+          "passed": true
+        },
+        {
+          "name": "refresh silently restores the same signed wallet profile, score and cosmetics without a new signature",
+          "passed": true
+        },
+        {
+          "name": "a second device signing the same wallet retrieves one existing profile and permanent records",
+          "passed": true
+        },
+        {
+          "name": "disconnect switches the title and profile back to the guest without exposing wallet records",
+          "passed": true
+        },
+        {
+          "name": "wallet/cloud browser flows produce no JavaScript or unexpected database errors",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "transportErrors": [],
+      "limitations": [
+        "Wallet provider, signatures, Auth and HTTP are fixtures. Database RPCs and rendered game/UI are real. No hosted Supabase or real MetaMask signing is proven."
+      ]
+    },
+    {
+      "command": "node scripts/validate-revision.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "touch PICK UP succeeds at the reported 24-pixel outer range without stepping closer",
+          "passed": true
+        },
+        {
+          "name": "desktop E claims the offered weapon at the same outer range",
+          "passed": true
+        },
+        {
+          "name": "mouse weapon selection returns focus to gameplay and Space jumps while Enter fires",
+          "passed": true
+        },
+        {
+          "name": "deliberate keyboard activation retains slot focus and native Enter/Space toggling",
+          "passed": true
+        },
+        {
+          "name": "touch weapon slot selection returns focus to the canvas",
+          "passed": true
+        },
+        {
+          "name": "two 390-wide devices save both real fruit events after A goes offline and B starts a new run",
+          "passed": true
+        },
+        {
+          "name": "retry, browser refresh and a fresh SQL leaderboard retain exactly both points without duplicates",
+          "passed": true
+        },
+        {
+          "name": "final revision flows have no JavaScript or unexpected local/SQL resource failures",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "failures": [],
+      "limitations": [
+        "WebKit cannot launch: missing GTK4, GStreamer and related host libraries; no Safari result claimed.",
+        "Auth sessions, HTTP and deterministic position/frame access are fixtures; game/save/UI/SQL are real. No hosted Supabase or physical device proof."
+      ]
+    },
+    {
+      "command": "node supabase/tests/verified-wallet.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "004 reproduces the real-identity failure before the upgrade",
+          "passed": true
+        },
+        {
+          "name": "005 upgrades without rewriting identities, profile links, balances, purchases or history",
+          "passed": true
+        },
+        {
+          "name": "uppercase verified claims and a different Auth UUID reopen the same unique profile",
+          "passed": true
+        },
+        {
+          "name": "flat claims, wrong provider/chain, malformed addresses and editable metadata do not authenticate",
+          "passed": true
+        },
+        {
+          "name": "nested claims take precedence over contradictory top-level address fields",
+          "passed": true
+        },
+        {
+          "name": "owned ended-run state returns the exact acknowledgement and settled authoritative profile",
+          "passed": true
+        },
+        {
+          "name": "another wallet and anonymous clients cannot inspect or recover someone else’s run",
+          "passed": true
+        },
+        {
+          "name": "post-upgrade preservation and permission checks run as SQL",
+          "passed": true
+        }
+      ],
+      "limitations": "Fixture Auth rows; no hosted Supabase login."
+    },
+    {
+      "command": "node supabase/tests/lifetime.mjs",
+      "exitCode": 0,
+      "results": [
+        {
+          "name": "004 and 005 apply over populated 003 without changing profile fields, wallet links or historical daily scores",
+          "passed": true
+        },
+        {
+          "name": "an old active run settles only new points beyond its already-credited migration baseline",
+          "passed": true
+        },
+        {
+          "name": "completed session replay cannot credit lifetime points again",
+          "passed": true
+        },
+        {
+          "name": "new score events after a session ended are rejected",
+          "passed": true
+        },
+        {
+          "name": "fresh in-progress map score remains separate from the lifetime total",
+          "passed": true
+        },
+        {
+          "name": "restarting or moving to another device settles an abandoned session exactly once",
+          "passed": true
+        },
+        {
+          "name": "smaller sessions add to the lifetime total instead of replacing a previous best",
+          "passed": true
+        },
+        {
+          "name": "the same verified address under a different Auth UUID resolves the original profile",
+          "passed": true
+        },
+        {
+          "name": "the public board and compatibility reader rank preserved lifetime totals only",
+          "passed": true
+        },
+        {
+          "name": "changing old calendar buckets or the clock cannot hide the lifetime ranking",
+          "passed": true
+        },
+        {
+          "name": "removed daily ranking RPC is no longer callable",
+          "passed": true
+        },
+        {
+          "name": "no replacement for the old daily reset writes remains in the current progress RPC",
+          "passed": true
+        },
+        {
+          "name": "lifetime totals cannot be accidentally reduced even by an ordinary owner SQL update",
+          "passed": true
+        },
+        {
+          "name": "profile deletion cannot cascade away permanent scores",
+          "passed": true
+        },
+        {
+          "name": "browser clients cannot update balances or lifetime totals directly",
+          "passed": true
+        },
+        {
+          "name": "browser clients cannot insert lifetime ledger entries",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_wallet_profile",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_start_run_v4",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_purchase",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_equip",
+          "passed": true
+        },
+        {
+          "name": "another wallet cannot submit events to the original wallet’s run",
+          "passed": true
+        },
+        {
+          "name": "purchase retries deduct SQK once and owned costumes use the same equip/unequip RPC",
+          "passed": true
+        },
+        {
+          "name": "arbitrary browser-supplied lifetime totals are rejected",
+          "passed": true
+        },
+        {
+          "name": "pickup acknowledgements remain idempotent and give SQK without counting it as score",
+          "passed": true
+        },
+        {
+          "name": "a new sequence cannot claim the same SQK drop twice",
+          "passed": true
+        },
+        {
+          "name": "an entire legal map completion credits all points once and keeps progression and balance",
+          "passed": true
+        },
+        {
+          "name": "Top 100 is capped, deterministic on ties and excludes anonymous historical profiles",
+          "passed": true
+        }
+      ],
+      "limitations": "Fixture Auth; no hosted Supabase project or real signatures."
+    }
+  ],
+  "namedChecksPassed": 119,
+  "taste": {
+    "checks": [
+      {
+        "name": "render",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 8649,
+        "output": "renders, no script errors or missing local files"
+      },
+      {
+        "name": "layout",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no horizontal scroll at 320, 390 or 1440\nno text box overlaps another\nno floating control covers text\nno text cut off by overflow: hidden"
+      },
+      {
+        "name": "targets",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "all 5 controls at least 24px or spaced at 390\n0 under the 44px comfortable size"
+      },
+      {
+        "name": "contrast",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "all measured text meets 4.5:1 (3:1 large)\n23 text boxes over images, video, canvas or gradients not measured"
+      },
+      {
+        "name": "casing",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no all-caps text in content"
+      },
+      {
+        "name": "tracking",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "letter-spacing natural in content (display type may run tight)"
+      },
+      {
+        "name": "eyebrows",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no kicker labels above headings"
+      },
+      {
+        "name": "type-sizes",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "390: 2 sizes in use, 3 with one-offs (14px×15, 16px×3, 20px×1)\n1440: 2 sizes in use, 4 with one-offs (14px×16, 16px×2, 20px×1, 28px×1)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
+      },
+      {
+        "name": "type-faces",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "families (2): georgia, system-ui\nweights (2): 400, 700"
+      },
+      {
+        "name": "glyphs",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no em dashes or emoji in text"
+      },
+      {
+        "name": "slogans",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "1 two-beat lines; a stack is four or more, so keep the best and cut the rest:\n\"Guest play · not saved. Cloud setup is pending.\" (#entry-save)"
+      },
+      {
+        "name": "repetition",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "no repeated lines"
+      },
+      {
+        "name": "copy-budget",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "prose on the first screen: 14 words at 390 (bar 60), 14 at 1440 (bar 90)\nall words on the first screen: 42 at 390, 43 at 1440\nwhole page: 43 words, 14 of them prose"
+      },
+      {
+        "name": "chrome",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "border and shadow together: 0\ncards inside cards: 0\ngradient text: 0"
+      },
+      {
+        "name": "motion",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "transition: all on 0 elements\nendless animations: 0; still running with reduced motion: 0"
+      },
+      {
+        "name": "share",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "title \"Squeek · The Lost Alice\", favicon, og:title, og:image, description"
+      }
+    ],
+    "target": "dist",
+    "at": "2026-11-05T11:45:07.221Z",
+    "bar": {
+      "sizes": 6,
+      "strays": 8,
+      "faces": 3,
+      "weights": 3,
+      "target": 24,
+      "comfortable": 44,
+      "proseMobile": 60,
+      "proseDesktop": 90,
+      "tracking": 0.04,
+      "repeatWords": 5,
+      "contrast": 4.5,
+      "contrastLarge": 3,
+      "slogans": 3
+    },
+    "views": {
+      "390": {
+        "vw": 390,
+        "vh": 844,
+        "art": 0,
+        "scrollWidth": 390,
+        "height": 844,
+        "texts": 19,
+        "offenders": [],
+        "overlaps": [],
+        "floating": [],
+        "clipped": [],
+        "ellipsized": [],
+        "targets": [
+          {
+            "sel": "#btn-wallet",
+            "w": 170,
+            "h": 44,
+            "cx": 96.890625,
+            "cy": 73.59375,
+            "label": "Connect MetaMask"
+          },
+          {
+            "sel": "#btn-change",
+            "w": 96,
+            "h": 44,
+            "cx": 235.5546875,
+            "cy": 73.59375,
+            "label": "Change it"
+          },
+          {
+            "sel": "#btn-menu",
+            "w": 81,
+            "h": 44,
+            "cx": 329.7265625,
+            "cy": 73.59375,
+            "label": "☰ Menu"
+          },
+          {
+            "sel": "#btn-start",
+            "w": 180,
+            "h": 44,
+            "cx": 195,
+            "cy": 503,
+            "label": "Start adventure"
+          },
+          {
+            "sel": "#btn-start-guild",
+            "w": 144,
+            "h": 44,
+            "cx": 194.9921875,
+            "cy": 555,
+            "label": "Open GUILD"
+          }
+        ],
+        "borderShadow": [],
+        "nested": [],
+        "gradientText": [],
+        "transitionAll": [],
+        "infinite": [],
+        "marquees": [],
+        "slogans": [
+          {
+            "sel": "#entry-save",
+            "text": "Guest play · not saved. Cloud setup is pending."
+          }
+        ],
+        "head": {
+          "title": "Squeek · The Lost Alice",
+          "icon": true,
+          "ogTitle": "squeek.hamster",
+          "ogImage": "./og-image.png",
+          "description": "A pixel-art adventure across forest, glacier, volcano and reef. Collect produce, grow Chang and defeat four bosses to find Alice."
+        }
+      },
+      "1440": {
+        "vw": 1440,
+        "vh": 900,
+        "art": 0,
+        "scrollWidth": 1440,
+        "height": 900,
+        "texts": 20,
+        "offenders": [],
+        "overlaps": [],
+        "floating": [],
+        "clipped": [],
+        "ellipsized": [],
+        "targets": [
+          {
+            "sel": "#btn-wallet",
+            "w": 174,
+            "h": 44,
+            "cx": 1009.828125,
+            "cy": 28,
+            "label": "Connect MetaMask"
+          },
+          {
+            "sel": "#btn-change",
+            "w": 100,
+            "h": 44,
+            "cx": 1154.4921875,
+            "cy": 28,
+            "label": "Change it"
+          },
+          {
+            "sel": "#btn-fullscreen",
+            "w": 123,
+            "h": 44,
+            "cx": 1273.734375,
+            "cy": 28,
+            "label": "⛶ Fullscreen"
+          },
+          {
+            "sel": "#btn-menu",
+            "w": 85,
+            "h": 44,
+            "cx": 1385.6015625,
+            "cy": 28,
+            "label": "☰ Menu"
+          },
+          {
+            "sel": "#btn-start",
+            "w": 180,
+            "h": 44,
+            "cx": 643.78125,
+            "cy": 525.890625,
+            "label": "Start adventure"
+          },
+          {
+            "sel": "#btn-start-guild",
+            "w": 144,
+            "h": 44,
+            "cx": 813.8828125,
+            "cy": 525.890625,
+            "label": "Open GUILD"
+          }
+        ],
+        "borderShadow": [],
+        "nested": [],
+        "gradientText": [],
+        "transitionAll": [],
+        "infinite": [],
+        "marquees": [],
+        "slogans": [
+          {
+            "sel": "#entry-save",
+            "text": "Guest play · not saved. Cloud setup is pending."
+          }
+        ],
+        "head": {
+          "title": "Squeek · The Lost Alice",
+          "icon": true,
+          "ogTitle": "squeek.hamster",
+          "ogImage": "./og-image.png",
+          "description": "A pixel-art adventure across forest, glacier, volcano and reef. Collect produce, grow Chang and defeat four bosses to find Alice."
+        }
+      }
+    },
+    "texts390": [
+      {
+        "sel": "#stage > div.game-chrome:nth-of-type(1) > header.site-header > h1",
+        "text": "squeek.hamster",
+        "words": 1,
+        "tag": "h1",
+        "size": 16,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 16.87,
+        "large": false,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 12,
+        "y": 6,
+        "w": 107.109375,
+        "h": 37.59375,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-wallet",
+        "text": "Connect MetaMask",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 12,
+        "y": 51.59375,
+        "w": 169.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-change",
+        "text": "Change it",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 187.78125,
+        "y": 51.59375,
+        "w": 95.546875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-menu",
+        "text": "☰ Menu",
+        "words": 1,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 289.328125,
+        "y": 51.59375,
+        "w": 80.796875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(1) > span:nth-of-type(1)",
+        "text": "SQK",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 113.59375,
+        "w": 29.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-sqk",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 57.09375,
+        "y": 113.59375,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(2) > span",
+        "text": "Map",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 84.84375,
+        "y": 113.59375,
+        "w": 29.546875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-map",
+        "text": "1",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 120.390625,
+        "y": 113.59375,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(3) > span",
+        "text": "Defeated",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 142.140625,
+        "y": 113.59375,
+        "w": 64.515625,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-enemies",
+        "text": "0/30",
+        "words": 2,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 212.65625,
+        "y": 113.59375,
+        "w": 34.34375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.75
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(4) > span",
+        "text": "Current Map Score",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 138.59375,
+        "w": 130.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-score",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 158.25,
+        "y": 138.59375,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud-environment",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "span",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 175.59375,
+        "w": 115.171875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-countdown",
+        "text": "Cockroach in 60s",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 153.171875,
+        "y": 175.59375,
+        "w": 120.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.125
+      },
+      {
+        "sel": "#start-title",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "h2",
+        "size": 20,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": true,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 129.34375,
+        "y": 414,
+        "w": 131.3125,
+        "h": 22,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#screen-start > p.overlay-text:nth-of-type(1)",
+        "text": "A pixel-art adventure to find Alice.",
+        "words": 6,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 74.875,
+        "y": 448,
+        "w": 240.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start",
+        "text": "Start adventure",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 105.109375,
+        "y": 481,
+        "w": 179.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start-guild",
+        "text": "Open GUILD",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 122.78125,
+        "y": 533,
+        "w": 144.421875,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#entry-save",
+        "text": "Guest play · not saved. Cloud setup is pending.",
+        "words": 8,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 12.71,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 43.578125,
+        "y": 589,
+        "w": 302.84375,
+        "h": 42,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      }
+    ],
+    "texts1440": [
+      {
+        "sel": "#stage > div.game-chrome:nth-of-type(1) > header.site-header > h1",
+        "text": "squeek.hamster",
+        "words": 1,
+        "tag": "h1",
+        "size": 20,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": true,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 12,
+        "y": 17,
+        "w": 133.890625,
+        "h": 22,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-wallet",
+        "text": "Connect MetaMask",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 922.9375,
+        "y": 6,
+        "w": 173.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-change",
+        "text": "Change it",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 1104.71875,
+        "y": 6,
+        "w": 99.546875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-fullscreen > span.tool-label",
+        "text": "Fullscreen",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 1242.265625,
+        "y": 19.59375,
+        "w": 80.9375,
+        "h": 16.796875,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-menu",
+        "text": "☰ Menu",
+        "words": 1,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 1343.203125,
+        "y": 6,
+        "w": 84.796875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(1) > span:nth-of-type(1)",
+        "text": "SQK",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 68,
+        "w": 29.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-sqk",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 57.09375,
+        "y": 68,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(2) > span",
+        "text": "Map",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 88.84375,
+        "y": 68,
+        "w": 29.546875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-map",
+        "text": "1",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 124.390625,
+        "y": 68,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(3) > span",
+        "text": "Defeated",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 150.140625,
+        "y": 68,
+        "w": 64.515625,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-enemies",
+        "text": "0/30",
+        "words": 2,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 220.65625,
+        "y": 68,
+        "w": 34.34375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.75
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(4) > span",
+        "text": "Current Map Score",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 271,
+        "y": 68,
+        "w": 130.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-score",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 407.25,
+        "y": 68,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud-environment",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "span",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 105,
+        "w": 115.171875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-countdown",
+        "text": "Cockroach in 60s",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 153.171875,
+        "y": 105,
+        "w": 120.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.125
+      },
+      {
+        "sel": "#start-title",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "h2",
+        "size": 28,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": true,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 628.078125,
+        "y": 428.09375,
+        "w": 183.84375,
+        "h": 30.796875,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#screen-start > p.overlay-text:nth-of-type(1)",
+        "text": "A pixel-art adventure to find Alice.",
+        "words": 6,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 599.875,
+        "y": 470.890625,
+        "w": 240.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start",
+        "text": "Start adventure",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 553.890625,
+        "y": 503.890625,
+        "w": 179.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start-guild",
+        "text": "Open GUILD",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 741.671875,
+        "y": 503.890625,
+        "w": 144.421875,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#entry-save",
+        "text": "Guest play · not saved. Cloud setup is pending.",
+        "words": 8,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 568.578125,
+        "y": 559.890625,
+        "w": 302.84375,
+        "h": 42,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      }
+    ],
+    "external": [],
+    "errors": []
+  },
+  "design": {
+    "domains": [
+      "accessibility",
+      "layout",
+      "writing",
+      "typography",
+      "colors",
+      "UI"
+    ],
+    "firstScreen390": "Viewed: game, Start and Connect visible; unsaved guest status explicit.",
+    "evidence": [
+      "docs/validation/screenshots/revision-phone-entry.png",
+      "docs/validation/screenshots/revision-weapon-range.png",
+      "docs/validation/screenshots/revision-keyboard-slot.png",
+      "docs/validation/screenshots/revision-two-device-save.png"
+    ],
+    "limits": [
+      "23 text boxes over art/alpha backgrounds not measured for numeric contrast.",
+      "No manual screen-reader session, physical mobile device, native browser 200% zoom or translated locale audit.",
+      "Assigned browser MCP initialization failed: socket directory path too long. Playwright Chromium fallback ran.",
+      "WebKit cannot launch due missing GTK4/GStreamer and related host libraries.",
+      "No hosted Supabase, real signature, production RLS/migration or independent-connection SQL lock contention verification."
+    ]
+  },
+  "database": {
+    "migration": "supabase/migrations/007_concurrent_runs.sql",
+    "schemaVersion": 7,
+    "rulesVersion": 6,
+    "installedMigrationsUnchanged": true,
+    "historicalRowsRewritten": false,
+    "progressValidatorUnchanged": true
+  },
+  "deliveryAudit": {
+    "budgetBytes": 8388608,
+    "changedFiles": [
+      ".imd-responses.json",
+      "DESIGN.md",
+      "README.md",
+      "VALIDATION.md",
+      "WORKPLAN.md",
+      "dist/config.js",
+      "dist/game.js",
+      "dist/save.js",
+      "docs/validation/revision-results.json",
+      "docs/validation/screenshots/revision-keyboard-slot.png",
+      "docs/validation/screenshots/revision-phone-entry.png",
+      "docs/validation/screenshots/revision-two-device-save.png",
+      "docs/validation/screenshots/revision-weapon-range.png",
+      "scripts/test-major.mjs",
+      "scripts/validate-revision.mjs",
+      "src/config.js",
+      "src/game.js",
+      "src/save.js",
+      "supabase/README.md",
+      "supabase/migrations/007_concurrent_runs.sql",
+      "supabase/tests/concurrent-runs.mjs",
+      "supabase/tests/major-client.mjs",
+      "supabase/tests/major-harness.mjs",
+      "supabase/tests/major.mjs",
+      "supabase/verify_major.sql"
+    ],
+    "protectedPathsUnchanged": true,
+    "ignoreFilesUnchanged": true,
+    "installedMigrationsUnchanged": true,
+    "noSubmodule": true,
+    "noDependencyCacheOrArchiveInSubmission": true,
+    "sourceExportMatch": true,
+    "noTestHooksOrFixtureConfigInRuntime": true,
+    "reviewResponsePresent": true,
+    "scratchExcluded": true,
+    "conservativeChangedFileBytes": 824313
+  }
+}

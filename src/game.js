@@ -637,7 +637,12 @@
     player.weapon = player.weapon === kind ? 'shell' : kind; updateHud();
   }
   document.querySelectorAll('[data-slot]').forEach(function (button) {
-    button.addEventListener('click', function () { selectWeapon(button.getAttribute('data-slot')); });
+    button.addEventListener('click', function (e) {
+      selectWeapon(button.getAttribute('data-slot'));
+      // Pointer selection returns play keys to the canvas. Keyboard activation
+      // keeps focus on the slot so Enter/Space and Tab remain native controls.
+      if ((/** @type {MouseEvent} */ (e)).detail > 0) focusStage();
+    });
   });
   byId('pickup-weapon').addEventListener('click', function () { if (game.state === 'playing') pressed.interact = true; });
   byId('context-interact').addEventListener('click', function () { if (game.state === 'playing') { var o = nearestThing(); if (o) interact(o); } });
@@ -1317,7 +1322,7 @@
       }
       var box = { x: k.x - 2, y: k.y - 2, w: k.w + 4, h: k.h + 4 };
       var nearby = overlap(player, { x: box.x - 8, y: box.y - 5, w: box.w + 16, h: box.h + 10 });
-      if (nearby && (k.kind !== 'weapon' || (k === weaponTarget && pressed.interact))) {
+      if (k.kind === 'weapon' ? k === weaponTarget && pressed.interact : nearby) {
         k.taken = true; // Claim before any side effect; an input frame cannot re-collect.
         if (k.kind === 'produce') { audio.sfx('item'); addChestnuts(1, k.forage); }
         else {

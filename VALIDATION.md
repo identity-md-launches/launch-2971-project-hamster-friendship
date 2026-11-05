@@ -1,5 +1,62 @@
 # Squeek major update · local validation
 
+## Revision validation
+
+Rechecked 2026-11-05 against the accepted tree and then the corrected `dist/` export. **All three reported defects reproduced and are fixed locally.** Hosted Supabase remains unconfigured/unverified: neither its original public URL/key nor migration/Auth access is supplied. No production database, domain, token, wallet provider implementation or installed migration was changed. This is complete for the three code findings; production activation still requires the original project's owner.
+
+### Reproduction, correction and recheck
+
+| Finding | Accepted-baseline reproduction | Correction and verified outcome |
+| --- | --- | --- |
+| `9faa5c15…` queued score lost when another device starts | Actual engine/save and migrations 001–006: `trail-0`, frame 90, sequence 1 stayed pending; another start abandoned the run; retry produced conflict; recovery kept 1 event locally and SQL total stayed 0. | `supabase/migrations/007_concurrent_runs.sql:8` permits independent v6 active runs; v6 starts end no run; legacy starts protect v6 runs. Shared-profile locks, `hf_progress` and its ownership/time/sequence/score checks remain unchanged. SQL tests compare validator definitions byte for byte. Two actual 390×844 Chromium contexts with isolated storage earn one fruit each: retry credits SQL lifetime/produce totals of 2, zero pending/recovery events, no conflict, one wallet profile. Replay and reload keep exactly 2. |
+| `fe77bac5…` offered PICK UP does nothing | Chromium 844×390 touch: player `(96,146)`, weapon `(120,146)`, horizontal centers 24 apart; button visible/enabled; press left weapons `['shell']` and drop untaken. | `src/game.js:1325` uses `nearbyWeapon()` for manual weapon eligibility without the narrower produce overlap. Tap and PC E both collect the offered gun without another step. Outer/boundary and nearest-of-two tests pass; automatic produce/coin range is unchanged. |
+| `1260c357…` slot click captures jump/attack keys | Chromium 1440×900: mouse-selected `slot-1` remained focused; Space/Enter toggled the slot, y stayed 146 and attacks stayed 0. | `src/game.js:640` returns pointer activation to `focusStage()`. Browser recheck: canvas focused, Space moves the character upward, Enter creates one gun shot and ammo becomes 99. Keyboard Enter/Space keeps slot focus and toggles without firing; Tab moves away. Touch slot focus also passes. |
+
+Migration 007 changes functions/index metadata only. Populated preservation snapshots and complete pre-existing run records match before/after. No historical row is reset or reopened. It narrows the unique active-run index to legacy rules and retains legacy settlement while preventing legacy starts from abandoning v6 queues. New ranked login requires schema **7**, rules **6**, so an unpatched 006 backend fails before requesting a signature. Old terminal conflicts remain explicitly recoverable; they are not automatically credited. Apply only missing migrations in the original project, as documented in `supabase/README.md`.
+
+### Commands and actual final results
+
+| Command | Result |
+| --- | --- |
+| `npm run build` / `npm run check` / `npm run typecheck` | Passed; 18 runtime files, 261,421 bytes; relative assets/metadata, syntax, 69 element IDs and byte-for-byte source/export checks pass. The existing `typecheck` alias is a syntax/export check. |
+| `node scripts/typecheck-major.mjs` | Passed using TypeScript **7.0.2** on all eight runtime JavaScript files and shared declarations with the existing `allowJs/checkJs/noEmit` mode. |
+| `node scripts/test-major.mjs` | 16 named checks passed, including two added pickup eligibility/nearest-item regressions. |
+| `node scripts/test-major-audio.mjs` | 4 passed. |
+| `node supabase/tests/major.mjs` | 11 passed against migrations 001–007, including populated upgrades, retained old queues, identity, RLS/grants, validator and Top 100. |
+| `node supabase/tests/major-client.mjs` | 11 passed, including old terminal recovery and rejection of the unpatched schema before signing. |
+| `node supabase/tests/major-engine.mjs` | 3 passed; actual engine/save/SQL across all four maps and permanent progress. |
+| `node supabase/tests/concurrent-runs.mjs` | 6 added checks passed: populated 006→007 preservation, independent devices, lost replies/replay, another run finishing plus refresh, legacy compatibility, and validation/ledger/leaderboard integrity. |
+| `node scripts/validate-major.mjs` | 17 Chromium checks passed, including source export at `/squeek/`, primary play/menu/wallet controls, axe entry/profile checks, 320/390/1440 reflow, 844×390 touch and 200% root text/RTL. No observed JS/local resource errors. |
+| `node scripts/validate-major-cloud.mjs` | 8 passed with actual SQL and fixture wallet/Auth/HTTP. Existing signed-login integration, board refresh/error/retry, purchases, reconnect and second device retained. |
+| `node scripts/validate-revision.mjs` | 8 added Chromium checks passed for manual pickup, pointer/keyboard focus, two devices' offline queue, retry, reload, SQL leaderboard and resource errors. Intentional offline progress requests are aborted by the fixture. |
+| `node supabase/tests/verified-wallet.mjs` / `node supabase/tests/lifetime.mjs` | 8 / 27 historical schema checks passed. Their old single-run semantics are tested only through migration 005. |
+| Pinned `taste.mjs --out test/scratch/taste` | **16/16 passed** at 320/390/1440 and reduced motion. Module/browser paths point to scratch tools. |
+
+**119 named checks passed**, plus taste, build/export checks and the actual JavaScript typecheck. Browser commands use `PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers"`; the probe also uses `IMD_PLAYWRIGHT="$PWD/test/scratch/node_modules/playwright/index.mjs"`. Exact dependency/tool setup and commands are in README. The regression harness uses PGlite 0.3.14, Playwright 1.56.1 with Chromium 141.0.7390.37, and axe 4.11.0; no tool is a shipped runtime dependency. Machine-readable revision results are in `docs/validation/revision-results.json`; the older `major-results.json` records the earlier implementation, not this revision.
+
+### Better Interface coverage for this revision
+
+| Domain | Checked scope and outcome | Limitations |
+| --- | --- | --- |
+| Accessibility | Native pickup/slot buttons retain names, states and keyboard behavior. Actual pointer→canvas and keyboard→slot focus paths checked. Screenshot confirms visible slot focus; existing entry/profile axe checks pass. | No manual screen reader, physical touch device or complete nonvisual game audit. |
+| Layout | Source layout/tokens retained. Rendered first screen at 390 includes product, Start and Connect; taste finds no overflow/overlap at 320/390/1440. Touch landscape controls/pickup remain distinct. Existing enlarged-text/RTL check passes. | No native browser 200% zoom or translated-locale audit; root text enlargement is documented separately. |
+| Writing | PICK UP and E offer exactly the action they perform. Cloud/pending/error/recovery copy remains explicit. Schema-migration error now names required 007. | No added copy or interface redesign outside these findings. |
+| Typography | Existing type scale/families unchanged; probe reports two repeated sizes at each width and two families/weights. Profile and pickup text inspected in screenshots. | Platform font fallback differences untested. |
+| Colors | Existing tokens/selected/focus cues unchanged. Probe passes resolved solid-background contrast pairs. | **23** text boxes over canvas/images/alpha backgrounds excluded from numerical contrast measurement; no ratios invented. |
+| UI | Prompt/collection eligibility is shared; selected slot state and pointer/keyboard feedback tested; menus/cloud retries work. Existing DOM reduced-motion probe passes. | No 10%-speed Animations-panel inspection, human difficulty/audio assessment or native Safari run. |
+
+Viewed the final 390 entry, touch pickup, keyboard slot and two-device profile screenshots. Evidence is under `docs/validation/screenshots/revision-*`. Gameplay screenshots inject deterministic state/position/time access; artwork and rendering come from the actual engine. Cloud evidence uses a disposable SQL database and fixture Auth/transport, never live player data. No hooks or fixtures are present in `dist/`.
+
+The assigned browser MCP could not initialize: “Socket directory path is too long (127 bytes); set PWTEST_SOCKETS_DIR to a shorter location.” Local Playwright Chromium was the working fallback. WebKit downloaded but could not launch because GTK4, GStreamer and related system libraries are missing. No Safari, hosted signature verification, hosted migration/RLS or independent-connection database contention result is claimed. Existing production configuration limitations remain as documented below.
+
+Revision files: `src/game.js`, `src/save.js`, the migration comment in `src/config.js`, and corresponding three `dist/` files; additive migration 007; existing major SQL/client/harness tests and owner verification SQL; pickup engine tests; new concurrent SQL/engine and revision browser tests; README, WORKPLAN, DESIGN, this validation record, revision evidence and `.imd-responses.json`. Migrations 001–006, root dependencies/build config, ignore rules and domain settings remain unchanged. The final path/byte audit is recorded in `revision-results.json`.
+
+---
+
+## Earlier accepted implementation record
+
+The following is the previous implementation's retained evidence. Its counts, schema version and environment observations describe that earlier run; the revision results above supersede them where applicable.
+
 Checked 2026-11-05. These are worker-run self-checks, not independent certification or proof of a production deployment. The assignment's verifier checks paths/bytes only.
 
 **The original Supabase project remains unconfigured and unverified.** Both supplied public settings are empty; no original project identifier or database access was provided. The implemented migration/client were tested against real disposable PostgreSQL, with explicit Auth, wallet and HTTP fixtures. No production record, Auth setting, domain or token was changed. The site honestly offers unsaved guest play until its existing owner configuration is set.

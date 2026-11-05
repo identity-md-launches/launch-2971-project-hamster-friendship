@@ -38,6 +38,20 @@ await check('fruit and vegetables auto-collect on desktop, once, without any key
 await check('weapons stay on the ground until E, on desktop and touch; only nearest weapon is claimed',async()=>{
  for(const touch of [false,true]){const a=await fixture({touch}),q=a.t;await q.startGame(1,true);const e=q.enemies[0];q.loot(e.id,'gun');q.hitEnemy(e,e.hp,0);const weapon=q.pickups.find(p=>p.kind==='weapon');weapon.phys=false;q.player.x=weapon.x;q.player.y=weapon.y;q.updatePickups();assert(!q.player.weapons.includes('gun'));q.press('interact');q.updatePickups();q.release();assert(q.player.weapons.includes('gun'));assert.equal(q.player.ammo.gun,100);q.updatePickups();assert.equal(q.player.ammo.gun,100);}
 });
+await check('every offered weapon in the outer pickup range can be collected by one explicit action',async()=>{
+ for(const [dx,dy] of [[24,0],[-24,0],[28,24],[-28,-24],[29,0],[0,25]]){
+  const a=await fixture(),q=a.t;await q.startGame(1,true);const e=q.enemies[0];q.loot(e.id,'gun');q.hitEnemy(e,e.hp,0);
+  const weapon=q.pickups.find(p=>p.kind==='weapon');Object.assign(q.player,{x:96,y:146});Object.assign(weapon,{phys:false,x:96+dx,y:148+dy});
+  const eligible=Math.abs(dx)<29&&Math.abs(dy)<25;assert.equal(Boolean(q.nearbyWeapon()),eligible);
+  q.updatePickups();assert(!q.player.weapons.includes('gun'));q.press('interact');q.updatePickups();q.release();assert.equal(q.player.weapons.includes('gun'),eligible);assert.equal(weapon.taken,eligible);
+ }
+});
+await check('one action takes the nearest eligible weapon even if a farther drop is processed first',async()=>{
+ const a=await fixture(),q=a.t;await q.startGame(1,true);Object.assign(q.player,{x:96,y:146});
+ for(const [i,kind,dx] of [[0,'gun',24],[1,'sword',28]]){const e=q.enemies[i];q.loot(e.id,kind);q.hitEnemy(e,e.hp,0);Object.assign(q.pickups.find(p=>p.target===e.id),{phys:false,x:96+dx,y:146});}
+ q.press('interact');q.updatePickups();q.release();assert(q.player.weapons.includes('gun'));assert(!q.player.weapons.includes('sword'));assert.equal(q.player.ammo.gun,100);
+ q.press('interact');q.updatePickups();q.release();assert(q.player.weapons.includes('sword'));
+});
 await check('growth triggers at every 20-point boundary and leaves collision dimensions/footing stable',async()=>{
  const a=await fixture(),q=a.t;await q.startGame(1,true);const before={w:q.player.w,h:q.player.h,x:q.player.x,y:q.player.y};
  q.addChestnuts(19);assert.equal(a.ctx.__hamster.snapshot().growth.tier,0);q.addChestnuts(1);assert.equal(a.ctx.__hamster.snapshot().growth.tier,1);assert(a.ctx.__hamster.snapshot().growth.scale>1.3);q.addChestnuts(20);assert.equal(a.ctx.__hamster.snapshot().growth.tier,2);assert.deepEqual({w:q.player.w,h:q.player.h,x:q.player.x,y:q.player.y},before);assert(rules.growth(1000000).scale<=2.05);q.render();

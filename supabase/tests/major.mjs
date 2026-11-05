@@ -9,8 +9,9 @@ try {
  await h.admin("insert into hf_private.purchases(user_id,item,paid) values($1,'costume-batman',50)",[a.id]);
  const oldRun=await h.rpc(a,'hf_start_run_v4',{p_map:1});await h.rpc(a,'hf_progress',{p_run:oldRun.id,p_events:[{kind:'forage',source:'chest',seq:1,frame:0}]});
  const snapshot=await readFile('supabase/preservation_snapshot.sql','utf8');await h.admin('select 1');const before=await h.db.exec(snapshot);
- await check('006 preserves every profile, wallet, balance, inventory and historical score fingerprint',async()=>{
+ await check('006 and 007 preserve every profile, wallet, balance, inventory and historical score fingerprint',async()=>{
   await h.db.exec(await readFile('supabase/migrations/006_four_worlds.sql','utf8'));assert.deepEqual(await h.db.exec(snapshot),before);
+  await h.db.exec(await readFile('supabase/migrations/007_concurrent_runs.sql','utf8'));assert.deepEqual(await h.db.exec(snapshot),before);
   const p=await h.rpc(a,'hf_wallet_profile');assert.equal(p.sqk,275);assert.equal(p.total_score,1400);assert.equal(p.highest_map,8);assert.deepEqual(p.purchases,['costume-batman']);assert.equal(p.produce_points,0);
  });
  await check('pre-upgrade pending events still settle once through the original v4 protocol',async()=>{
@@ -33,10 +34,13 @@ try {
   assert.deepEqual((await h.rpc(a,'hf_progress',{p_run:run.id,p_events:events})).profile,p);
   assert.equal((await h.rpc(null,'hf_lifetime_top100')).rows[0].score,1414);
  });
- await check('ending, restart and second-device abandon cannot lose or double-settle checkpointed points',async()=>{
+ await check('second-device start leaves the first run active; its own death settles points only once',async()=>{
   await h.rpc(alias,'hf_start_run_v6',{p_map:2});assert.equal((await h.rpc(a,'hf_wallet_profile')).total_score,1414);
-  const state=await h.rpc(a,'hf_run_state',{p_run:run.id});assert.equal(state.status,'abandoned');assert.equal(state.ack,1);
-  await assert.rejects(()=>h.rpc(a,'hf_progress',{p_run:run.id,p_events:[{kind:'forage',source:'log',seq:2,frame:0}]}),/already ended/);
+  const state=await h.rpc(a,'hf_run_state',{p_run:run.id});assert.equal(state.status,'active');assert.equal(state.ack,1);
+  await h.rpc(a,'hf_progress',{p_run:run.id,p_events:[{kind:'death',seq:2,frame:0}]});
+  await h.rpc(a,'hf_progress',{p_run:run.id,p_events:[{kind:'death',seq:2,frame:0}]});
+  assert.equal((await h.rpc(a,'hf_wallet_profile')).total_score,1414);
+  await assert.rejects(()=>h.rpc(a,'hf_progress',{p_run:run.id,p_events:[{kind:'forage',source:'log',seq:3,frame:0}]}),/already ended/);
  });
  await check('all four SQL maps match their duration, enemy families, HP and boss-only progression',async()=>{
   const families=[['moth','wasp','gnat'],['frost','penguinling'],['drake','cinder'],['reef','ray']];

@@ -5,12 +5,12 @@ import {randomUUID, randomBytes} from 'node:crypto';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 const {PGlite} = await import(pathToFileURL(resolve('test/scratch/node_modules/@electric-sql/pglite/dist/index.js')).href);
-export async function createHarness(last=6) {
+export async function createHarness(last=7) {
  const db=await PGlite.create();
  await db.exec(`create role anon;create role authenticated;create schema auth;grant usage on schema auth to authenticated;
  create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create table auth.identities(user_id uuid,provider text,identity_data jsonb);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
- const files=['001_friendship','002_seasons_dice_badges','003_squeek','004_lifetime_persistence','005_verified_wallet_recovery','006_four_worlds'];
+ const files=['001_friendship','002_seasons_dice_badges','003_squeek','004_lifetime_persistence','005_verified_wallet_recovery','006_four_worlds','007_concurrent_runs'];
  for(const file of files.slice(0,last)) await db.exec(await readFile('supabase/migrations/'+file+'.sql','utf8'));
  let flight=Promise.resolve();
  const exclusive=fn=>{const next=flight.then(fn);flight=next.catch(()=>{});return next;};

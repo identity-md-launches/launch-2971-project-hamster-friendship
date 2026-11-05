@@ -1,5 +1,17 @@
 # Squeek major update: inspection and implementation plan
 
+## Revision inspection and plan · 2026-11-05
+
+This revision evaluates only the three supplied findings. Before changing runtime code, read the project context, existing frontend/save/wallet/audio/viewport flow, database migrations, tests, design guide and current documentation. Supabase public settings remain empty; production verification still needs the original owner configuration. No replacement backend or database reset is appropriate.
+
+Reproduced all three against the accepted baseline: real engine/save/SQL left the offline fruit uncredited after another device started; Chromium showed an enabled PICK UP at center distance 24 that did nothing; a mouse-selected gun slot kept focus and captured Space/Enter. Also identified the original `hf_one_active_map` unique index, which prevents a function-only concurrency fix.
+
+Plan reported before runtime edits: add migration 007 without editing installed migrations; retain shared-profile lock ordering and the unchanged progress validator; preserve independent v6 runs and protect them from older starts; gate the frontend on the patched schema. Reuse the existing nearest-weapon predicate for manual collection. Return pointer-selected slot focus to the canvas while retaining keyboard activation. Rebuild and run SQL, engine, interaction, responsive and six-domain design regressions, then record responses/evidence.
+
+Risks: the migration and new export must be used together (schema 7, rules 6). Already abandoned historical runs must not be reopened or credited from unverified local files. Changing the legacy index must preserve its single-active-run guarantee. The local single-connection SQL harness cannot establish independent connection contention or hosted signature/RLS behavior. Keep production limitations explicit.
+
+The original implementation plan below is retained as historical context.
+
 Inspected 2026-11-05 before application edits. This is an upgrade of the existing dependency-free canvas engine, static-copy build, Supabase REST/RPC client, EIP-6963/MetaMask connector, wardrobe, marketplace, audio, viewport and authored forest. The existing root manifest/lockfile and build configuration stay intact. The existing ENS/IPFS domain stays intact.
 
 ## Findings and risks
