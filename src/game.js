@@ -13,7 +13,7 @@
   var GRAVITY = 0.25, JUMP_V = 5.6, MAX_FALL = 5;
   var EMPTY = 0, DIRT = 1, BRANCH = 2, STONE = 3, WOOD = 4;
   var rules = window.HamsterRules, saves = window.HamsterSave;
-  var mapNumber = 1, mapLoot = [], mapCoins = [], mapMonsters = [], mapPurchases = [], attackId = 0, legacyCloud = false;
+  var mapNumber = 1, mapLoot = [], mapMonsters = [], mapPurchases = [], attackId = 0;
   var audio = window.HamsterAudio || { sfx: function () {}, unlock: function () {}, play: function () {} };
   var seasons = ['Spring', 'Summer', 'Autumn', 'Winter'], season = Math.floor(Math.random() * 4);
   var defeatedCount = 0, burns = [], starting = false;
@@ -28,9 +28,9 @@
   var ui = {
     start: byId('screen-start'), pause: byId('screen-pause'), over: byId('screen-over'), end: byId('screen-end'),
     dialogue: byId('dialogue'), dlgName: byId('dlg-name'), dlgText: byId('dlg-text'), dlgNext: byId('dlg-next'),
-    shells: byId('hud-shells'), hearts: byId('hud-hearts'), health: byId('hud-health'), clues: byId('hud-clues'),
+    score: byId('hud-score'),
     boss: byId('hud-boss'), bossBar: byId('hud-boss-bar'), bossFill: byId('hud-boss-fill'),
-    toast: byId('toast'), endShells: byId('end-shells'), endClues: byId('end-clues'), endTime: byId('end-time'),
+    toast: byId('toast'), endScore: byId('end-score'), endClues: byId('end-clues'), endTime: byId('end-time'),
     btnPause: byId('btn-pause')
   };
 
@@ -237,10 +237,11 @@
   SPR.roachDead = pair(flipV(makeRoach(0)));
   var playerName = 'Guest', wardrobe = {}, equippedShellColor = '#8b4a22', lastShellSkin;
   function refreshWardrobe() {
-    var profile = saves.snapshot().profile; wardrobe = profile.cosmetics; playerName = profile.name;
+    var profile = saves.snapshot().profile; wardrobe = profile.cosmetics; playerName = profile.name; mapPurchases = profile.purchases.slice();
     if (lastShellSkin === wardrobe.shell && SPR.equippedShell) return;
     lastShellSkin = wardrobe.shell;
-    var skin = rules.catalogue.find(function (item) { return item.id === wardrobe.shell; });
+    var oldSkins = { 'shell-teal': { color: '#68c2ad' }, 'shell-rose': { color: '#e88eac' }, 'shell-gold': { color: '#f2c45b' } };
+    var skin = oldSkins[wardrobe.shell];
     equippedShellColor = skin ? skin.color : PAL_CHESTNUT.b;
     SPR.equippedShell = skin ? sprite(CHESTNUT_ROWS, { o: PAL_CHESTNUT.o, b: skin.color, h: '#fff2bd', c: PAL_CHESTNUT.c }) : SPR.shell;
   }
@@ -356,7 +357,7 @@
       [C, 'I’ll follow every little clue. Hold on, Alice.']
     ],
     basket: [
-      [C, 'Her favourite basket. Two shells are still tucked inside.'],
+      [C, 'Her favourite basket. Two chestnuts are still tucked inside.'],
       [C, 'It’s warm, like it sat under that light.']
     ],
     scorch: [
@@ -364,7 +365,7 @@
       [C, 'Whatever came down here was hot, and very round.']
     ],
     sign1: [[N, 'The signpost reads: “Chestnut Forest. Beetles nest past the old roots.”']],
-    bush: [[N, 'You shake the bush. Three chestnut shells tumble out.']],
+    bush: [[N, 'You shake the bush. Three chestnuts tumble out.']],
     bushEmpty: [[N, 'Just leaves now. You already shook this one.']],
     ribbon: [
       [C, 'Alice’s red ribbon, caught all the way up here!'],
@@ -378,7 +379,7 @@
       ['Mrs. Pebble', 'Those old lanterns have guided little paws through the forest for years.']
     ],
     snailAgain: [['Mrs. Pebble', 'The soldier ants have been restless ever since that strange light.']],
-    lantern: [[N, 'The lantern flickers to life. Ten spare shells sit tucked in its base.']],
+    lantern: [[N, 'The lantern flickers to life. Ten chestnuts sit tucked in its base.']],
     log: [
       [N, 'Inside the hollow log: a trail of oily prints, too round and even for any bug.'],
       [C, 'Metal feet? And two shells someone dropped in a hurry.']
@@ -411,8 +412,8 @@
     return {
       x: game.checkpoint.x, y: game.checkpoint.y, w: 12, h: 14, vx: 0, vy: 0, dir: 1,
       onGround: false, coyote: 0, jumpBuf: 0, inv: 0, hurt: 0, throwCd: 0, throwAnim: 0,
-      shield: false, hp: 1, maxHp: 1, shells: 12, safeX: game.checkpoint.x, safeY: game.checkpoint.y,
-      runT: 0, wasGround: true, weapon: 'shell', weapons: ['shell'], ammo: { gun: 0, grenade: 0 }, attackIds: {}
+      dead: false, safeX: game.checkpoint.x, safeY: game.checkpoint.y,
+      runT: 0, wasGround: true, weapon: 'shell', weapons: ['shell'], ammo: { gun: 0, bomb: 0 }, attackIds: {}
     };
   }
 
@@ -429,7 +430,7 @@
     var sizes = { beetle: [14, 10], ant: [14, 13], larva: [16, 8], ember: [14, 13] };
     var scale = spec.size === 'large' ? 1.15 : 1, s = sizes[type].map(function (v) { return Math.ceil(v * scale); });
     enemies.push({
-      id: enemies.length, type: type, x: c * T, y: row * T - s[1], w: s[0], h: s[1], vx: 0, vy: 0, dir: -1, hp: spec.hp, maxHp: spec.hp, size: spec.size, scale: scale, damage: spec.damage,
+      id: enemies.length, type: type, x: c * T, y: row * T - s[1], w: s[0], h: s[1], vx: 0, vy: 0, dir: -1, hp: spec.hp, maxHp: spec.hp, size: spec.size, scale: scale,
       homeX: c * T, range: 56, state: type === 'larva' ? 'buried' : 'patrol', fireCd: 90 + enemies.length * 7, t: 0, knock: 0, flash: 0,
       dead: false, anim: 0, onGround: false, hitWall: false
     });
@@ -443,7 +444,7 @@
   }
 
   function newBoss() {
-    return { id: 30, x: 198 * T, y: 10 * T - 20, w: 40, h: 20, vx: 0, vy: 0, dir: -1, hp: legacyCloud ? Math.ceil(500 * Math.pow(1.2, mapNumber - 1)) : rules.hp(mapNumber, true), maxHp: legacyCloud ? Math.ceil(500 * Math.pow(1.2, mapNumber - 1)) : rules.hp(mapNumber, true), damage: rules.monsterDamage(mapNumber),
+    return { id: 30, x: 198 * T, y: 10 * T - 20, w: 40, h: 20, vx: 0, vy: 0, dir: -1, hp: rules.hp(mapNumber, true), maxHp: rules.hp(mapNumber, true),
       state: 'sleep', t: 0, flash: 0, anim: 0, onGround: true, solidOnly: true, hitWall: false, moves: 0 };
   }
 
@@ -455,7 +456,7 @@
       [121, 8], [124, 10], [125, 10], [136, 8], [145, 7], [147, 7], [153, 4], [158, 10], [162, 10],
       [168, 8], [171, 10], [173, 10], [178, 10], [180, 10]
     ];
-    for (var i = 0; i < shellSpots.length; i++) addPickup('shell', shellSpots[i][0], shellSpots[i][1]);
+    for (var i = 0; i < shellSpots.length; i++) addPickup('shell', shellSpots[i][0], shellSpots[i][1], { forage: 'trail-' + i });
     // The original twelve enemies keep their places and animations. Eighteen
     // more inhabit the same authored forest; no art or tile map is replaced.
     for (var e = 0; e < rules.spawns.length; e++) {
@@ -486,8 +487,7 @@
   var KEYS = {
     ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
     ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump',
-    KeyX: 'throw', KeyJ: 'throw', KeyC: 'shield', KeyK: 'shield', ArrowDown: 'shield', KeyS: 'shield',
-    KeyE: 'interact', Enter: 'interact', KeyQ: 'swap'
+    Enter: 'throw', KeyE: 'interact', Digit1: 'slot1', Digit2: 'slot2', Digit3: 'slot3', Numpad1: 'slot1', Numpad2: 'slot2', Numpad3: 'slot3'
   };
   function clearInput() {
     held = {}; pressed = {};
@@ -504,7 +504,7 @@
       if (game.state === 'paused') { e.preventDefault(); resumeGame(); return; }
     }
     if (game.state === 'dialogue') {
-      if ((code === 'KeyE' || code === 'KeyX' || code === 'KeyJ') && !e.repeat) { e.preventDefault(); advanceDialogue(); }
+      if (code === 'KeyE' && !e.repeat) { e.preventDefault(); advanceDialogue(); }
       return;
     }
     if (game.state !== 'playing') return;
@@ -571,7 +571,19 @@
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) { joystick.addEventListener(name, releaseStick); });
   joystick.addEventListener('keydown', function (e) { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') e.preventDefault(); });
 
-  canvas.addEventListener('pointerdown', function () { if (game.state === 'playing') canvas.focus({ preventScroll: true }); });
+  canvas.addEventListener('pointerdown', function (e) {
+    if (game.state === 'playing') { canvas.focus({ preventScroll: true }); if (e.button === 0 && e.pointerType !== 'touch') { e.preventDefault(); pressed.throw = true; } }
+  });
+  function selectWeapon(kind) {
+    if (game.state !== 'playing' && game.state !== 'paused') return;
+    if (player.weapons.indexOf(kind) === -1) return;
+    player.weapon = player.weapon === kind ? 'shell' : kind; updateHud();
+  }
+  document.querySelectorAll('[data-slot]').forEach(function (button) {
+    button.addEventListener('click', function () { selectWeapon(button.dataset.slot); });
+  });
+  byId('context-interact').addEventListener('click', function () { if (game.state === 'playing') { var o = nearestThing(); if (o) interact(o); } });
+  window.addEventListener('hamster:identity', function () { if (game.state !== 'title') { gameOver(); toast('Profile changed. Restart this map to continue.'); } });
 
   // ---------------------------------------------------------------------------
   // Screens, HUD and dialogue
@@ -583,20 +595,21 @@
   }
   function focusStage() { canvas.focus({ preventScroll: true }); }
 
-  var heartSvg = '<rect x="1" y="0" width="2" height="1"/><rect x="4" y="0" width="2" height="1"/><rect x="0" y="1" width="7" height="2"/><rect x="1" y="3" width="5" height="1"/><rect x="2" y="4" width="3" height="1"/><rect x="3" y="5" width="1" height="1"/>';
   function updateHud() {
-    ui.shells.textContent = String(player.shells);
-    var html = '';
-    for (var i = 0; i < player.maxHp; i++) {
-      html += '<svg class="heart' + (i < player.hp ? ' is-full' : '') + '" viewBox="0 0 7 6">' + heartSvg + '</svg>';
-    }
-    ui.hearts.innerHTML = html;
-    ui.health.textContent = player.hp + '/' + player.maxHp;
-    ui.clues.textContent = game.clues + '/3';
+    ui.score.textContent = String(game.collected);
+    document.body.dataset.gameState = game.state;
+    ['gun', 'bomb', 'sword'].forEach(function (kind, i) {
+      var button = byId('slot-' + (i + 1)), owned = player.weapons.indexOf(kind) !== -1;
+      button.disabled = !owned; button.classList.toggle('is-owned', owned);
+      button.setAttribute('aria-pressed', String(player.weapon === kind));
+      var amount = owned ? kind === 'sword' ? '∞' : String(player.ammo[kind]) : '—';
+      byId('ammo-' + kind).textContent = amount;
+      button.setAttribute('aria-label', 'Slot ' + (i + 1) + ': ' + kind + (owned ? ', ' + amount + (kind === 'gun' ? ' bullets' : kind === 'bomb' ? ' bombs' : ' uses') + (player.weapon === kind ? ', selected. Select again for chestnuts.' : '') : ', not collected'));
+    });
     byId('hud-map').textContent = String(mapNumber);
     byId('hud-enemies').textContent = defeatedCount + '/30';
     byId('hud-weapon').textContent = player.weapon === 'shell' ? 'Chestnut' : player.weapon.charAt(0).toUpperCase() + player.weapon.slice(1);
-    byId('hud-ammo').textContent = player.weapon === 'gun' || player.weapon === 'grenade' ? ' · ' + player.ammo[player.weapon] : '';
+    byId('hud-ammo').textContent = player.weapon === 'gun' || player.weapon === 'bomb' ? ' · ' + player.ammo[player.weapon] : ' · ∞';
     byId('hud-timer').textContent = game.frames < 3600 ? 'Boss in ' + Math.max(0, 60 - Math.floor(game.frames / 60)) + 's' : game.bossDefeated ? 'Boss defeated' : 'Boss at forest exit';
     var showBoss = !game.bossDefeated && boss.state !== 'sleep';
     ui.boss.hidden = !showBoss;
@@ -681,7 +694,7 @@
     }
     byId('game-error').textContent = '';
     mapNumber = desiredMap;
-    mapLoot = setup.loot; mapCoins = setup.coinDrops; mapMonsters = setup.monsters; mapPurchases = setup.purchases; legacyCloud = setup.rulesVersion < 3;
+    mapLoot = setup.loot; mapMonsters = setup.monsters; mapPurchases = setup.purchases;
     season = Math.floor(Math.random() * 4); paintSky(); byId('hud-season').textContent = seasons[season];
     defeatedCount = 0; attackId = 0; burns = [];
     starting = false; activeStart.disabled = false; activeStart.textContent = originalLabel;
@@ -703,7 +716,7 @@
 
   function gameOver() {
     if (game.state === 'gameover') return;
-    event('death');
+    player.dead = true; event('death');
     pickups = pickups.filter(function (p) { return p.kind !== 'coin' && p.kind !== 'weapon'; });
     shots = []; burns = [];
     game.state = 'gameover'; audio.play(false); ui.btnPause.textContent = 'Pause';
@@ -721,7 +734,7 @@
     game.state = 'ending';
     clearInput();
     var secs = Math.floor(game.frames / 60);
-    ui.endShells.textContent = String(game.collected);
+    ui.endScore.textContent = String(game.collected);
     ui.endClues.textContent = game.clues + ' of 3';
     ui.endTime.textContent = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
     showScreen(ui.end, 'btn-again');
@@ -735,6 +748,7 @@
   byId('btn-retry').addEventListener('click', respawn);
   byId('btn-resume').addEventListener('click', resumeGame);
   ui.btnPause.addEventListener('click', function () {
+    byId('menu-dialog').close();
     if (game.state === 'paused') resumeGame();
     else if (game.state === 'playing' || game.state === 'dialogue') pauseGame();
     else if (game.state === 'title') toast('Start the chapter first.');
@@ -755,22 +769,16 @@
   // ---------------------------------------------------------------------------
   // Update
   // ---------------------------------------------------------------------------
-  function addShells(n) {
-    player.shells += n;
-    game.collected += n;
-    updateHud();
+  function addChestnuts(n, forage) {
+    if (forage && event('forage', { source: forage }) === null) return;
+    game.collected += n; updateHud();
   }
 
   function hurtPlayer(dmg, fromX) {
-    var p = player;
     if (game.state !== 'playing') return;
-    p.hp = Math.max(0, p.hp - dmg); p.hurt = 16; audio.sfx('hurt');
-    var d = fromX === undefined ? -p.dir : (sign(cx(p) - fromX) || -p.dir);
-    p.vx = d * 2.2; p.vy = -2.6; p.onGround = false;
-    game.shake = 8;
-    burst(cx(p), p.y + 6, 6, ['#f6e2bd', '#d9893b']);
-    updateHud();
-    if (p.hp <= 0) { p.hp = 0; updateHud(); gameOver(); }
+    player.dead = true; audio.sfx('hurt');
+    burst(cx(player), player.y + 6, 6, ['#f6e2bd', '#d9893b']);
+    gameOver();
   }
 
   function nearestThing() {
@@ -800,9 +808,9 @@
     switch (o.kind) {
       case 'chest':
         if (o.done) return;
-        o.done = true; addShells(6); audio.sfx('chest'); toast('Chest opened. +6 shells.'); burst(cx(o), o.y, 12, ['#ffe28c', '#f2a93b']); break;
+        o.done = true; addChestnuts(6, 'chest'); audio.sfx('chest'); toast('Chest opened. +6 points.'); burst(cx(o), o.y, 12, ['#ffe28c', '#f2a93b']); break;
       case 'basket':
-        audio.sfx('item'); o.done = true; addShells(2); say(LINES.basket, function () { toast('+2 shells'); }); break;
+        audio.sfx('item'); o.done = true; addChestnuts(2, o.kind); say(LINES.basket, function () { toast('+2 points'); }); break;
       case 'scorch':
         o.done = true; say(LINES.scorch, findClue); break;
       case 'sign':
@@ -811,21 +819,21 @@
         if (o.done) { say(LINES.bushEmpty); break; }
         o.done = true; o.anim = 30;
         for (var i = 0; i < 3; i++) {
-          addPickup('shell', 0, 0, { x: cx(o) - 4 + (i - 1) * 4, y: o.y - 4, vx: (i - 1) * 1.1, vy: -2.6, phys: true });
+          addPickup('shell', 0, 0, { x: cx(o) - 4 + (i - 1) * 4, y: o.y - 4, vx: (i - 1) * 1.1, vy: -2.6, phys: true, forage: 'bush-' + Math.floor(o.x / T) + '-' + i });
         }
         say(LINES.bush); break;
       case 'ribbon':
         o.done = true; say(LINES.ribbon, findClue); break;
       case 'lantern':
         o.done = true; o.anim = 1;
-        addShells(10); audio.sfx('quest');
+        addChestnuts(10, 'lantern-' + Math.floor(o.x / T)); audio.sfx('quest');
         burst(cx(o), o.y + 4, 10, ['#ffd27a', '#ffefb8']);
-        say(LINES.lantern, function () { toast('Lantern lit. +10 shells.'); }); break;
+        say(LINES.lantern, function () { toast('Lantern lit. +10 points.'); }); break;
       case 'snail':
         if (o.done) { say(LINES.snailAgain); break; }
         o.done = true; say(LINES.snail); break;
       case 'log':
-        o.done = true; addShells(2); say(LINES.log, findClue); break;
+        o.done = true; addChestnuts(2, o.kind); say(LINES.log, findClue); break;
       case 'fragment':
         o.done = true; say(LINES.fragment, showEnding); break;
     }
@@ -833,14 +841,12 @@
 
   function updatePlayer() {
     var p = player;
-    var shieldUp = !!held.shield && p.onGround && p.hurt === 0;
-    p.shield = shieldUp;
     var ax = (held.left ? -1 : 0) + (held.right ? 1 : 0);
     if (p.hurt > 0) {
       p.hurt--;
       p.vx *= 0.94;
     } else {
-      var max = shieldUp ? 0.5 : 1.7;
+      var max = 1.7;
       if (ax !== 0) {
         p.vx += ax * (p.onGround ? 0.3 : 0.2);
         p.dir = ax;
@@ -856,7 +862,7 @@
     if (p.jumpBuf > 0) {
       p.jumpBuf--;
       if (p.coyote > 0 && p.hurt === 0) {
-        p.vy = -JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.onGround = false; p.shield = false;
+        p.vy = -JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.onGround = false;
         dust(cx(p), p.y + p.h); audio.sfx('jump');
       }
     }
@@ -870,15 +876,11 @@
 
     if (p.throwCd > 0) p.throwCd--;
     if (p.throwAnim > 0) p.throwAnim--;
-    if (pressed.swap) {
-      var weaponIndex = p.weapons.indexOf(p.weapon);
-      p.weapon = p.weapons[(weaponIndex + 1) % p.weapons.length]; updateHud();
-      toast(p.weapons.length === 1 ? 'Find a weapon drop to add another weapon.' : 'Equipped ' + p.weapon + '.');
-    }
+    ['gun', 'bomb', 'sword'].forEach(function (kind, i) { if (pressed['slot' + (i + 1)]) selectWeapon(kind); });
     if (pressed.throw && p.throwCd === 0 && p.hurt === 0) {
       var kind = p.weapon;
-      if ((kind === 'shell' && p.shells > 0) || kind === 'sword' || p.ammo[kind] > 0) {
-        if (kind === 'shell') p.shells--; else if (kind !== 'sword') p.ammo[kind]--;
+      if (kind === 'shell' || kind === 'sword' || p.ammo[kind] > 0) {
+        if (kind === 'gun' || kind === 'bomb') p.ammo[kind]--;
         audio.sfx('attack'); p.throwCd = rules.cooldown(kind); p.throwAnim = 10;
         var aid = ++attackId;
         event('attack', { attack: aid, weapon: kind });
@@ -886,9 +888,10 @@
           vx: kind === 'sword' ? 0 : p.dir * (kind === 'gun' ? 5 : 3.4) + p.vx * 0.3, vy: kind === 'gun' || kind === 'sword' ? 0 : -1.5,
           g: kind === 'gun' || kind === 'sword' ? 0 : 0.14, life: kind === 'sword' ? 8 : 100, spin: 0, hits: [], bounces: 0, dir: p.dir });
         if (kind === 'sword') shots[shots.length - 1].x = p.dir > 0 ? p.x + p.w : p.x - 28;
+        if ((kind === 'gun' || kind === 'bomb') && p.ammo[kind] === 0) { p.weapons = p.weapons.filter(function (w) { return w !== kind; }); p.weapon = 'shell'; }
         updateHud();
       } else {
-        toast(kind === 'shell' ? 'No shells left. More fall from the canopy; you can also stomp.' : 'Out of ammo. Press Q or Swap to use chestnuts.');
+        p.weapon = 'shell'; updateHud(); toast('Using chestnuts.');
         p.throwCd = 30;
       }
     }
@@ -902,16 +905,17 @@
       p.safeX = p.x; p.safeY = p.y;
     }
     if (p.y > H + 24) {
-      p.hp = 0; updateHud(); gameOver(); return;
+      gameOver(); return;
     }
     if (p.inv > 0) p.inv--;
     if (Math.abs(p.vx) > 0.2 && p.onGround) { p.runT++; if (p.runT % 14 === 0) audio.sfx('move'); } else p.runT = 0;
   }
 
   function dropLoot(e) {
-    if (mapCoins[e.id]) addPickup('coin', 0, 0, { target: e.id, x: cx(e) - 18, y: e.y - 25, w: 36, h: 31, vx: 0, vy: -1.6, phys: true });
+    if (e.dropped) return; e.dropped = true;
     var drop = mapLoot[e.id];
-    if (drop) addPickup('weapon', 0, 0, { target: e.id, weapon: drop, x: cx(e) + 32, y: e.y - 10, w: 12, h: 10, vx: 0.5, vy: -2.4, phys: true });
+    if (drop) addPickup(drop === 'coin' ? 'coin' : drop === 'small' || drop === 'big' ? drop : 'weapon', 0, 0,
+      { target: e.id, weapon: drop, x: cx(e) - 6, y: e.y - 12, w: drop === 'coin' ? 36 : 12, h: drop === 'coin' ? 31 : 10, vx: 0, vy: -2.4, phys: true });
   }
 
   function hitEnemy(e, dmg, fromX, aid) {
@@ -923,7 +927,6 @@
       e.dead = true;
       defeatedCount++; event('defeat', { target: e.id }); dropLoot(e); updateHud();
       burst(cx(e), e.y + e.h / 2, 10, e.type === 'beetle' ? ['#3f6b4a', '#b9dc95'] : e.type === 'ant' ? ['#8e3324', '#c85a3c'] : ['#efe2c2', '#c9b282']);
-      if (Math.random() < 0.5) addPickup('shell', 0, 0, { x: cx(e) - 36, y: e.y - 4, vx: 0, vy: -2.4, phys: true });
     } else {
       e.vx = sign(cx(e) - fromX) * 1.6; e.knock = 10;
       if (e.state === 'charge') { e.state = 'patrol'; e.t = 50; }
@@ -942,7 +945,7 @@
       if (Math.abs(dx) < 180 && Math.abs(dy) < 60 && --e.fireCd <= 0) {
         e.fireCd = 140;
         var distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-        shots.push({ kind: 'fire', x: cx(e), y: e.y + 3, w: 6, h: 6, vx: dx / distance * 1.65, vy: dy / distance * 1.65, g: 0, life: 130, spin: 0, damage: e.damage });
+        shots.push({ kind: 'fire', x: cx(e), y: e.y + 3, w: 6, h: 6, vx: dx / distance * 1.65, vy: dy / distance * 1.65, g: 0, life: 130, spin: 0 });
       }
     } else if (e.type === 'beetle') {
       e.vx = e.dir * 0.45;
@@ -971,7 +974,7 @@
         if (--e.t <= 0) {
           e.t = 120;
           if (Math.abs(dx) < 140) {
-            shots.push({ kind: 'chip', x: cx(e) - 2, y: e.y, w: 4, h: 4, vx: sign(dx) * 1.7, vy: -2.4, g: 0.12, life: 120, spin: 0, damage: e.damage });
+            shots.push({ kind: 'chip', x: cx(e) - 2, y: e.y, w: 4, h: 4, vx: sign(dx) * 1.7, vy: -2.4, g: 0.12, life: 120, spin: 0 });
           }
         }
       }
@@ -1003,14 +1006,7 @@
       dust(cx(p), p.y + p.h);
       return;
     }
-    if (p.shield && sign(cx(e) - cx(p)) === p.dir) {
-      e.dir = p.dir; e.vx = p.dir * 2; e.knock = 12; e.x += p.dir * 2;
-      if (e.state === 'charge') { e.state = 'patrol'; e.t = 60; }
-      p.vx = -p.dir * 1.2;
-      burst(cx(p) + p.dir * 8, p.y + 6, 4, ['#ffe6a6', '#ffffff'], 1.4);
-      return;
-    }
-    hurtPlayer(e.damage, cx(e));
+    hurtPlayer(1, cx(e));
   }
 
   function bossStun(t) {
@@ -1098,16 +1094,6 @@
     if (b.state === 'charge' && b.hitWall) bossStun(80);
     if (b.state === 'hop' && b.onGround && wasAir) { b.state = 'idle'; b.t = enraged ? 28 : 44; game.shake = 6; dust(cx(b), b.y + b.h); }
 
-    // shells fall from the old chestnut tree while the fight is on
-    if (game.arenaLocked) {
-      var inArena = 0;
-      for (var i = 0; i < pickups.length; i++) if (!pickups[i].taken && pickups[i].kind === 'shell' && pickups[i].x > ARENA_L * T) inArena++;
-      if (--game.dropTimer <= 0) {
-        game.dropTimer = p.shells === 0 ? 80 : 200;
-        if (inArena < 4) addPickup('shell', 0, 0, { x: (ARENA_L + 3 + Math.floor(Math.random() * 18)) * T, y: -10, phys: true });
-      }
-    }
-
     if (b.state === 'defeated' || !overlap(p, b) || game.state !== 'playing') return;
     var stomp = p.vy > 0.5 && (p.y + p.h - p.vy) <= b.y + 6;
     if (stomp) {
@@ -1120,16 +1106,7 @@
       else dust(cx(p), p.y + p.h);
       return;
     }
-    var front = sign(cx(b) - cx(p)) === p.dir;
-    if (p.shield && front && (b.state === 'charge' || b.state === 'hop' || b.state === 'idle' || b.state === 'windup')) {
-      if (b.state === 'charge') { bossStun(100); toast('Blocked! The cockroach is dazed.'); }
-      b.x = clamp(b.x - b.dir * 6, (ARENA_L + 1) * T, ARENA_R * T - b.w);
-      p.vx = -p.dir * 2;
-      burst(cx(p) + p.dir * 8, p.y + 6, 6, ['#ffe6a6', '#ffffff'], 1.6);
-      return;
-    }
-    if (b.state !== 'stunned') hurtPlayer(b.damage, cx(b));
-    else { p.vx = -sign(cx(b) - cx(p)) * 1.2; }
+    hurtPlayer(1, cx(b));
   }
 
   function updateShots() {
@@ -1141,7 +1118,7 @@
         s.x -= s.vx; s.y -= s.vy; s.vx *= -1; s.vy = -Math.abs(s.vy) * 0.7; s.bounces++; wall = false;
       }
       var hit = (s.life < 0) || (wall && s.kind !== 'sword');
-      if (s.kind === 'grenade' && (hit || s.life < 40)) {
+      if (s.kind === 'bomb' && (hit || s.life < 40)) {
         burns.push({ id: s.id, x: s.x - 38, y: s.y - 24, w: 80, h: 48, frame: game.frames, life: 480, ticks: 0 });
         burst(s.x, s.y, 18, ['#f2a93b', '#e9735f', '#ffe28c'], 4);
         shots.splice(i, 1); continue;
@@ -1161,8 +1138,7 @@
         }
       } else if (!hit && (s.kind === 'chip' || s.kind === 'fire') && overlap(s, player)) {
         hit = true;
-        if (player.shield && sign(s.vx) === -player.dir) { audio.sfx('shield'); burst(s.x, s.y, 4, ['#ffe6a6', '#ffffff'], 1.4); }
-        else { hurtPlayer(s.damage || rules.monsterDamage(mapNumber), s.x); if (game.state !== 'playing') return; }
+        hurtPlayer(1, s.x); if (game.state !== 'playing') return;
       }
       if (s.kind === 'sword') { s.checked = true; if (s.life <= 0) shots.splice(i, 1); continue; }
       if (hit) {
@@ -1182,9 +1158,9 @@
       if (fire.ticks % 60 === 0) {
         for (var j = 0; j < enemies.length; j++) {
           var e = enemies[j];
-          if (!e.dead && e.state !== 'buried' && overlap(e, fire)) hitEnemy(e, 5, fire.x, fire.id);
+          if (!e.dead && e.state !== 'buried' && overlap(e, fire)) hitEnemy(e, rules.damage('bomb', mapPurchases), fire.x, fire.id);
         }
-        if (overlap(boss, fire)) damageBoss(5, fire.id);
+        if (overlap(boss, fire)) damageBoss(rules.damage('bomb', mapPurchases), fire.id);
       }
       if (fire.life <= 0) burns.splice(i, 1);
     }
@@ -1204,21 +1180,24 @@
         if (k.y > H + 20) { k.taken = true; continue; }
       }
       var box = { x: k.x - 2, y: k.y - 2, w: k.w + 4, h: k.h + 4 };
-      if (overlap(player, box)) {
-        k.taken = true;
-        if (k.kind === 'shell') { audio.sfx('item'); addShells(1); burst(k.x + 4, k.y + 4, 4, ['#e9cf9c', '#d48a4e']); }
-        else if (k.kind === 'coin') {
-          audio.sfx('coin'); event('collect', { target: k.target });
-          burst(k.x + 21, k.y + 18, 6, ['#ffe28c', '#f2a93b']);
-          toast(saves.snapshot().ranked ? '+1 SQK pending cloud save' : '+1 SQK saved on this device');
-        } else if (k.kind === 'weapon') {
-          audio.sfx('item'); event('weapon', { target: k.target });
-          if (player.weapons.indexOf(k.weapon) === -1) player.weapons.push(k.weapon);
-          if (k.weapon === 'gun') player.ammo.gun += 30;
-          if (k.weapon === 'grenade') player.ammo.grenade += 3;
-          player.weapon = k.weapon; updateHud();
-          toast('Equipped ' + k.weapon + '. Press Q or Swap to change weapons.');
+      var nearby = overlap(player, { x: box.x - 8, y: box.y - 5, w: box.w + 16, h: box.h + 10 });
+      var touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+      if (nearby && (touch || pressed.interact)) {
+        k.taken = true; // Claim before any side effect; an input frame cannot re-collect.
+        if (k.kind === 'shell') { audio.sfx('item'); addChestnuts(1, k.forage); }
+        else {
+          if (event('pickup', { target: k.target }) === null) continue;
+          if (k.kind === 'small' || k.kind === 'big') { game.collected += k.kind === 'big' ? 5 : 1; audio.sfx('item'); }
+          else if (k.kind === 'coin') { audio.sfx('coin'); toast('+1 SQK' + (saves.snapshot().ranked ? ' · saving' : ' · this run only')); }
+          else if (k.kind === 'weapon') {
+            audio.sfx('item');
+            if (player.weapons.indexOf(k.weapon) === -1) player.weapons.push(k.weapon);
+            if (k.weapon === 'gun') player.ammo.gun = 100;
+            if (k.weapon === 'bomb') player.ammo.bomb += 3;
+            toast(k.weapon === 'gun' ? 'Gun collected · 100 bullets' : k.weapon === 'bomb' ? 'Bombs collected · 3 throws' : 'Sword collected');
+          }
         }
+        updateHud(); burst(k.x + 4, k.y + 4, 4, ['#e9cf9c', '#d48a4e']);
       }
     }
   }
@@ -1247,11 +1226,6 @@
     if (game.state !== 'playing') return;
     updateBurns();
     updatePickups();
-    // The original arena's falling-shell mechanic now also supplies the forest,
-    // so the larger enemy population cannot exhaust the player's ammunition.
-    if (!game.arenaLocked && game.frames % 240 === 0 && player.shells < 8) {
-      for (var n = 0; n < 3; n++) addPickup('shell', 0, 0, { x: player.x + 16 + n * 10, y: player.y - 42, phys: true });
-    }
     if (game.frames % 60 === 0) updateHud();
     updateCamera();
     for (var t = 0; t < things.length; t++) if (things[t].anim > 0 && things[t].kind === 'bush') things[t].anim--;
@@ -1515,11 +1489,12 @@
     ctx.drawImage(facing(body, dir), x, y + bob);
     if (kind === 'chang') {
       var cosmetics = wardrobe;
-      var shirt = rules.catalogue.find(function (item) { return item.id === cosmetics.shirt; });
+      var oldShirts = { 'shirt-coral': { color: '#df786e' }, 'shirt-blue': { color: '#78b8dc' }, 'shirt-purple': { color: '#b49bdc' } };
+      var shirt = !cosmetics.costume && oldShirts[cosmetics.shirt];
       if (shirt) { rect(ctx, fx_(5, 8), y + 9 + bob, 8, 3, shirt.color); rect(ctx, fx_(4, 2), y + 8 + bob, 2, 2, shirt.color); }
-      if (cosmetics.vest) { rect(ctx, fx_(4, 3), y + 8 + bob, 3, 4, '#687a60'); rect(ctx, fx_(11, 2), y + 8 + bob, 2, 4, '#687a60'); rect(ctx, fx_(5, 1), y + 9 + bob, 1, 1, '#f2c45b'); }
+      if (cosmetics.costume) rules.costumeArt(cosmetics.costume).forEach(function (r) { rect(ctx, fx_(r[0], r[2]), y + r[1] + bob, r[2], r[3], r[4]); });
+      if (cosmetics.vest && !cosmetics.costume) { rect(ctx, fx_(4, 3), y + 8 + bob, 3, 4, '#687a60'); rect(ctx, fx_(11, 2), y + 8 + bob, 2, 4, '#687a60'); rect(ctx, fx_(5, 1), y + 9 + bob, 1, 1, '#f2c45b'); }
     }
-    if (pose === 'shield') ctx.drawImage(SPR.equippedShell, fx_(11, 8), y + 5);
     if (pose === 'throw') rect(ctx, fx_(15, 2), y + 7, 2, 2, kind === 'alice' ? '#e6cfb3' : '#d9893b');
   }
 
@@ -1712,7 +1687,7 @@
         rect(ctx, x, y + 2, 6, 2, '#ffe28c'); rect(ctx, x + 4, y + 1, 2, 1, '#fff2bd');
       } else if (s.kind === 'sword') {
         rect(ctx, x, y + 5, 24, 3, '#dce7e6'); rect(ctx, x + 5, y + 3, 2, 7, '#f2c45b');
-      } else if (s.kind === 'grenade') {
+      } else if (s.kind === 'bomb') {
         rect(ctx, x + 1, y + 1, 5, 5, '#687a60'); rect(ctx, x + 3, y - 1, 2, 2, '#e9735f');
       } else {
         rect(ctx, x, y, 4, 4, '#c9a77a'); rect(ctx, x + 1, y + 1, 2, 2, '#8a6a4a');
@@ -1731,7 +1706,6 @@
     if (p.inv > 0 && (p.inv >> 2) % 2 && game.state === 'playing') return;
     var pose = 'idle';
     if (!p.onGround || p.hurt > 0) pose = 'air';
-    else if (p.shield) pose = 'shield';
     else if (p.throwAnim > 0) pose = 'throw';
     else if (Math.abs(p.vx) > 0.2) pose = 'run';
     ctx.save(); ctx.translate(Math.round(p.x - 3 - cam), Math.round(p.y - 3)); ctx.scale(1.15, 1.15);
@@ -1791,7 +1765,7 @@
         var by = k.phys || reduceMotion ? 0 : Math.round(Math.sin(k.bob / 14) * 1.5);
         if (k.kind === 'weapon') drawWeapon(k.weapon, kx, Math.round(k.y) + by);
         else if (k.kind === 'coin') ctx.drawImage(SPR.coin, kx, Math.round(k.y) + by, k.w, k.h);
-        else ctx.drawImage(SPR.shell, kx, Math.round(k.y) + by);
+        else ctx.drawImage(SPR.shell, kx, Math.round(k.y) + by, k.kind === 'big' ? 13 : 8, k.kind === 'big' ? 13 : 8);
       }
       for (i = 0; i < burns.length; i++) {
         var fire = burns[i];
@@ -1808,6 +1782,8 @@
       drawShots(cam);
       if (game.state === 'playing') {
         var o = nearestThing();
+        var contextButton = byId('context-interact'); contextButton.hidden = !o || !coarseQuery.matches; if (o) contextButton.textContent = o.kind === 'snail' ? 'Talk' : o.kind === 'chest' || o.kind === 'basket' || o.kind === 'bush' ? 'Open' : 'Read';
+        for (var pi = 0; pi < pickups.length; pi++) { var pk = pickups[pi]; if (!pk.taken && !coarseQuery.matches && Math.abs(cx(pk) - cx(player)) < 28 && Math.abs(pk.y - player.y) < 24) drawBubble(cx(pk) - cam, pk.y - 10, 'E'); }
         if (o) drawBubble(cx(o) - cam - 3, o.y - 14, coarseQuery.matches ? '!' : 'E');
       }
       for (i = 0; i < fx.length; i++) {
@@ -1870,6 +1846,7 @@
 
   var last = performance.now(), acc = 0, STEP = 1000 / 60;
   function frame(now) {
+    document.body.dataset.gameState = game.state;
     acc += Math.min(100, now - last);
     last = now;
     var steps = 0;
@@ -1887,14 +1864,14 @@
 
   // Player menus can pause the game. All gameplay diagnostics are read-only.
   window.__hamster = {
-    pause: pauseGame,
+    pause: pauseGame, resume: resumeGame,
     snapshot: function () {
-      return { state: game.state, shells: player.shells, hp: player.hp, clues: game.clues, x: Math.round(player.x), y: Math.round(player.y), shield: player.shield,
+      return { state: game.state, score: game.collected, dead: player.dead, clues: game.clues, x: Math.round(player.x), y: Math.round(player.y),
         bossHp: boss.hp, bossState: boss.state, arenaLocked: game.arenaLocked, bossDefeated: game.bossDefeated,
         map: mapNumber, enemyCount: enemies.length, defeated: defeatedCount, frame: game.frames,
-        weapon: player.weapon, ammo: Object.assign({}, player.ammo), weapons: player.weapons.slice(),
+        attacks: attackId, weapon: player.weapon, ammo: Object.assign({}, player.ammo), weapons: player.weapons.slice(),
         coinCount: pickups.filter(function (p) { return p.kind === 'coin'; }).length, burningAreas: burns.length,
-        season: seasons[season], enemyTypes: enemies.map(function (e) { return { id: e.id, type: e.type, size: e.size, hp: e.hp, maxHp: e.maxHp, damage: e.damage }; }), fireProjectiles: shots.filter(function (s) { return s.kind === 'fire'; }).length, regularHp: rules.hp(mapNumber), purchases: mapPurchases.slice() };
+        season: seasons[season], enemyTypes: enemies.map(function (e) { return { id: e.id, type: e.type, size: e.size, hp: e.hp, maxHp: e.maxHp }; }), fireProjectiles: shots.filter(function (s) { return s.kind === 'fire'; }).length, regularHp: rules.hp(mapNumber), purchases: mapPurchases.slice() };
     }
   };
 })();

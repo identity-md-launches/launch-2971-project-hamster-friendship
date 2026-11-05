@@ -1,5 +1,6 @@
 /* Owner configuration. Public values only. Never put a service-role key here.
-   Apply supabase/migrations/001_friendship.sql and enable anonymous Auth first.
+   Apply migrations 001–003 in order; enable Ethereum Web3 Auth.
+   Existing projects apply only migrations not already applied. See supabase/README.md.
    Empty values deliberately keep the cloud features off; guest play still works. */
 window.HAMSTER_CONFIG = Object.freeze({
   supabaseUrl: '',

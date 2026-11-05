@@ -1,89 +1,80 @@
-# Validation and design review
+# Local validation and consolidated design review
 
-Local implementation/export is complete. Chromium verification passes. Cross-browser verification remains incomplete because WebKit could not launch; live Supabase checks await the owner's URL/public key and application of migration 002. Nothing was fabricated to fill those gaps. These are worker-side results, not independent certification.
+## Scope and completion
 
-## Scope and assumptions
+Updated the existing Hamster Friendship v3 tree in place. Runtime source is `src/`; the deliverable is the complete relative-URL export in `dist/`. Root build/package configuration, lockfile, authored map, original sprite assets, website address and hosting remain in place. No live database migration, hosting publication or chain deployment was performed.
 
-The existing dependency-free canvas game was upgraded, not replaced. Review covered the exported entry, play/dialogue/pause/retry/victory, original equipment/profile/rankings/wallet, GUILD, Audio, SQK Dice and Badge Exchange. The original one-hit rule is preserved; numerical enemy damage still compounds. Small/large sizes are selected independently of type. The authored forest is replayed in random seasons and deeper tiers. Skill badge milestones are maps 1/3/5; contribution issuance is an owner-verified administrative action. Dice correct predictions and lifetime wins count the same successful outcomes and never reset.
+**Local implementation and static delivery are complete.** Live Supabase/real-wallet validation and physical Safari/phone checks remain unperformed. The checkout has empty public Supabase configuration, so the exported site truthfully enables guest gameplay and explains unavailable cloud features. PostgreSQL and browser integration checks below use explicitly identified fixtures, not a pretend production backend.
 
-All browser testing served the real `dist/` beneath `/preview/`. Tests needing reliable threshold/encounter states use explicitly labeled temporary fixtures, injected into intercepted responses or browser storage. Production source has no such hooks, demo leaderboard or seeded player data. Local Auth/HTTP fixtures bridge to the actual PostgreSQL functions; they do not prove a live service works.
+Assumptions: UTC for the unresolved `[TIMEZONE]`; daily best map score, rather than lifetime ranking; additive one-time upgrades (+55% maximum); a gun refills to 100; bomb pickup gives three throws; selecting the active slot restores unlimited chestnuts; touch auto-pickup replaces the removed Look button. Original finite forest chestnuts/caches also score points. Daily attribution uses server acknowledgement time for offline events. These choices are documented in README and GUILD where relevant.
 
-## Actual checks
+## Actual commands and results
 
-| Command / suite | Result |
+Commands ran on the final source/export on 2026-11-05. All browser tests serve `dist/` beneath `/preview/` and close their foreground-owned server/browser after completion.
+
+| Command | Actual result |
 | --- | --- |
-| `npm run build` | Passed; 14 runtime files, 222,899 bytes |
-| `npm run check` and original `npm run typecheck` alias | Passed; syntax, metadata, 51 referenced element IDs, relative URLs and source/export equality |
-| `tsc --noEmit -p jsconfig.json` | Passed; actual compiler, TypeScript 7.0.2 |
-| Extended `tsc --noEmit --allowJs --checkJs --strict false ...` command in README | Passed; additionally checks the new audio module |
-| `node scripts/test.mjs` | 32 passed: original physics/story, damage/weapons/burns, shield, pause/dialogue, retry, inventory, map/coin changes |
-| `node scripts/test-upgrade.mjs` | 16 passed: exact drop boundary, random type/HP/damage, all 36 Dice pairs, byte rejection sampling, fire/shield, chest, legacy saves, milestones, exchanges/reload |
-| `node supabase/tests/validation.mjs <pglite>` | 43 passed against unchanged historical migration 001 |
-| `node supabase/tests/upgrade.mjs <pglite>` | 24 passed against populated 001 → 002, old-page reload gate, permissions, idempotence and a full legal v3 map replay |
-| `node supabase/tests/frontend.mjs <pglite>` | 9 passed: actual old-backend client/engine, burn timing, durable retry/reload, SQK and purchases |
-| `node supabase/tests/upgrade-client.mjs <pglite>` | 7 passed: actual upgraded engine/client/SQL; offline coin/reload; lost replies after committed Dice/exchange; ordered balance snapshots, failed-restart recovery |
-| `node scripts/validate-browser.mjs <playwright> <pglite> '' <axe>` | 28 Chromium checks passed, including original wallet and browser-to-PostgreSQL flows |
-| `node scripts/validate-upgrade.mjs <playwright> <axe>` | 16 Chromium checks passed, including real audio signal/mutes, two pointers, landscape, Dice UI, exchange UI, concurrent-tab rewards/purchase, all seasons and victory |
-| Pinned `taste.mjs --out test/scratch/taste` | 16/16 passed against the final export |
+| `npm run build` | Pass; 14 files, 214,871 bytes. No runtime dependency download. |
+| `npm run typecheck` | Pass; the existing script parses all seven runtime scripts, checks 54 referenced element IDs, metadata/relative URLs and byte-for-byte source/export parity. |
+| `node test/scratch/node_modules/typescript/bin/tsc -p jsconfig.json --noEmit` | Pass; real TypeScript 5.9.3 `checkJs` using the existing configuration. This configuration checks config/rules/save/wallet/UI and declarations; canvas/audio are syntax-checked and exercised in Chromium rather than fully annotated by this TypeScript project. |
+| `node supabase/tests/squeek.mjs` | **51 pass**, executing actual migrations/functions with PGlite 0.5.15 (PostgreSQL). |
+| `node supabase/tests/squeek-client.mjs` | **13 pass**, actual save client plus actual PostgreSQL RPCs, explicit local Auth/HTTP fixtures. |
+| `PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-squeek.mjs /opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs test/scratch/node_modules/axe-core/axe.min.js` | **29 pass** in Chromium, including touch, keys, pickups, ammo, death/restart, overflow and wallet transitions. WebKit attempted and not runnable. |
+| `PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-market.mjs` | **10 pass**, actual production UI + PostgreSQL, fixture provider/Auth/HTTP only. Includes two tabs purchasing once, uncertain post-commit response and automatic board refresh at a shortened server reset deadline. |
+| `IMD_PLAYWRIGHT=/opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste` | **16/16 pass**: render, layout, targets, contrast, casing, tracking, eyebrows, type sizes, faces, glyphs, slogans, repetition, copy budget, chrome, motion and share metadata. |
 
-Functional checks total 175; design probe checks are a separate 16. Optional tools were Playwright 1.64.1, PGlite 0.5.15 and axe-core 4.14.0. Temporary installations and browser downloads are excluded from the delivery. Structured counts, probe output, source hashes and axe summaries are in `docs/validation/results.json`.
+The provided browser MCP connection returned `Transport closed` before navigation. Rendered validation instead used the provided Playwright/Chromium directly in bounded foreground scripts. No alternative browser installation was added. Tests and the probe recorded no uncaught runtime errors or missing local resources in their covered production flows.
 
-The provided browser tool failed with “Socket path too long”. A temporary local Playwright Chromium installation then performed the rendered checks and screenshots. WebKit was downloaded and attempted but could not launch its runtime; it was never recorded as a pass. An early probe overlapped a rebuild and saw a temporary asset 404; rebuilding first and rerunning the probe resolved it. Final independent previews reported no missing local assets or uncaught script errors.
+## Requested behavior coverage
 
-## Requirement coverage
-
-| Requested area | Implemented / verified evidence |
+| Requirement | Coverage and outcome |
 | --- | --- |
-| 20% SQK drops, size, names | Shared rule quantiles yield exactly 20,000/100,000; server coin masks reject ineligible claims. 36×31 coin, 1.15× hamster, opaque name label in game.js. |
-| Ranged/random/scaled monsters | Four randomized types, two sizes, 50/100/300 bases and HP/damage compounding. Ember fire is blocked from the front and fatal unblocked under existing rules. |
-| Mobile and keyboard | Captured circular joystick, independent action pointers, keyboard regression passes. 390 portrait plus 844×390 and 667×375 landscape. |
-| Audio | Real Web Audio analyser detects generated music/effects; separate gains/volume/mutes produce signal then silence and persist after reload. Movement/attack/jump/item/coin/quest/chest/level/victory hooks present; victory and level hooks exercised. No subjective listening test claimed. |
-| GUILD | Four native collapsible chapters, expanded trigger state, keyboard/focus return, all controls/rules/tutorials and original story. |
-| Seasons | Four distinct canvas captures; birds, sunlight, leaves and snow source/render paths. Reduced-motion behavior inspected. |
-| Compact/responsive UI | First 390 screen contains the product and main action. No overflow at 320/390/768/1440; menu checks at 200% text; landscape controls fit. |
-| Map victory | Required heading, winking hamster with readable SQK, finite animation, victory sound hook, statistics, next-map 360 boss HP and scaled regular HP. |
-| Fair optional Dice | Rejection sampling maps the 252 accepted byte values equally to six faces, separate draws per die. Enumeration yields HIGH 15, LOW 15, DRAW 6 out of 36. No SQK mutation. |
-| Dice achievements | Thresholds 20/50/100, persistent counts/wins; visible Bronze threshold UI; all three real server milestones tested. Source and SQL reject exchange. |
-| Badge Exchange | Separate sources; fixed 20/50/120 credits; actual UI exchange and focus return; SQL replays, two-tab local exchange and coin/purchase concurrency pass. Owner-only contribution issuance tested. |
-| Branding/domain | Desired concepts remain explicit. Existing website address retained. No domain, DNS, hosting or on-chain change attempted; replacement verification not applicable to this unchanged configuration. |
-| Account/backend preservation | Stable storage/session/outbox keys, retained unknown guest fields, populated migration tests, old active HP/coin entitlement, explicit old-page reload gate preventing old-policy new runs, purchase/cosmetic/map preservation, old/new client retry tests. |
-| Static export and metadata | Final dist/index.html and all 14 local runtime files; relative asset URLs, favicon, description, og:title and 1200×630 og:image. Existing package manifest/lockfile unchanged. |
-| Source/design/docs | Existing source extended; DESIGN.md extracts final tokens, components and responsive behavior; README includes rebuild and actual test results. |
+| Full-screen landscape; joystick, Attack, Jump, slots | Measured canvas exactly equals viewport at 844×390, 667×375 and 568×320. All six control boxes fit and are mutually non-overlapping. Simultaneous movement/jump pointers, cancellation, automatic touch pickups and slot taps pass. |
+| Compact menu/minimal HUD/fullscreen fallback | Four HUD metrics; seven utilities behind Menu. All how-to text in GUILD, subtitle/footer removed. Fullscreen request/fallback and any supported exit exercised in Chromium. Portrait rotate prompt inspected. Physical iPhone fallback remains unverified. |
+| Desktop controls | Arrow movement, retained four jump bindings, Enter/left-click attack and removed X/J attack verified; E required for desktop drops; keys 1/2/3 switch weapons. |
+| Weapons and ammo | Exactly 100 gun shots, rejected 101st shot, empty slot/fallback, refill capped at 100, separate bomb ammo and persistent sword entitlement checked in engine and SQL. Unlimited chestnut attacks exercised 150 times. |
+| Exclusive drops and score | Exact 10/40/20/10/10/10 split across 10,000 stratified client rolls; server sample of 6,200 drops within ±3.5 percentage points for every bucket, with exactly one drop per monster. All six entitlements, 1/5-point scoring and duplicate rejection checked. Original forage values compared between client/SQL. |
+| One-hit death and scaling | Actual monster contact and fire projectile hit each produce game over. Restart works. Small/large/boss HP and +20% map scaling checked. Player shield and health code/UI removed. |
+| Marketplace | All eight products match server catalogue exactly. Buy/equip/unequip, insufficiency, one-time upgrades, immediate +55% damage for all three weapons, duplicate/retry and two-tab purchase paths pass. Five costume overlays render distinctly on the existing sprite. |
+| Stored data and removed features | Migration over a populated prior schema retains exact profile/balance/inventory/cosmetics/history. Old shop entries become inactive; old reward-exchange/minigame RPCs are gone. Removed UI is absent. Private historical records remain. |
+| Wallet vs guest | Guests perform no Auth/signup or gameplay save request; old guest data is ignored and unchanged. Verified legacy attachment, mismatched cached session rejection, delayed-response isolation, queued action cancellation, account/network changes and disconnect are checked. Real signature verification is delegated to Supabase, not simulated as a production result. |
+| Daily Top 100 | Current-day wallet-only data, exact 100 cap, stable ties, old-day exclusion, timezone validation, DST conversion, midnight contribution rollover and later lower-score protection pass in SQL. Browser shows server rows, zone/reset time, empty state and automatic deadline refresh. |
+| Branding/static delivery | Title/header `squeek.hamster`; favicon/description/og:title/og:image present; relative runtime assets. Existing website address and hosting unmodified. |
 
-## Better Interface: all six domains
+A complete legal map replay through actual attack/hit/pickup events verifies saved SQK, chestnut-only points, map-clear checks and map 2 unlock. No forced HP-zero shortcut is used in that completion test. A comparison against the original committed source also confirms the tile-map builder, base hamster pixel rows and all four enemy/boss sprite constructors are unchanged; root package/lockfile, jsconfig, build/check scripts and ignore file are byte-for-byte unchanged. Encounter/HP/drop fixtures used for individual unit paths are identified inside their test files and are never shipped in production source.
 
-| Domain | Coverage | Evidence and limits |
+## Better Interface coverage: six domains
+
+| Domain | Reviewed evidence | Unperformed or inapplicable subchecks |
 | --- | --- | --- |
-| Accessibility | Checked: source + Chromium | Native dialog/details/radio/range/button semantics; field labels, error announcements, keyboard focus/return, pointer cancellation, reduced motion. Axe reported zero violations on the inspected entry/profile/shop/wallet/pause/GUILD/Audio/Dice/badge/victory surfaces. Screen-reader sessions and physical touch devices not verified. Canvas remains a visual, timed game, not a screen-reader gameplay mode. |
-| Layout | Checked: source + Chromium | Entry, forms, market, help, Dice/audio, portrait/landscape, widths 320/390/768/1440 and 200% text. No final horizontal overflow. Native browser zoom, other locales/RTL and physical safe-area behavior not verified. |
-| Writing | Checked: source + rendered panels | Existing cozy voice retained. Controls/rules moved into GUILD; real empty/error/retry states distinguish local/cloud data and legacy backend. Badge sources, no-staking Dice rules and concept-only domains are explicit. Singular/plural Dice labels corrected. |
-| Typography | Checked: source + Chromium | Existing system stacks, two weights and four active entry sizes at most. Full names/amounts wrap or fit. Probe passes size/tracking checks. Exact platform fallback face not established. |
-| Colors | Checked: source + rendered probe/axe | Existing hex/semantic palette retained. Measured entry pairs pass; examples in DESIGN.md. Eight media-overlay text boxes and per-pixel canvas/art contrast were not measured. No alternate theme exists to review. |
-| UI | Checked: source + Chromium | Hover/focus/pressed/disabled/pending/error/success states; native focus trapping; 150ms named transitions, 0.96 press scale; finite Dice/victory motion and reduced-motion guards. Browser Animations-panel replay at 10% speed was not performed. |
+| Accessibility | Native buttons/dialogs/forms, labels, live/error regions, Escape and focus return; 44px entry controls; inset canvas focus outline; keyboard paths and axe on entry/GUILD/market/audio. All four axe scans report zero violations in selected WCAG A/AA tags. | Native screen reader, forced-colors rendering and every focus ring against every art pixel unperformed. Axe retains incomplete color-contrast checks and entry-state aria-prohibited-attr/aria-valid-attr-value checks; zero violations is not full accessibility compliance. |
+| Layout | Actual 320/390/768/1440 viewports; three landscape phone sizes; 200% text enlargement; long HUD values; dialogue/menu reflow. First screen at 390 shows the game and Start. Screenshots inspected. | Browser-native zoom and RTL/localization not tested. No localization/theme feature is added. |
+| Writing | Short action labels, one consistent weapon vocabulary, recoverable purchase/login errors, explicit guest/cloud status, all instructions in GUILD. First-screen prose is 14 words at 390, below the 60-word probe bar. | Legal copy/localized copy not part of this game update. |
+| Typography | Existing native serif/system stacks, 400/700 weights, 14/16/20/28px roles, stable numbers and 16px inputs. Large values wrap without clipping; source and rendered screenshots reviewed. | Real OS fallback fonts and browser-native zoom not exhaustively tested. |
+| Colors | Existing bark/cream/amber roles retained; opaque control surfaces inspected. Computed opaque-pair contrast in DESIGN.md. Probe’s measured text passes 4.5:1/3:1 thresholds. | Probe excludes 19 text boxes over canvas/media; no claim of per-pixel art/alpha-overlay contrast. No second theme exists. |
+| UI details | Actual idle, pressed, selected, unavailable, loading, owned, equipped, insufficient-funds, retry and empty-board states; native modal scrolling/focus return; no repeated cards, glow or new decorative system. Reduced-motion CSS/engine guards reviewed and probe passes. | Slow-motion animation-panel inspection and native phone haptics not performed. No transaction flow exists to assess. |
 
-Review idea: the existing chestnut forest is the visual center, with compact bark-and-amber controls and seasonal life around it. No unrelated visual redesign, extra font or marketing hero was added. Guide notices/licenses remain in `docs/licenses/better-interface.txt`.
+## Findings and fixes
 
-## Findings, fixes and rechecks
-
-| Severity / source | Observed issue | Fix and recheck |
+| Severity and source | Observed issue / correction | Recheck |
 | --- | --- | --- |
-| High — `src/styles.css:789` | At 844 landscape, the touchpad's inherited 100% width plus absolute side insets made the document 860px wide. At 667×375 the joystick extended below the viewport. | Automatic width, separate safe-area insets, compact overlay actions and a scene height budget of 184px. Both landscape sizes now pass bounding-box and overflow checks; screenshot inspected. |
-| High — `src/ui.js:85` | Axe reported `label-content-name-mismatch` on the exchange button: the longer accessible name omitted its exact visible “Exchange · 20 SQK” label. | Accessible name now starts with that full visible label, followed by source/tier. Badge audit re-run: zero violations. Actual exchange removes it, updates SQK and restores useful focus. |
-| High — `src/save.js:35`, `src/save.js:155` | Source review found guest reward writes could replace a profile updated in another tab. Delayed cloud response acceptance also needed one ordering path. | Guest mutations share a fresh-read Web Lock when available; cloud RPC acceptance is serialized at `src/save.js:79`. Concurrent two-tab badge exchange and a coin reward alongside another tab's purchase preserve both balance/inventory. No-lock fallback concurrency remains unverified. |
-| Medium — `src/game.js:1750` | Decorative tree parallax still followed the camera under reduced motion. | Background camera offset becomes zero when reduced motion is enabled; existing particle/shake guards and new CSS motion guards remain. Source branch and reduced-motion render inspected. |
+| High — `src/styles.css:409`, `.game-chrome` | Initial fixed header/HUD placement overflowed to 404px at a 390px viewport with 200% text. Header and HUD now occupy growing grid rows; brand and long values wrap. | Full menu loop and GUILD at 200% text pass; 320 long-value screenshot inspected. |
+| High — `src/save.js:18`, `mutate`; `src/save.js:36`, `accept` | Review found a queued action could otherwise execute under the wallet selected later, and old responses could otherwise restore the wrong snapshot. Operations capture an identity generation; stale queued actions fail and stale snapshots are ignored. | Delayed-A-response/B-switch and queued-B-purchase/A-switch tests preserve each wallet’s balance, inventory and name. |
+| High — `src/save.js:89`, `signIn`; `003_squeek.sql`, `hf_prepare_legacy` | An expiring cached attachment ticket could prevent a later retry; a lost successful attachment must not strand the preserved profile. Login now requests a fresh ticket, and already attached legacy sessions identify their linked wallet without moving funds. | Attachment replay/established-wallet precedence/client legacy-login tests pass. |
+| Medium — `src/styles.css:423`, narrow slot sizing | Weapon labels’ intrinsic widths could bring the row too close to the joystick at 320px. Explicit 44px slots/2px inline padding and a 76px joystick retain a visible gap. | 320px long-values/control screenshot inspected; landscape bounding-box checks pass. |
+| Medium — `src/game.js:598`, `updateHud`; `src/styles.css:419` | Empty gun state needed to remove the weapon’s visible art and selection, while retaining its numeric slot. Zero ammo removes ownership, hides its icon and returns to chestnuts. | 100-shot engine/SQL tests, disabled slot and unlimited fallback pass. |
+| Low — `src/styles.css`, final stage-tools/canvas rules | Probe measured Fullscreen only 26px wide; an outside canvas outline could be clipped by the viewport. Utilities now have a 44px minimum width and the canvas focus ring is inset. | Final probe: zero entry controls under 44px. Keyboard and viewport checks pass. |
 
-A final screenshot review also found two long character labels overlapping in the non-playable title illustration. Those ornamental title labels were removed; the active player keeps the opaque name label above Chang (`src/game.js:1739`). The named-player gameplay capture and final entry were rechecked.
+A final preservation review restored the original five-line opening story on first play; the browser helper advances its actual dialogue before testing combat.
 
-A final stability review found that a failed cloud restart had already ended the old run, but its old pause screen could still resume that unsaved world (`src/game.js:675`). The error path now ends that world and offers Retry; the actual client/SQL test verifies the old run cannot resume and retry retains SQK/name.
-
-An intentionally uppercase GUILD label and SQK/HIGH/LOW/DRAW branding/rules follow the brief. Lettering within game/SVG art is not HTML typography. Compact landscape utilities are 32px high, above the 24px minimum; primary touch combat controls remain at least 44px.
+The optional “two reviewer-found bugs” were not supplied with concrete IDs/reproductions in this brief. The existing failed-restart guard is retained and regression-tested: a failed setup cannot resume a stale world without save tracking. Existing elapsed-frame bomb burn timing is retained and server timing/upgrade tests pass. No claim is made to resolve unidentified findings.
 
 ## Evidence and limitations
 
-Current screenshots under `docs/validation/screenshots/` show entry, play, desktop, GUILD, Audio, Dice, Badge Exchange, landscape and victory. Badge/victory/season encounter screenshots use explicitly injected test fixtures; they are interface evidence, not live-user balances or a real leaderboard. The game exports no seeded fixture data.
+The compact machine-readable summary is `docs/validation/results.json`. Selected genuine screenshots are under `docs/validation/screenshots/`: phone entry, desktop entry, landscape gameplay/weapons, long values, GUILD, owned costume and daily rankings. Temporary full probe files, additional state screenshots and raw axe details remain under `test/scratch/` and are not submission assets. Superseded validation screenshots are removed rather than presented as this release’s evidence.
 
-Outstanding: real Supabase configuration/activation and live smoke tests, WebKit/Safari, physical phones/notches/audio output, screen readers, native zoom and long-duration play across many maps. Server/backend unit tests ran with the real SQL locally, not a hosted project. No load/security audit or claim of complete accessibility certification is made. Publication and future domain verification belong to the existing hosting process; no replacement address, deployment or external verification was fabricated.
+Live backend URL/key and Web3 Auth redirect settings were not provided. Hosted Auth, real signature verification, live legacy attachment/purchases and physical iPhone/Android fullscreen behavior therefore need owner/device validation. WebKit was attempted and unavailable, so Safari is not marked passed. Chromium touch emulation is not a device test. 200% text enlargement is not native browser zoom. The inherited server validates game events, not a full authoritative movement simulation. One active gameplay tab per wallet remains the supported model; multi-tab purchases are separately tested.
 
-## Packaging path budget
+The network’s structural verifier checks paths/bytes only. These are actual local worker observations, not independent certification or evidence that the unconfigured live service already works.
 
-Temporary verification packages, browser downloads and scratch outputs were removed after copying the required evidence. Deleting the tool-managed root cache encountered a read-only `lock`; its contents were not read or included in the delivery. The narrow `/.cache/` ignore rule has an explicit submission budget of **0 files / 0 bytes**. No source, runtime asset, lockfile, documentation or required export path is covered by that rule.
+Final structural check: the source/export/documentation tree is about 1.18 MiB, below the 8 MiB cap. Required paths are not ignored, protected build/package/ignore files are unchanged, no submodule is present, and no dependency/cache archive is included. `git diff --check` passes. The worker stages/commits the prepared tree after this task; no Git mutation was performed here.

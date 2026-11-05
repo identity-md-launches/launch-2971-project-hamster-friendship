@@ -6,7 +6,7 @@
   try { Object.assign(settings, JSON.parse(localStorage.getItem(key) || '{}')); } catch (_) { storageOK = false; }
   ['music', 'sfx'].forEach(function (k) { settings[k] = Math.max(0, Math.min(1, Number(settings[k]) || 0)); });
   var melody = [60, 64, 67, 69, 67, 64, 62, 64, 60, 64, 67, 72, 69, 67, 64, 62];
-  var effects = { move: [160], attack: [330, 180], jump: [262, 392], coin: [784, 1047], item: [523, 659], quest: [523, 659, 784], chest: [392, 523, 659, 784], level: [523, 659, 784, 1047], victory: [523, 659, 784, 1047, 784, 1047], shield: [220, 330], hurt: [180, 110], dice: [440, 523, 659] };
+  var effects = { move: [160], attack: [330, 180], jump: [262, 392], coin: [784, 1047], item: [523, 659], quest: [523, 659, 784], chest: [392, 523, 659, 784], level: [523, 659, 784, 1047], victory: [523, 659, 784, 1047, 784, 1047], hurt: [180, 110] };
   var last = {};
   function gains() {
     if (!context) return;

@@ -1,4 +1,4 @@
-/* Connection only. No authentication, signatures, transactions, or approvals.
+/* Connection and explicit Supabase Web3 login. No transactions or approvals.
    Uses EIP-6963 discovery and the EIP-1193 provider already inside the wallet. */
 (function () {
   'use strict';
@@ -16,6 +16,7 @@
   }
   function short(value) { return value.slice(0, 6) + '…' + value.slice(-4); }
   function renderControl() {
+    void window.HamsterSave.setWallet(address && chain === '0x1' ? address : '');
     button.textContent = address ? chain === '0x1' ? short(address) : 'Switch to Mainnet' : 'Connect MetaMask';
     button.setAttribute('aria-label', address ? chain === '0x1' ? 'Wallet ' + short(address) + '. Open connection details' : 'Switch to Mainnet · Ethereum Mainnet' : 'Connect MetaMask');
   }
@@ -67,8 +68,8 @@
       if (chain !== '0x1') throw new Error('Switch your wallet to Ethereum Mainnet, then try again.');
       remembered = entry.id;
       try { localStorage.setItem('hamster-wallet-provider', remembered); } catch (_) { /* optional */ }
-      status.textContent = 'Connected to Ethereum Mainnet. Your wallet is only displayed on this device.';
-      renderControl(); dialog.close(); button.focus();
+      status.textContent = window.HamsterSave.snapshot().configured ? 'Connected. Sign in below to save your progress.' : 'Connected. Cloud saves are not available yet; guest play is ready.';
+      renderControl();
     } catch (error) {
       status.textContent = error.code === 4001 ? 'The wallet request was declined. Try again or continue as a guest.' : error.code === -32002 ? 'A request is already open in your wallet. Complete it there, then retry.' : 'Unable to connect. ' + (error.message || 'Open your wallet and retry.');
       renderControl();
@@ -88,6 +89,20 @@
       var full = document.createElement('p'); full.className = 'wallet-address'; full.textContent = address; options.append(full);
       var network = document.createElement('p'); network.className = 'panel-note'; network.textContent = chain === '0x1' ? 'Connected · Ethereum Mainnet (1)' : 'Wrong network · Ethereum Mainnet required'; options.append(network);
       if (chain !== '0x1') row('Switch to Ethereum Mainnet', function () { void connect(selected); });
+      var saveState = window.HamsterSave.snapshot();
+      if (chain === '0x1' && !saveState.cloud) {
+        var keepLegacy = null;
+        if (saveState.legacyAvailable) {
+          var label = document.createElement('label'); label.className = 'mute-label'; keepLegacy = document.createElement('input'); keepLegacy.type = 'checkbox'; keepLegacy.checked = true;
+          label.append(keepLegacy, document.createTextNode('Keep this browser’s existing cloud balance and progress')); options.append(label);
+        }
+        row(busy ? 'Signing in…' : 'Sign in to save', async function () {
+          if (busy) return; busy = true; status.textContent = 'Confirm the login message in your wallet. This costs no gas.';
+          try { await window.HamsterSave.signIn(selected.provider, address, Boolean(keepLegacy && keepLegacy.checked)); status.textContent = 'Signed in. Restart the map for saved progress.'; }
+          catch (error) { status.textContent = error.code === 4001 ? 'Login declined. Continue as a guest or retry.' : error.message; }
+          finally { busy = false; renderOptions(); }
+        });
+      } else if (saveState.cloud) { var saved = document.createElement('p'); saved.className = 'panel-note'; saved.textContent = 'Verified wallet profile · cloud saves enabled.'; options.append(saved); }
       row('Disconnect', disconnected);
       return;
     }
@@ -123,10 +138,10 @@
     add({ id: legacy.isMetaMask ? 'io.metamask' : 'legacy', name: legacy.isMetaMask ? 'MetaMask' : 'Browser wallet', provider: legacy });
   }
   button.addEventListener('click', function () {
-    window.__hamster.pause(); renderOptions(); status.textContent = ''; dialog.showModal();
+    (/** @type {HTMLDialogElement} */ (document.getElementById('menu-dialog'))).close(); window.__hamster.pause(); renderOptions(); status.textContent = ''; dialog.showModal();
   });
   document.getElementById('close-wallet').addEventListener('click', function () { dialog.close(); });
   dialog.addEventListener('click', function (event) { if (event.target === dialog && (event.clientX < dialog.getBoundingClientRect().left || event.clientX > dialog.getBoundingClientRect().right || event.clientY < dialog.getBoundingClientRect().top || event.clientY > dialog.getBoundingClientRect().bottom)) dialog.close(); });
-  dialog.addEventListener('close', function () { button.focus({ preventScroll: true }); });
+  dialog.addEventListener('close', function () { document.getElementById('btn-menu').focus({ preventScroll: true }); });
   window.HamsterWallet = { snapshot: function () { return { address: address, chainId: chain, connected: Boolean(address && chain === '0x1'), pending: busy }; } };
 })();
