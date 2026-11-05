@@ -152,6 +152,6 @@
   });
   document.getElementById('close-wallet').addEventListener('click', function () { dialog.close(); });
   dialog.addEventListener('click', function (event) { if (event.target === dialog && (event.clientX < dialog.getBoundingClientRect().left || event.clientX > dialog.getBoundingClientRect().right || event.clientY < dialog.getBoundingClientRect().top || event.clientY > dialog.getBoundingClientRect().bottom)) dialog.close(); });
-  dialog.addEventListener('close', function () { document.getElementById('btn-menu').focus({ preventScroll: true }); });
+  dialog.addEventListener('close', function () { button.focus({ preventScroll: true }); });
   window.HamsterWallet = { snapshot: function () { return { address: address, chainId: chain, connected: Boolean(address && chain === '0x1'), pending: busy }; } };
 })();

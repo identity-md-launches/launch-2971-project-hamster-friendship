@@ -6,14 +6,16 @@
   var config = window.HAMSTER_CONFIG || { supabaseUrl: '', supabasePublishableKey: '' };
   var configError = !config.supabaseUrl || !config.supabasePublishableKey ? 'Cloud storage is not configured. The site owner must connect the existing Supabase project. Guest play is available; it is not saved.' : '';
   if (!configError && (!/^https:\/\//.test(config.supabaseUrl) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(config.supabaseUrl))) configError = 'Cloud configuration is invalid. Ask the site owner to check the Supabase URL.';
-  if (/^sb_secret_/.test(config.supabasePublishableKey)) configError = 'Cloud configuration is invalid. Only a browser-safe publishable key is allowed.';
+  var keyRole = '';
+  try { keyRole = JSON.parse(atob((config.supabasePublishableKey.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/'))).role || ''; } catch (_) {}
+  if (/^sb_secret_/.test(config.supabasePublishableKey) || keyRole === 'service_role') configError = 'Cloud configuration is invalid. Only a browser-safe publishable key is allowed.';
   var CLOUD = !configError;
   var url = String(config.supabaseUrl).replace(/\/$/, ''), prefix = 'hamster-friendship-v2';
   var listeners = [], storageOK = true, generation = 0, wallet = '', session = null;
   var guestProfile = empty(), profile = guestProfile, cloud = false, active = null, outbox = [], recovery = [], flushing = null;
   var status = CLOUD ? 'Guest · connect a wallet to save.' : configError;
   var mutation = Promise.resolve(), rpcFlight = Promise.resolve(), backendReady = false;
-  function empty() { return { name: 'Guest', sqk: 0, total_score: 0, highest_map: 1, purchases: [], cosmetics: {} }; }
+  function empty() { return { name: 'Guest', sqk: 0, total_score: 0, highest_map: 1, produce_points: 0, purchases: [], cosmetics: {} }; }
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(prefix + key) || 'null') || fallback; } catch (_) { storageOK = false; return fallback; } }
   function write(key, data) { try { localStorage.setItem(prefix + key, JSON.stringify(data)); return true; } catch (_) { storageOK = false; return false; } }
   function notify() { listeners.forEach(function (fn) { fn(); }); }
@@ -27,7 +29,7 @@
   async function request(path, body, token, method) {
     var control = new AbortController(), timer = setTimeout(function () { control.abort(); }, 10000);
     try {
-      var response = await fetch(url + path, { method: method || 'POST', headers: Object.assign({ apikey: config.supabasePublishableKey, 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body), signal: control.signal });
+      var response = await fetch(url + path, { method: method || 'POST', headers: Object.assign({ apikey: config.supabasePublishableKey, 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body), signal: control.signal, keepalive: path === '/rest/v1/rpc/hf_progress' });
       var data = await response.json().catch(function () { throw new Error('Cloud returned an unreadable response. Pending progress has been kept. Retry the save.'); });
       if (!response.ok) throw new Error(data.msg || data.message || data.error_description || 'Cloud request failed. Check your connection and retry.');
       return data;
@@ -37,9 +39,9 @@
     if (backendReady) return;
     try {
       var data = await request('/rest/v1/rpc/hf_service_status', {});
-      if (data.schemaVersion !== 5 || data.leaderboard !== 'lifetime') throw new Error('The verified wallet and recovery migration is not installed.');
+      if (data.schemaVersion !== 6 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime') throw new Error('The four-world persistence migration is not installed.');
       backendReady = true;
-    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 005. ' + error.message); }
+    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 006. ' + error.message); }
   }
   async function access(auth, key) {
     if (!auth) throw new Error('Sign in with MetaMask to save.');
@@ -62,7 +64,41 @@
     });
     rpcFlight = result.catch(function () {}); return result;
   }
-  function persist(queue, address) { write('-wallet-outbox-' + address, queue); notify(); }
+  // One durable key per run prevents another tab's run from overwriting this
+  // tab's queue. The old array is migrated without changing any event/score.
+  function runKey(address, id) { return '-run-outbox-' + address + '-' + id; }
+  function mergedRun(run, address, through) {
+    var stored = read(runKey(address, run.id), null), ack = Math.max(run.ack || 0, stored && stored.ack || 0, through || 0), events = {};
+    (stored && stored.events || []).concat(run.events).forEach(function (e) { if (e.seq > ack) events[e.seq] = e; });
+    return Object.assign({}, stored, run, { ack: ack, events: Object.values(events).sort(function (a, b) { return a.seq - b.seq; }) });
+  }
+  function persist(queue, address) {
+    queue.forEach(function (run) { var merged = mergedRun(run, address); Object.assign(run, merged); write(runKey(address, run.id), merged); }); notify();
+  }
+  function retire(run, address, through) {
+    // Another tab may have appended while this tab awaited the acknowledgement.
+    // Remove only acknowledged (or explicitly archived) sequences, never its
+    // newer events. A refresh can recover the remaining durable run.
+    var merged = mergedRun(run, address, through);
+    if (merged.events.length) { write(runKey(address, run.id), merged); return; }
+    try { localStorage.removeItem(prefix + runKey(address, run.id)); } catch (_) { storageOK = false; }
+  }
+  function loadQueue(address) {
+    var old = read('-wallet-outbox-' + address, []), queue = [];
+    if (Array.isArray(old) && old.length) {
+      if (old.every(function (run) { return write(runKey(address, run.id), run); })) write('-wallet-outbox-' + address, []);
+    }
+    try {
+      var match = prefix + '-run-outbox-' + address + '-';
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i); if (!key || !key.startsWith(match)) continue;
+        var run = JSON.parse(localStorage.getItem(key));
+        if (run && run.id && Array.isArray(run.events)) queue.push(run);
+      }
+    } catch (_) { storageOK = false; }
+    if (!queue.length && Array.isArray(old)) queue = old;
+    return queue;
+  }
   async function flush() {
     if (!cloud || !session || !outbox.length) return;
     if (flushing && flushing.generation === generation) return flushing.promise;
@@ -71,7 +107,7 @@
       try {
         while (queue.some(function (r) { return !r.conflict; })) {
           var run = queue.find(function (r) { return !r.conflict; });
-          if (!run.events.length) { queue.splice(queue.indexOf(run), 1); continue; }
+          if (!run.events.length) { queue.splice(queue.indexOf(run), 1); retire(run, address); continue; }
           var events = run.events.slice(0, 128);
           var result;
           try { result = await rpc('hf_progress', { p_run: run.id, p_events: events }, auth, address, epoch); }
@@ -81,9 +117,10 @@
             var remote;
             try { remote = await rpc('hf_run_state', { p_run: run.id }, auth, address, epoch); } catch (_) { throw error; }
             if (!remote || !['abandoned', 'dead', 'complete'].includes(remote.status) || !Number.isSafeInteger(remote.ack) || remote.ack < 0) throw error;
+            run.ack = remote.ack;
             run.events = run.events.filter(function (e) { return e.seq > remote.ack; });
             if (!run.events.length && !(epoch === generation && active && active.id === run.id)) {
-              queue.splice(queue.indexOf(run), 1); persist(queue, address); continue;
+              queue.splice(queue.indexOf(run), 1); retire(run, address); persist(queue, address); continue;
             }
             run.conflict = { status: remote.status, ack: remote.ack };
             persist(queue, address);
@@ -94,8 +131,9 @@
             continue;
           }
           if (!result || !Number.isSafeInteger(result.ack) || result.ack < events[events.length - 1].seq) throw new Error('Cloud did not acknowledge these events. Pending progress has been kept. Retry the save.');
+          run.ack = result.ack;
           run.events = run.events.filter(function (e) { return e.seq > result.ack; });
-          if (!run.events.length) queue.splice(queue.indexOf(run), 1); persist(queue, address);
+          if (!run.events.length) { queue.splice(queue.indexOf(run), 1); retire(run, address); } persist(queue, address);
         }
         if (epoch === generation) status = hasConflict() ? conflictMessage() : 'Wallet profile saved.';
       } catch (error) { if (epoch === generation) status = 'Save pending. ' + error.message + ' Open Profile and retry.'; }
@@ -106,7 +144,7 @@
   async function restore(epoch) {
     if (!CLOUD || !wallet) return;
     var address = wallet; session = read('-wallet-session-' + address, null);
-    outbox = read('-wallet-outbox-' + address, []); if (!Array.isArray(outbox)) outbox = [];
+    outbox = loadQueue(address);
     recovery = read('-wallet-recovery-' + address, []); if (!Array.isArray(recovery)) recovery = [];
     if (!session) { status = 'Wallet connected. Sign a login message to save.'; notify(); return; }
     try {
@@ -163,7 +201,7 @@
     var epoch = generation, loot, monsters, id = uuid(), ranked = cloud;
     if (ranked) {
       if (outbox.length) throw new Error('Retry your pending cloud save in Profile before starting another map.');
-      var result = await rpc('hf_start_run_v4', { p_map: map });
+      var result = await rpc('hf_start_run_v6', { p_map: map });
       if (epoch !== generation) throw new Error('The wallet changed. Start this map again.');
       id = result.id; loot = result.loot; monsters = result.monsters;
     } else {
@@ -171,7 +209,7 @@
       monsters = Array.from({ length: 30 }, function () { return window.HamsterRules.monster(Math.random(), Math.random(), map); });
     }
     active = { id: id, ranked: ranked, seq: 0, score: 0, lastFrame: 0, claimed: {}, defeated: {}, forage: {}, loot: loot };
-    notify(); return { loot: loot, monsters: monsters, rulesVersion: 4, ranked: ranked, purchases: profile.purchases.slice() };
+    notify(); return { loot: loot, monsters: monsters, rulesVersion: 6, ranked: ranked, purchases: profile.purchases.slice() };
   }
   function record(kind, data, frame) {
     if (!active) return null;
@@ -187,16 +225,18 @@
       if (!run) { run = { id: active.id, loot: active.loot, events: [] }; outbox.push(run); }
       run.events.push(event); persist(outbox, wallet);
     } else {
+      var beforeScore = active.score;
       if (kind === 'pickup') {
         var drop = active.loot[data.target]; if (drop === 'coin') guestProfile.sqk++; else if (drop === 'small' || drop === 'big') active.score += drop === 'big' ? 5 : 1;
       }
       if (kind === 'forage') active.score += window.HamsterRules.forageValue(data.source);
       if (kind === 'finish') guestProfile.highest_map = Math.max(guestProfile.highest_map, data.map + 1);
-      if (kind === 'finish' || kind === 'death') guestProfile.total_score += active.score;
+      guestProfile.total_score += active.score - beforeScore; guestProfile.produce_points += active.score - beforeScore;
       notify();
     }
     if (kind === 'defeat') active.defeated[data.target] = true;
     if (kind === 'death' || kind === 'finish') { active = null; void flush(); }
+    else if (kind === 'forage' || kind === 'pickup') void flush();
     return event.seq;
   }
   async function saveName(name) {
@@ -246,6 +286,7 @@
     // Do not unblock play by silently throwing away rejected progress. Keep a
     // durable, wallet-specific recovery record before retiring the active queue.
     if (!write('-wallet-recovery-' + address, archived)) throw new Error('Browser storage could not keep the recovery record. Keep this page open and download the record from Profile before freeing site storage and trying again.');
+    outbox.forEach(function (run) { retire(run, address, Math.max(run.ack || 0, ...run.events.map(function (e) { return e.seq; }))); });
     recovery = archived; outbox = []; persist(outbox, address);
     status = 'Cloud profile restored. Unsent events are kept in the recovery record on this browser; they have not been credited.';
     notify();
@@ -256,10 +297,11 @@
     saveName: function (name) { return mutate(function () { return saveName(name); }); },
     purchase: function (id) { return mutate(function () { return purchase(id); }); },
     equip: function (slot, id) { return mutate(function () { return equip(slot, id); }); }, leaderboard: leaderboard,
+    legacyRecord: function () { return { warning: 'Unverified browser data. Not credited to the leaderboard.', profile: read('-guest', null) }; },
     subscribe: function (fn) { listeners.push(fn); },
     retry: retry, recover: function () { return mutate(recover); },
     recoveryRecord: function () { return JSON.parse(JSON.stringify({ wallet: wallet, runs: recovery.concat(outbox.filter(function (r) { return r.conflict; })) })); },
-    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, status: status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
+    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, status: status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), localLegacyAvailable: Boolean(read('-guest', null)), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
   };
   window.addEventListener('online', function () { if (cloud) void flush(); });
   window.addEventListener('pagehide', function () { if (cloud) void flush(); });

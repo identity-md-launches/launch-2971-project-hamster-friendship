@@ -460,3 +460,49 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
 .leaderboard th:last-child { width: 16%; }
 @media (max-width: 28rem) { #btn-fullscreen { display: none; } .leaderboard th, .leaderboard td { padding-inline: 4px; } }
 @media (orientation: landscape) and (max-height: 34rem) { .game-chrome .hud { padding-block: 2px; } }
+
+/* Major update: map identity, a visible timer and deliberate touch targets. */
+.route-status { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-inline: max(12px, env(safe-area-inset-left)); width: fit-content; max-width: calc(100% - 24px); padding: 4px 10px; border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+#hud-environment { color: var(--color-text); font-weight: 700; }
+#hud-growth, #map-hint { margin-block-end: 12px; }
+#pickup-weapon { position: absolute; z-index: 4; inset: auto auto max(124px, calc(env(safe-area-inset-bottom) + 116px)) 50%; translate: -50% 0; min-height: 52px; min-width: 112px; font-size: var(--text-sm); touch-action: manipulation; }
+body:not([data-game-state="playing"]) #pickup-weapon { display: none; }
+.stage-tools #btn-wallet { min-width: 44px; }
+#entry-save { max-width: 34ch; }
+@media (max-width: 52rem), (pointer: coarse) {
+  .joystick { width: 104px; height: 104px; }
+  .attack-btn { width: 92px; height: 92px; }
+  .jump-btn { width: 68px; height: 68px; right: max(28px, env(safe-area-inset-right)); bottom: max(124px, calc(env(safe-area-inset-bottom) + 112px)); }
+  .weapon-slots { gap: 10px; right: max(126px, calc(env(safe-area-inset-right) + 114px)); bottom: max(24px, env(safe-area-inset-bottom)); }
+  .weapon-slot { width: 56px; min-width: 56px; min-height: 68px; }
+}
+@media (max-width: 28rem) {
+  .site-header { align-items: start; }
+  .site-header h1 { max-width: 120px; padding-block: 10px; }
+  .stage-tools { max-width: 220px; }
+  .stage-tools .btn { padding-inline: 10px; }
+  .joystick { width: 88px; height: 88px; left: 12px; bottom: max(24px, env(safe-area-inset-bottom)); }
+  .attack-btn { width: 76px; height: 76px; right: 12px; bottom: max(24px, env(safe-area-inset-bottom)); }
+  .jump-btn { width: 64px; height: 64px; right: 18px; bottom: max(120px, calc(env(safe-area-inset-bottom) + 108px)); }
+  .weapon-slots { gap: 8px; right: 100px; bottom: max(24px, env(safe-area-inset-bottom)); }
+  .weapon-slot { width: 48px; min-width: 48px; min-height: 68px; }
+}
+@media (max-width: 23rem) {
+  .weapon-slots { bottom: max(132px, calc(env(safe-area-inset-bottom) + 120px)); left: 12px; right: auto; }
+  #pickup-weapon { bottom: max(216px, calc(env(safe-area-inset-bottom) + 204px)); }
+}
+@media (orientation: landscape) and (max-height: 34rem) {
+  .route-status { padding-block: 2px; }
+  .game-chrome .site-header { flex-wrap: nowrap; }
+  .stage-tools #btn-change { display: none; }
+  #pickup-weapon { bottom: max(110px, calc(env(safe-area-inset-bottom) + 102px)); }
+}
+
+/* Text zoom can make the chrome taller than a fixed inset. Observe its actual
+   height and give screens their own scrollable space below it. */
+body[data-game-state="title"] #rotate-hint { display: none; }
+.overlay { inset-block-start: calc(var(--chrome-height, 140px) + 8px); padding: 24px 16px 32px; justify-content: flex-start; justify-content: safe center; }
+.overlay > * { flex-shrink: 0; }
+.rotate-overlay { inset-block-start: calc(var(--chrome-height, 140px) + 16px); max-height: calc(100% - var(--chrome-height, 140px) - 32px); }
+.dialogue { max-height: calc(100% - var(--chrome-height, 140px) - 24px); overflow-y: auto; }
+.game-error, .toast { inset-block-start: calc(var(--chrome-height, 140px) + 8px); }

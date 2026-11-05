@@ -1,90 +1,80 @@
-# squeek.hamster
+# Squeek · The Lost Alice
 
-An in-place update of **Hamster Friendship: The Lost Alice**. The existing forest, pixel renderer, story, characters, audio, combat, drop rates, prices and damage balance remain. The existing production address is unchanged:
+An in-place update of the existing Hamster Friendship pixel-art adventure. The original canvas engine, Chang/Alice artwork, story clues, marketplace, costumes, SQK economy, MetaMask connector, audio settings, static build and hosting name remain.
 
-[hamster-friendship-the-lost-alic.identitymd.eth.limo](https://hamster-friendship-the-lost-alic.identitymd.eth.limo/).
+**Production Supabase is not connected or verified.** The supplied `src/config.js` and `dist/config.js` have empty public settings, and the supplied project history identifies no Supabase project. This update implements and locally tests the integration and an additive migration for the **original** database. It does not substitute a new backend or fabricate credentials. Guest play is usable immediately and clearly marked as unsaved. The original project's owner must complete the configuration below before permanent saves and global rankings can be used on the hosted site.
 
-**Production cloud saves are not fixed or verified yet.** Both public Supabase settings were empty in the supplied checkout and the live `config.js` checked on 2026-11-05. No input identifies the original backend. This delivery supplies the tested frontend and migration, but does not invent a replacement project, migrate production or publish the site. Guest play works immediately. See [VALIDATION.md](VALIDATION.md) for actual test coverage and production blockers.
+## Install, preview and rebuild
 
-## Reviewed revision
-
-All four reopened findings reproduced and are corrected in place: verified Web3 identities now use Supabase's nested claims through migration 005; ended maps have an explicit recovery/restart with a retained downloadable record; leaderboard refresh retains rows, scroll and focus; disconnect renders the guest's actual entry labels. No game rules, artwork, root build/dependency files or production URL changed. The revision responses are in `.imd-responses.json`; the detailed reproduction and checks are in [VALIDATION.md](VALIDATION.md).
-
-## Install, build and preview
-
-Use Node 18 or later. This existing application is plain HTML/CSS/JavaScript with no runtime dependencies; its package manifest and lockfile are unchanged. No Vite/React conversion or second project was created.
+Use Node 18 or newer. The website has no runtime npm dependencies; its existing root manifest and lockfile are retained unchanged.
 
 ```sh
-npm ci --ignore-scripts
+npm ci
 npm run build
 npm run check
 npm run preview
 ```
 
-Open `http://localhost:4173/`. The production build copies 18 necessary files from `src/` to root `dist/`. All runtime assets, the manifest and icons use relative URLs and work under a static hosting subpath. No server, secrets, remote fonts, wallet relay or runtime CDN is required for guest play. Wallet cloud features use the owner's existing Supabase service once configured.
+Open `http://localhost:4173/`. Stop the preview with Ctrl+C. The production build copies 18 complete runtime files from `src/` to committed `dist/`. It uses relative URLs, a relative manifest/start URL, local art/icons/share image and no runtime CDN. The export was also tested beneath `/squeek/`, without route rewrites. The existing hosting name `hamster-friendship-the-lost-alic.identitymd.eth` and domain configuration are preserved; no deployment or naming action was performed.
 
-`npm run typecheck` is the inherited syntax/export checker. Actual JavaScript type analysis was additionally run using TypeScript against `jsconfig.json` and the new viewport module; do not confuse the two checks.
+## What changed
 
-## Modified features
+| Map | Exploration timer | Boss | Gameplay and scenery |
+| --- | --- | --- | --- |
+| Amber Canopy | 60 s | Cockroach | Original forest; airborne moths, wasps and gnats; telegraphed swoops and a winged boss swoop/charge. |
+| Frostfall Reach | 90 s | Penguin | Glacier peaks, ice crystals and shelves; slippery movement; ice shooters; fan volleys and belly slides. |
+| Cinder Caldera | 120 s | Dragon | Volcanoes, basalt pillars and embers; drakes and cinder creatures; fire projectiles, flame breath and wing-assisted hops. |
+| Tidal Hollow | 150 s | Shark | Coral, reef terraces and distant wrecks; aerial currents and water bursts; arcing volleys and shark rushes. |
 
-- **Lifetime Top 100:** replaces the daily board, reset countdown and calendar filtering. Only verified wallet-linked profiles with positive scores qualify. Rankings refresh every 15 seconds while open and on returning to the tab, with manual refresh and an error/retry state. No sample players are shipped.
-- **Separate scores:** Current Map Score shows the current run's points. Lifetime Score in Profile and Menu shows ended sessions across maps. Death, completion and restart/abandonment end a session. Active-run points settle once, in the same database transaction as the terminal event. Existing stored totals are retained exactly, including points credited by earlier versions to then-active runs. Historical daily bests are archived, not added on top of already-counted totals.
-- **Cloud readiness and saves:** the client checks migration 005 before asking for a login signature. Invalid configuration, failed requests and missing migrations remain visible. An unreadable or unacknowledged response cannot discard queued events. Retry also reloads the verified profile, allowing acknowledged changes from another device to appear. Terminal run conflicts use recovery rather than retry.
-- **Profile separation:** a guest's temporary profile stays separate in memory when switching wallets or disconnecting. It never uploads into a wallet account. Wallet authentication sessions and unsent event queues remain address-partitioned. Server balances and inventory remain authoritative.
-- **Verified identity:** migration 005 reads the verified address/chain from `auth.identities.identity_data.custom_claims`; it retains migration 004’s resolution of a canonical lowercase verified wallet to its original profile even if Supabase gives that same wallet a different Auth UUID. Original balances and purchase ownership are not merged or overwritten.
-- **Mobile display:** `100dvh`/`100dvw`, VisualViewport resizing, safe-area insets, optional landscape lock after connection/play/fullscreen, and a rotate overlay. Rotation pauses and resumes the same world, rather than creating a map or changing wallet identity. Portrait play remains available.
-- **Fullscreen/Home Screen:** a user-triggered fullscreen option, recoverable denial notice and a relative standalone manifest with local hamster icons. On narrow phones Fullscreen moves into Menu, leaving Change it visible beside Menu. Safari limitations are explained next to these options. No offline cache/service worker is installed.
-- **Touch input:** ordinary buttons use `touch-action: manipulation`; the canvas, joystick and held action buttons retain gesture isolation. Repeated attacks/jumps and simultaneous movement/action touches remain responsive. Pinch zoom is not disabled across the page.
-- **Change it:** visible on desktop and phone entry screens and in Menu. It opens owned costumes and calls the very same equip/unequip logic and Supabase RPC as Marketplace, without buying an item or charging SQK. Empty inventory links to Marketplace. **Interpretation:** the supplied checkout contained no control or handler named Change it; this exposes its existing costume functionality rather than inventing a separate cosmetic store or changing seasonal/gameplay rules.
-- **Branding:** title, visible name, share-card heading and standalone app identity use `squeek.hamster`. The underlying project and original artwork remain Hamster Friendship. [docs/DOMAIN.md](docs/DOMAIN.md) records domain findings and alternatives.
+The timers count **active exploration time until boss appearance**, preserving the game's existing timed-boss convention. Boss combat can extend a map; dialogue, pause and menus stop the exploration timer. The boss waits at the exit. Defeating it automatically starts the next map after a short defeat animation, without a metal fragment or clearing every regular enemy. Enemy/projectile hazards cannot cancel a victory during the defeat animation; exiting during it queues completion synchronously. Shark ends the four-map adventure. Existing map unlocks above four remain stored; a completed returning profile starts a new four-map adventure rather than having its record reset.
 
-## Play and saved data
+- Carrots, apples, pears, strawberries and turnips replace collectible chestnuts. Nearby produce and SQK collect automatically. Small produce scores 1, large produce 5; existing cache values are unchanged.
+- Weapons always require **E** on desktop or the visible **PICK UP** button on touch. One press claims only the nearest weapon. Gun/bomb/sword slots, ammunition and purchased damage upgrades remain.
+- Every 20 produce points increases Chang's visual size. Growth carries across saved maps/visits through `produce_points`, rises from scale 1.15 toward 2.05 and leaves the original 12×14 collision body and foot anchor stable. Historical scores do not invent a produce-growth history.
+- In-world SQK artwork is exactly 30% smaller: 36×31 → 25.2×21.7 logical pixels. Its horizontal SQK lettering never spins.
+- Touch controls have larger targets, more space and pointer ownership. The narrowest layout puts weapon slots above the joystick. Screens adapt to the measured chrome height, including 200% text; orientation/fullscreen fallbacks remain.
+- Chestnut ammunition, gun, sword and bomb each have a different procedural waveform/envelope. A 24-voice ceiling, per-effect rate limits and master compression limit overlap. The original music/SFX volume and mute storage key is preserved.
 
-Start adventure plays immediately as a guest. Keyboard: arrows/A/D move, Space/W/Up/Z jump, Enter or left mouse attack, E interacts, 1/2/3 select gun/bomb/sword, Escape/P pauses. Touch: joystick, Attack, Jump and three weapon slots; nearby drops collect automatically. GUILD retains the existing controls, story and economy details. Marketplace retains all eight products and existing purchase entitlements.
+## Permanent saves and identity
 
-Menu → Connect MetaMask connects on Ethereum Mainnet without signing, approving or sending a transaction. With cloud configured, **Sign in to save** explicitly requests one domain-bound login message; Supabase verifies ownership. Saved sessions refresh without a new signature. Old browser Auth profiles can still be attached through the existing explicit legacy recovery option; an established wallet profile takes priority.
+The browser submits ordered **events**, never a score or SQK total. Supabase validates wallet ownership, run ownership, sequence, elapsed timing, damage, ammunition, loot eligibility and one-time collectibles. All private tables keep RLS enabled with no browser table privileges. Only narrow RPCs mutate data. Canonical verified wallet addresses retain unique profile links; row/advisory locks and acknowledgement sequences prevent duplicate profiles and duplicate credits. No service-role key belongs in the website; secret-format and service-role JWT configuration are rejected before a request.
 
-Permanent data consists of the verified profile, SQK, purchased inventory/upgrades, equipped cosmetics, map unlocks and lifetime score. Collected weapons/ammo remain per-map mechanics. The existing engine does not restore a suspended canvas position after a browser reload. Rotation preserves that live session. Guest progress lasts for the current page visit only. `localStorage` holds Auth sessions, pending-event queues and audio settings; it is not the cloud database or a global leaderboard.
+Migration 006 checkpoints validated new-run score deltas, produce progression and a per-run lifetime ledger in the same transaction. Death, completion, restart, retries and device changes cannot settle an acknowledged point twice. The Top 100 reads permanent SQL totals, recomputes ordering on every query, refreshes every 15 seconds while open and refreshes on a local saved-score change. It retains loaded rows during refresh/failure and exposes an explicit retry.
 
-One active map per wallet remains the server model. Starting another map/device ends the earlier server run and settles acknowledged points. When another device ends a run, the client checks its authoritative acknowledgement, stops the stale world and retains only rejected events for recovery. Profile → Restart from cloud profile first loads the authoritative wallet profile and archives those events on this browser, then starts its unlocked map. Profile also offers Download recovery record, containing run events but no Auth credentials. Rejected events are not automatically credited or merged. Ordinary offline failures remain retryable. An abrupt offline close cannot guarantee delivery; reopen the original browser to retry or recover. Browser storage failures explicitly warn the player to keep the page open.
+Wallet connect itself requests no transaction. **Sign in to save** separately requests a domain/URI-bound, expiring login message through `personal_sign`; Supabase Web3 Auth verifies it. Saved sessions restore without another signature. The [Supabase Web3 documentation](https://supabase.com/docs/guides/auth/auth-web3) explains the required provider and redirect URL settings. Local Auth fixtures test the application's integration, not the hosted cryptographic verification.
 
-## After launch / before enabling cloud
+Pending ranked events are written before transmission, partitioned by wallet and run, merged by acknowledgement sequence across tabs and retried after refresh/online/exit. `fetch` uses keepalive for progress. A browser can still terminate networking; an unsent event requires that original browser's retained queue to reconnect. A run ended on another device keeps rejected events in a downloadable recovery record and offers Restart from cloud profile. A different device can retrieve only progress already acknowledged by Supabase.
 
-These owner actions are required in the **same original Supabase project**, not a new backend:
+Existing legacy cloud profiles can be linked through their authenticated, expiring server ticket. An existing verified wallet profile always wins. Older **unverified browser-only totals** are left untouched and offered as a download in Profile for owner review; they cannot overwrite or mint a verified score. Guests remain memory-only and unranked. See [Supabase migration and security details](supabase/README.md).
 
-1. Identify its real project URL and browser-safe publishable/anon key; set only those public values in `src/config.js`. They remain deliberately empty in this delivery. Never put a private/service-role key in the export.
-2. Back up the existing database. Record [supabase/preservation_snapshot.sql](supabase/preservation_snapshot.sql) before/after upgrades. Establish which migrations are already installed; apply only unapplied files in order, including `004_lifetime_persistence.sql` and `005_verified_wallet_recovery.sql`. A project already on 004 applies only 005. Do not replay installed historical migrations.
-3. Enable Ethereum Web3 Auth; verify the current HTTPS site's login domain/URI and Supabase Auth/Data API configuration. Keep `hf_private` unexposed. Confirm [supabase/verify_lifetime.sql](supabase/verify_lifetime.sql) succeeds.
-4. Audit production cron/external automation for any old game score reset. No scheduled reset exists in this repository. Remove only confirmed reset jobs; their production existence cannot be checked from this checkout. The new total-protection trigger rejects decreases/deletions.
-5. Rebuild, then use two real devices and a real wallet to confirm login, reconnect, saved SQK/inventory/cosmetics, completed-session scoring, permanent rankings and zero duplicate purchases. Compare the preserved records with the backup. Test actual iPhone Safari, Android Chrome and MetaMask Mobile rotation/toolbars/fullscreen.
-6. Review and deliver this same project's `dist/` through the established IMD handoff only after critical production checks pass. No publish command was run here. Do not replace the existing URL. Domain migration additionally needs a confirmed, working address and the recovery checks in [docs/DOMAIN.md](docs/DOMAIN.md).
+## After launch: original-project owner configuration
 
-[Supabase setup and schema details](supabase/README.md) include the exact migration semantics and access model.
+These are owner-settable settings, not invented credentials or a request to replace the backend:
 
-## Reproduce checks
+1. Identify the existing Supabase project. Set its public URL and browser-safe publishable/anon key in `src/config.js`. Keep private/service-role keys out of source and `dist/`.
+2. Back up the original database and inspect its installed migration versions. Keep installed migrations unchanged. A project already on 005 applies **only `supabase/migrations/006_four_worlds.sql`**, once. Earlier projects first apply only their missing historical migrations, in order. Never reset the database or replay installed migrations.
+3. Run `supabase/preservation_snapshot.sql` before and after 006 during a maintenance window; compare every historical count/fingerprint/SQK/lifetime sum. Enable Ethereum Web3 Auth and allow the actual HTTPS origin/URI in Auth redirect URLs. Expose `public`, never `hf_private`, through the Data API.
+4. Run `supabase/verify_major.sql`, rebuild the export and verify actual signed login, score save, refresh, a second device, Top 100 and unauthorized access against that **same** hosted database. The frontend expects schema/rules version 6 before requesting a signature.
 
-Test-only dependencies can be installed in disposable scratch space; they are not runtime dependencies or part of the submitted bundle:
+No production database was inspected, migrated or reset here. No live signature, real-device wallet or hosted Supabase result is claimed. The browser remains the authority for positions/collisions; server event validation is not a fully authoritative multiplayer anti-cheat engine.
 
-```sh
-npm install --prefix test/scratch --package-lock=false --no-audit --no-fund @electric-sql/pglite typescript axe-core
-npm run build
-npm run typecheck
-node test/scratch/node_modules/typescript/bin/tsc --project jsconfig.json
-node test/scratch/node_modules/typescript/bin/tsc --noEmit --allowJs --checkJs --strict false --target ES2022 --lib ES2022,DOM src/types.d.ts src/config.js src/rules.js src/save.js src/wallet.js src/ui.js src/viewport.js
-node supabase/tests/verified-wallet.mjs
-node supabase/tests/lifetime.mjs
-node supabase/tests/squeek-client.mjs
-```
+## Validation
 
-The browser scripts accept the path to an existing Playwright installation. With this assignment's provided Chromium runtime:
+The final production build, existing check script and actual JavaScript typecheck all ran. Local checks exercise real PostgreSQL via disposable PGlite, and actual production-export interactions via Playwright Chromium. Test Auth, wallet and HTTP adapters are confined to test files and never shipped in `dist/`. WebKit could not launch because its system libraries are missing.
+
+To reproduce the additional checks without changing the root dependency/build files:
 
 ```sh
-PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-squeek.mjs /opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs test/scratch/node_modules/axe-core/axe.min.js
-PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-mobile.mjs
-PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-market.mjs test/scratch/node_modules/@electric-sql/pglite/dist/index.js /opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs test/scratch/node_modules/axe-core/axe.min.js
-IMD_PLAYWRIGHT=/opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste --offline
+npm install --prefix test/scratch --no-audit --no-fund --ignore-scripts @electric-sql/pglite typescript playwright @axe-core/playwright
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node test/scratch/node_modules/playwright/cli.js install chromium webkit
+node scripts/typecheck-major.mjs
+node scripts/test-major.mjs
+node scripts/test-major-audio.mjs
+node supabase/tests/major.mjs
+node supabase/tests/major-client.mjs
+node supabase/tests/major-engine.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-major.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-major-cloud.mjs
 ```
 
-The pinned taste script is an assignment input and is removed at handoff; its measured result is retained in `docs/validation/results.json`. Browser scripts manage their preview and browser inside a bounded foreground command. Results and screenshots are written to disposable `test/scratch/`; selected final evidence is copied to `docs/validation/`. Older `test-upgrade`/`upgrade`/`squeek` SQL scripts document earlier rule versions; use the commands above for the current delivery.
-
-Full results, failed attempts that were repaired, and unperformed checks are recorded in [VALIDATION.md](VALIDATION.md). [DESIGN.md](DESIGN.md) describes the final implemented design and its six-domain review.
+Historical migration regressions also ran with `node supabase/tests/verified-wallet.mjs` and `node supabase/tests/lifetime.mjs`; they intentionally test schemas up to 005. Older v1–v3 gameplay scripts describe superseded rules and are retained as history, not presented as current passing checks. Test dependencies and browser downloads stay in disposable `test/scratch/`; they are not part of the site/submission. The pinned taste probe passed 16/16 after the final layout fix. See [VALIDATION.md](VALIDATION.md), [machine-readable results](docs/validation/major-results.json), [DESIGN.md](DESIGN.md) and [the pre-edit plan](WORKPLAN.md) for coverage, findings and limitations.

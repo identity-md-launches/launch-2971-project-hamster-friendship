@@ -26,8 +26,19 @@
   ];
   /** @param {number} map @param {boolean} [boss] @param {string} [size] */
   function hp(map, boss, size) { return Math.ceil((boss ? 300 : size === 'small' ? 50 : 100) * Math.pow(1.2, Math.max(0, map - 1))); }
+  var maps = Object.freeze([
+    { id: 1, name: 'Amber Canopy', boss: 'Cockroach', seconds: 60, attack: 'swoop', types: ['moth', 'wasp', 'gnat'], atmosphere: 'Flyers sweep through the forest. Watch the air above the trail.', floor: '#73502b', edge: '#c9bc52', accent: '#e0a653' },
+    { id: 2, name: 'Frostfall Reach', boss: 'Penguin', seconds: 90, attack: 'ice', types: ['frost', 'penguinling'], atmosphere: 'Ice volleys cross a slippery glacier. Jump between the shots.', floor: '#487b92', edge: '#cff4f4', accent: '#83dce8' },
+    { id: 3, name: 'Cinder Caldera', boss: 'Dragon', seconds: 120, attack: 'fire', types: ['drake', 'cinder'], atmosphere: 'Drakes rain fire over basalt ledges. Dodge the dragon’s breath.', floor: '#443941', edge: '#e59052', accent: '#ffb269' },
+    { id: 4, name: 'Tidal Hollow', boss: 'Shark', seconds: 150, attack: 'water', types: ['reef', 'ray'], atmosphere: 'Reef hunters fire water bursts. Read the current before the shark rushes.', floor: '#366b75', edge: '#b6ded0', accent: '#75d9ce' }
+  ]);
+  /** @param {number} map */
+  function environment(map) { return maps[Math.max(0, Math.min(3, Math.floor(map) - 1))]; }
+  /** Cosmetic growth keeps the original 12×14 collision body and foot anchor. */
+  function growth(points) { var tier = Math.floor(Math.max(0, points) / 20); return { tier: tier, scale: 1.15 + 0.9 * (1 - Math.pow(0.8, tier)) }; }
   function monster(roll, sizeRoll, map) {
-    var type = ['beetle', 'ant', 'larva', 'ember'][Math.min(3, Math.floor(roll * 4))];
+    var types = environment(map).types;
+    var type = types[Math.min(types.length - 1, Math.floor(roll * types.length))];
     var size = sizeRoll < 0.5 ? 'small' : 'large';
     return { type: type, size: size, hp: hp(map, false, size) };
   }
@@ -66,7 +77,7 @@
     };
     return masks[id] || [];
   }
-  var api = Object.freeze({ catalogue: Object.freeze(catalogue), costumeArt: costumeArt, forageValue: forageValue, spawns: Object.freeze(spawns), hp: hp, monster: monster, drop: drop, damage: damage, cooldown: cooldown, validName: validName });
+  var api = Object.freeze({ maps: maps, environment: environment, growth: growth, catalogue: Object.freeze(catalogue), costumeArt: costumeArt, forageValue: forageValue, spawns: Object.freeze(spawns), hp: hp, monster: monster, drop: drop, damage: damage, cooldown: cooldown, validName: validName });
   // Both the browser and the Node test VM use this same global.
   globalThis.HamsterRules = api;
 })();

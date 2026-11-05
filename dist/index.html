@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>squeek.hamster</title>
-  <meta name="description" content="Explore the chestnut forest as Chang. Collect SQK, find weapons and follow the trail to Alice.">
+  <title>Squeek · The Lost Alice</title>
+  <meta name="description" content="A pixel-art adventure across forest, glacier, volcano and reef. Collect produce, grow Chang and defeat four bosses to find Alice.">
   <meta name="theme-color" content="#1a110b">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
   <meta property="og:title" content="squeek.hamster">
-  <meta property="og:description" content="A pixel-art forest adventure. Find Alice, collect chestnuts and survive one hit at a time.">
+  <meta property="og:description" content="Four worlds. Four bosses. Help Chang find Alice in a pixel-art adventure with wallet-linked cloud saves when configured.">
   <meta property="og:image" content="./og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -41,6 +41,7 @@
         <header class="site-header">
           <h1>squeek.hamster</h1>
           <div class="stage-tools">
+            <button class="btn btn-secondary" id="btn-wallet" type="button" aria-haspopup="dialog" aria-controls="wallet-dialog">Connect MetaMask</button>
             <button class="btn btn-secondary btn-small" id="btn-change" type="button" aria-haspopup="dialog" aria-controls="player-dialog">Change it</button>
             <button class="btn btn-secondary btn-small" id="btn-fullscreen" type="button" aria-label="Enter fullscreen">⛶<span class="tool-label"> Fullscreen</span></button>
             <button class="btn btn-secondary btn-small" id="btn-menu" type="button" aria-haspopup="dialog" aria-controls="menu-dialog">☰ Menu</button>
@@ -52,7 +53,8 @@
           <p class="hud-item"><span>Defeated</span><strong class="hud-value" id="hud-enemies">0/30</strong></p>
           <p class="hud-item"><span>Current Map Score</span><strong class="hud-value" id="hud-score">0</strong></p>
         </div>
-        <div class="boss-status" id="hud-boss" hidden><span>Cockroach</span><span class="hud-bar" role="img" id="hud-boss-bar" aria-label="Cockroach health full"><span class="hud-bar-fill" id="hud-boss-fill"></span></span></div>
+        <p class="route-status"><span id="hud-environment">Amber Canopy</span><span id="hud-countdown">Cockroach in 60s</span></p>
+        <div class="boss-status" id="hud-boss" hidden><span id="hud-boss-name">Cockroach</span><span class="hud-bar" role="img" id="hud-boss-bar" aria-label="Cockroach health full"><span class="hud-bar-fill" id="hud-boss-fill"></span></span></div>
           <p class="rotate-hint" id="rotate-hint">Rotate your phone for landscape play.</p>
         </div>
 
@@ -68,13 +70,14 @@
 
 
         <div class="overlay" id="screen-start">
-          <h2 id="start-title">The chestnut forest</h2>
-          <p class="overlay-text">Alice has vanished. Find out where she went.</p>
+          <h2 id="start-title">Amber Canopy</h2>
+          <p class="overlay-text">A pixel-art adventure to find Alice.</p>
           <div class="overlay-actions">
             <button class="btn btn-primary" id="btn-start" type="button">Start adventure</button>
             <button class="btn btn-secondary" id="btn-replay" type="button" hidden>Replay map 1</button>
             <button class="btn btn-secondary" id="btn-start-guild" type="button">Open GUILD</button>
           </div>
+          <p class="overlay-text" id="entry-save">Guest play · not saved. Cloud setup is pending.</p>
         </div>
 
         <div class="overlay" id="screen-pause" hidden>
@@ -105,7 +108,7 @@
             <div><dt>Time</dt><dd id="end-time">0:00</dd></div>
           </dl>
           <div class="overlay-actions">
-            <button class="btn btn-primary" id="btn-again" type="button">Explore next map</button>
+            <button class="btn btn-primary" id="btn-again" type="button">Play again</button>
           </div>
         </div>
 
@@ -128,6 +131,8 @@
           <button class="btn btn-secondary pad-btn jump-btn" type="button" data-action="jump">Jump</button>
           <button class="btn btn-primary pad-btn attack-btn" type="button" data-action="throw">Attack</button>
         </div>
+        <button id="pickup-weapon" class="btn btn-primary" type="button" hidden>PICK UP</button>
+        <p id="map-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
         <button id="context-interact" class="btn btn-secondary" type="button" hidden>Read</button>
 
         <p class="toast" id="toast" role="status" aria-live="polite"></p>
@@ -136,7 +141,7 @@
     </section>
 
     <template id="guild-template">
-      <p class="panel-note">Find Alice, one forest map at a time.</p>
+      <p class="panel-note">Find Alice across four worlds. Collect produce to grow; defeat each boss to travel on.</p>
       <details class="guild-chapter" open><summary>Controls</summary>
         <dl class="controls">
           <dt><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd></dt>
@@ -145,26 +150,26 @@
           <dd>Jump. Hold for a higher jump.</dd>
           <dt>Left mouse or <kbd>Enter</kbd></dt><dd>Attack. Chestnuts have unlimited ammo.</dd>
           <dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></dt><dd>Select gun, bomb or sword. Select the same slot again to use chestnuts.</dd>
-          <dt><kbd>E</kbd></dt><dd>Pick up nearby drops, look, talk and read.</dd>
+          <dt><kbd>E</kbd></dt><dd>Pick up a nearby weapon, look, talk and read. Produce and coins collect automatically.</dd>
           <dt><kbd>Esc</kbd> or <kbd>P</kbd></dt>
           <dd>Pause, resume or restart</dd>
         </dl>
-        <p>On a phone, rotate to landscape. If your browser cannot lock orientation, use the rotate overlay or choose Play in portrait. On iPhone Safari, use Share → Add to Home Screen for a standalone view; Safari’s browser bars cannot be hidden by the game. Drag the joystick to walk; hold Jump for height. Use Attack and weapon slots on the right. Walk over items to collect them. A contextual Read or Talk button appears near story objects. Fullscreen requests landscape orientation when supported; on iPhone, rotate manually. Change it opens your owned costumes on desktop and mobile; equipping uses the same wallet inventory as Marketplace.</p>
+        <p>On a phone, rotate to landscape. If your browser cannot lock orientation, use the rotate overlay or choose Play in portrait. On iPhone Safari, use Share → Add to Home Screen for a standalone view; Safari’s browser bars cannot be hidden by the game. Drag the joystick to walk; hold Jump for height. Use Attack and weapon slots on the right. Walk near fruit, vegetables and coins to collect them. Weapons need the PICK UP button. A contextual Read or Talk button appears near story objects. Fullscreen requests landscape orientation when supported; on iPhone, rotate manually. Change it opens your owned costumes on desktop and mobile; equipping uses the same wallet inventory as Marketplace.</p>
       </details>
       <details class="guild-chapter"><summary>Combat and rewards</summary>
         <ul class="tips">
           <li>One monster or projectile hit ends the run. Jump onto a monster to stomp it; dodge the boss’s charge. There is no shield or health bar.</li>
-          <li>Each map has 30 monsters and a boss after 60 active seconds. Small, large and boss HP start at 50, 100 and 300, increasing by 20% each map.</li>
-          <li>Every defeated monster drops exactly one item: big chestnut 10%, small chestnut 40%, SQK 20%, gun 10%, sword 10%, bomb 10%. Each item can be collected once.</li>
-          <li>Small chestnuts score 1 point, big chestnuts 5. The original forest’s chestnuts and caches also add points. A coin gives 1 SQK. Desktop: press E near an item. Touch: walk over it.</li>
+          <li>Each map has 30 monsters. Cockroach appears at 60 seconds, Penguin at 90, Dragon at 120 and Shark at 150. These are active exploration timers; boss combat can take longer. Small, large and boss HP start at 50, 100 and 300, increasing by 20% each map.</li>
+          <li>Every defeated monster drops exactly one item: large produce 10%, small produce 40%, SQK 20%, gun 10%, sword 10%, bomb 10%. Each item can be collected once.</li>
+          <li>Small produce scores 1 point, large produce 5. Trail produce and caches also add points. Every 20 produce points increases Chang’s size; the collision body stays stable. A coin gives 1 SQK. Food and coins collect nearby. Weapons require E on a computer or PICK UP on touch.</li>
           <li>A gun holds 100 bullets. A new gun refills to 100; ammo never exceeds 100. An empty gun leaves the bar. A bomb pickup gives 3 throws; the sword and chestnuts have unlimited uses.</li>
           <li>Base damage: chestnut 25, gun 20, sword and stomp 50. Bombs burn an area for 5 damage per second for 8 seconds. Weapon upgrades add together, up to +55%, for gun, sword and bomb. Existing purchased skills remain effective.</li>
-          <li>Clear all 30 monsters and the boss, then inspect the metal fragment beyond the gate to continue the story.</li>
+          <li>Defeat the boss to travel to the next map automatically. No extra object is required. Defeat Shark to finish the adventure.</li>
         </ul>
       </details>
       <details class="guild-chapter"><summary>Saves and lifetime scores</summary>
         <p>Guests play without saving. Connect MetaMask and sign a login message to save progress; login never sends a transaction or spends funds. A wallet connection alone does not verify a save account.</p>
-        <p>Lifetime Top 100 ranks accumulated scores from ended sessions across all maps. Death, completion and restart end a session. Scores never reset. Current Map Score stays separate until the session ends. Existing stored lifetime scores are retained; guests are never ranked.</p>
+        <p>Lifetime Top 100 ranks permanent verified wallet scores across all maps. Validated points save during play and at session end; scores never reset. Pending offline events stay on this browser until Supabase acknowledges them. Existing stored lifetime scores are retained; guests are never ranked.</p>
         <p>Marketplace purchases require a verified wallet profile. Each costume and upgrade can be bought once. Costumes are cosmetic and do not protect against hits.</p>
       </details>
       <details class="guild-chapter"><summary>The story so far</summary>
@@ -192,6 +197,8 @@
     <div class="panel-header"><h2 id="menu-title">Forest menu</h2><button id="close-menu" class="btn btn-secondary close-dialog" type="button" aria-label="Close menu">×</button></div>
     <div class="map-status"><p>Lifetime Score <strong id="hud-lifetime">0</strong></p><p><strong id="hud-weapon">Chestnut</strong><span id="hud-ammo"> · ∞</span></p><p><span id="hud-season">Autumn</span> · <span id="hud-timer">Boss in 60s</span></p></div>
     <p class="panel-note" id="immersive-help"></p>
+    <p class="panel-note" id="map-hint">Flyers sweep through the forest. Watch the air above the trail.</p>
+    <p class="panel-note" id="hud-growth">Growth 0 · 0/20</p>
     <p class="save-summary" id="save-summary">Guest · this run only</p>
     <nav class="game-utilities" aria-label="Player menu">
       <button class="btn btn-secondary" id="btn-profile" type="button">Profile</button>
@@ -201,7 +208,7 @@
       <button class="btn btn-secondary" id="btn-audio" type="button">Audio</button>
       <button class="btn btn-secondary" id="btn-leaderboard" type="button">Lifetime Top 100</button>
       <button class="btn btn-secondary" id="btn-fullscreen-menu" type="button">Fullscreen</button>
-      <button class="btn btn-secondary" id="btn-wallet" type="button">Connect MetaMask</button>
+
       <button class="btn btn-secondary" id="btn-pause" type="button">Pause</button>
     </nav>
   </dialog>

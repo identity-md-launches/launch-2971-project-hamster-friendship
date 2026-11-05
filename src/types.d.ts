@@ -1,7 +1,11 @@
 interface FriendshipItem {
   id: string; name: string; price: number; slot: string; color: string; description: string;
 }
+interface FriendshipEnvironment { id: number; name: string; boss: string; seconds: number; attack: string; types: string[]; atmosphere: string; floor: string; edge: string; accent: string; }
 interface FriendshipRules {
+  readonly maps: readonly FriendshipEnvironment[];
+  environment(map: number): FriendshipEnvironment;
+  growth(points: number): {tier: number; scale: number};
   readonly catalogue: readonly FriendshipItem[];
   readonly spawns: ReadonlyArray<[string, number, number]>;
   hp(map: number, boss?: boolean, size?: string): number;
@@ -21,7 +25,7 @@ interface FriendshipAudio {
   snapshot(): { available: boolean; unlocked: boolean; playing: boolean; storageOK: boolean; music: number; sfx: number; musicMuted: boolean; sfxMuted: boolean };
 }
 interface FriendshipProfile {
-  name: string; sqk: number; total_score: number; highest_map: number;
+  name: string; sqk: number; total_score: number; highest_map: number; produce_points?: number;
   wallet?: string;
   badges?: FriendshipBadge[];
   purchases: string[]; cosmetics: Record<string, string | null>;
@@ -30,7 +34,7 @@ interface FriendshipSaveSnapshot {
   profile: FriendshipProfile; cloud: boolean; configured: boolean; status: string;
   storageOK: boolean; pendingCoins: number; pendingEvents: number;
   runConflict: boolean; recoveryEvents: number;
-  ranked: boolean; playingGuest: boolean; legacyAvailable: boolean; wallet: string;
+  ranked: boolean; playingGuest: boolean; legacyAvailable: boolean; localLegacyAvailable: boolean; wallet: string;
 }
 interface FriendshipSave {
   ready: Promise<void>;
@@ -46,6 +50,7 @@ interface FriendshipSave {
   subscribe(listener: () => void): void;
   retry(): Promise<void>;
   recover(): Promise<void>;
+  legacyRecord(): Record<string, unknown>;
   recoveryRecord(): {wallet: string; runs: Array<Record<string, unknown>>};
   snapshot(): FriendshipSaveSnapshot;
 }

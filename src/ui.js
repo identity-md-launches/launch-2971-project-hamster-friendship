@@ -16,12 +16,17 @@
     document.getElementById('hud-pending').textContent = state.pendingCoins ? '(+' + state.pendingCoins + ' pending)' : '';
     document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.runConflict ? 'Map ended elsewhere · open Profile to recover' : state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents ? 'Cloud save pending · open Profile to retry' : 'Wallet profile saved' : 'this run only; not saved');
     if (window.__hamster.snapshot().state === 'title') {
-      var map = state.profile.highest_map;
+      var map = state.profile.highest_map > 4 ? 1 : state.profile.highest_map;
       document.getElementById('btn-start').textContent = map > 1 ? 'Continue map ' + map : 'Start adventure';
       document.getElementById('hud-map').textContent = String(map);
-      document.getElementById('start-title').textContent = map > 1 ? 'The chestnut forest · Map ' + map : 'The chestnut forest';
+      document.getElementById('hud-environment').textContent = rules.environment(map).name;
+      document.getElementById('hud-countdown').textContent = rules.environment(map).boss + ' in ' + rules.environment(map).seconds + 's';
+      document.getElementById('hud-timer').textContent = document.getElementById('hud-countdown').textContent;
+      document.getElementById('map-hint').textContent = rules.environment(map).atmosphere;
+      document.getElementById('start-title').textContent = map > 1 ? rules.environment(map).name : rules.environment(1).name;
       document.getElementById('btn-replay').hidden = map <= 1;
     }
+    document.getElementById('entry-save').textContent = state.cloud ? 'Verified wallet · progress saves during play.' : state.configured ? 'Guest play is not saved. Sign in with a wallet to save.' : 'Guest play · not saved. Cloud setup is pending.';
     document.getElementById('hud-lifetime').textContent = state.profile.total_score.toLocaleString();
     if (panel === 'profile') {
       var values = { sqk: state.profile.sqk.toLocaleString(), total_score: state.profile.total_score.toLocaleString(), highest_map: String(state.profile.highest_map), purchases: String(state.profile.purchases.length) };
@@ -32,7 +37,7 @@
       var recoveryHint = document.getElementById('profile-recovery-hint'); if (recoveryHint) recoveryHint.hidden = !state.runConflict && !state.recoveryEvents;
       var download = document.getElementById('profile-recovery-download'); if (download) download.hidden = !state.runConflict && !state.recoveryEvents;
       var accountInfo = document.getElementById('profile-account-info');
-      if (accountInfo) accountInfo.textContent = state.cloud ? 'Saved to your verified wallet profile. Guest progress is never imported. Lifetime scores, SQK and purchases are retained.' : state.configured ? 'Guest runs are not saved. Open Menu → Connect MetaMask and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
+      if (accountInfo) accountInfo.textContent = state.cloud ? 'Saved to your verified wallet profile. Guest progress is never imported. Lifetime scores, SQK and purchases are retained.' : state.configured ? 'Guest runs are not saved. Use Connect MetaMask above and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
     }
     var balance = document.getElementById('market-balance'); if (balance) balance.textContent = state.profile.sqk.toLocaleString() + ' SQK available' + (state.pendingCoins ? ' · ' + state.pendingCoins + ' awaiting cloud save' : '');
   }
@@ -81,6 +86,13 @@
       }); download.id = 'profile-recovery-download';
       content.append(retry, recoveryHint, recover, download, retryResult);
     }
+    if (state.localLegacyAvailable) {
+      content.append(el('p', 'An older browser save is retained on this device. Its unverified totals cannot replace a verified wallet score. Download it for the project owner to review.', 'panel-note'));
+      content.append(action('Download older browser save', function () {
+        var url = URL.createObjectURL(new Blob([JSON.stringify(save.legacyRecord(), null, 2)], {type:'application/json'}));
+        var link = el('a'); link.href = url; link.download = 'squeek-legacy-browser-save.json'; link.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }));
+    }
     var earned = (p.badges || []).filter(function (b) { return b.source === 'skill' || b.source === 'contribution'; });
     if (earned.length) content.append(el('p', 'Earned badges: ' + earned.map(function (b) { return b.tier + ' ' + b.source; }).join(', '), 'panel-note'));
     summary();
@@ -119,7 +131,7 @@
     var balance = el('p', p.sqk.toLocaleString() + ' SQK available' + (state.pendingCoins ? ' · ' + state.pendingCoins + ' awaiting cloud save' : ''), 'balance-label'); balance.id = 'market-balance'; content.append(balance);
     if (wardrobe) content.append(el('p', 'Choose an owned costume, or unequip it to return to Chang’s original look.', 'panel-note'));
     else content.append(el('p', 'Costumes cost 50 SQK each. Buy each item once per account. Damage upgrades stack and apply to gun, sword and bomb immediately.', 'panel-note'));
-    if (!state.cloud) content.append(el('p', state.configured ? 'Connect MetaMask and sign in through Menu to buy and equip items.' : 'Purchases are unavailable until cloud saves are enabled. Guest play is ready.', 'panel-note'));
+    if (!state.cloud) content.append(el('p', state.configured ? 'Use Connect MetaMask above and sign in to buy and equip items.' : 'Purchases are unavailable until cloud saves are enabled. Guest play is ready.', 'panel-note'));
     var feedback = message(''); feedback.id = 'shop-feedback'; content.append(feedback);
     var list = el('div', '', 'shop-list');
     var items = rules.catalogue.filter(function (item) { return !wardrobe || item.slot === 'costume' && p.purchases.includes(item.id); });
@@ -152,12 +164,12 @@
   var boardTimer, refreshBoard = function () {};
   function leaderboardPanel() {
     clearTimeout(boardTimer); title.textContent = 'Lifetime Top 100'; content.replaceChildren(); var stamp = generation, loading = false;
-    content.append(el('p', 'Accumulated score from ended sessions · verified wallets only. Scores never reset. Guests are unranked.', 'panel-note'));
+    content.append(el('p', 'Accumulated score across all maps · verified wallets only. Scores never reset. Guests are unranked.', 'panel-note'));
     var state = message('Loading lifetime rankings…'); content.append(state);
     var table = el('table', '', 'leaderboard'), caption = el('caption', 'Lifetime wallet scores'); caption.className = 'visually-hidden'; table.append(caption); table.hidden = true;
     var head = el('thead'), hr = el('tr'); ['Rank', 'Player', 'Lifetime Score', 'Map'].forEach(function (text) { var th = el('th', text); th.scope = 'col'; hr.append(th); }); head.append(hr); table.append(head);
     var body = el('tbody'); table.append(body); content.append(table);
-    content.append(el('p', 'Refreshes every 15 seconds while open. Current Map Score joins your lifetime total when the session ends, including a defeat or restart.', 'panel-note'));
+    content.append(el('p', 'Updates after a saved score change and every 15 seconds while open. Points are saved during play; pending offline points appear after syncing.', 'panel-note'));
     var refresh = action('Refresh rankings', function () { void update(); });
     async function update() {
       if (loading || stamp !== generation || panel !== 'leaderboard') return;
@@ -167,7 +179,7 @@
         if (stamp !== generation || panel !== 'leaderboard') return;
         var rows = board.rows.slice(0, 100), top = dialog.scrollTop;
         state.className = 'panel-note';
-        state.textContent = rows.length ? rows.length === 1 ? '1 player ranked' : rows.length + ' players ranked' : 'No verified wallet scores yet. Sign in, play a map and end the session to enter.';
+        state.textContent = rows.length ? rows.length === 1 ? '1 player ranked' : rows.length + ' players ranked' : 'No verified wallet scores yet. Sign in and collect produce to enter.';
         // Keep the table and controls mounted. Unchanged cells are untouched.
         rows.forEach(function (player, index) {
           var row = body.rows[index];
@@ -208,5 +220,6 @@
   menu.addEventListener('close', function () { document.getElementById('btn-menu').focus({ preventScroll: true }); });
   menu.addEventListener('click', function (e) { var r = menu.getBoundingClientRect(); if (e.target === menu && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) menu.close(); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && panel === 'leaderboard') refreshBoard(); });
-  save.subscribe(summary); summary();
+  var lastScore = -1;
+  save.subscribe(function () { summary(); var score = save.snapshot().profile.total_score; if (score !== lastScore && panel === 'leaderboard') refreshBoard(); lastScore = score; }); summary();
 })();
