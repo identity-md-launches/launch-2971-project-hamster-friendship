@@ -3,12 +3,16 @@
    supplied as profile data. Historical browser saves are left intact. */
 (function () {
   'use strict';
-  var config = window.HAMSTER_CONFIG, CLOUD = Boolean(config.supabaseUrl && config.supabasePublishableKey);
+  var config = window.HAMSTER_CONFIG || { supabaseUrl: '', supabasePublishableKey: '' };
+  var configError = !config.supabaseUrl || !config.supabasePublishableKey ? 'Cloud storage is not configured. The site owner must connect the existing Supabase project. Guest play is available; it is not saved.' : '';
+  if (!configError && (!/^https:\/\//.test(config.supabaseUrl) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(config.supabaseUrl))) configError = 'Cloud configuration is invalid. Ask the site owner to check the Supabase URL.';
+  if (/^sb_secret_/.test(config.supabasePublishableKey)) configError = 'Cloud configuration is invalid. Only a browser-safe publishable key is allowed.';
+  var CLOUD = !configError;
   var url = String(config.supabaseUrl).replace(/\/$/, ''), prefix = 'hamster-friendship-v2';
   var listeners = [], storageOK = true, generation = 0, wallet = '', session = null;
-  var profile = empty(), cloud = false, active = null, outbox = [], flushing = null;
-  var status = CLOUD ? 'Guest · connect MetaMask to save.' : 'Guest · cloud saves and purchases are unavailable.';
-  var mutation = Promise.resolve(), rpcFlight = Promise.resolve();
+  var guestProfile = empty(), profile = guestProfile, cloud = false, active = null, outbox = [], flushing = null;
+  var status = CLOUD ? 'Guest · connect a wallet to save.' : configError;
+  var mutation = Promise.resolve(), rpcFlight = Promise.resolve(), backendReady = false;
   function empty() { return { name: 'Guest', sqk: 0, total_score: 0, highest_map: 1, purchases: [], cosmetics: {} }; }
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(prefix + key) || 'null') || fallback; } catch (_) { storageOK = false; return fallback; } }
   function write(key, data) { try { localStorage.setItem(prefix + key, JSON.stringify(data)); } catch (_) { storageOK = false; } }
@@ -22,10 +26,18 @@
     var control = new AbortController(), timer = setTimeout(function () { control.abort(); }, 10000);
     try {
       var response = await fetch(url + path, { method: method || 'POST', headers: Object.assign({ apikey: config.supabasePublishableKey, 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body), signal: control.signal });
-      var data = await response.json().catch(function () { return {}; });
+      var data = await response.json().catch(function () { throw new Error('Cloud returned an unreadable response. Pending progress has been kept. Retry the save.'); });
       if (!response.ok) throw new Error(data.msg || data.message || data.error_description || 'Cloud request failed. Check your connection and retry.');
       return data;
     } finally { clearTimeout(timer); }
+  }
+  async function requireBackend() {
+    if (backendReady) return;
+    try {
+      var data = await request('/rest/v1/rpc/hf_service_status', {});
+      if (data.schemaVersion !== 4 || data.leaderboard !== 'lifetime') throw new Error('The lifetime migration is not installed.');
+      backendReady = true;
+    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 004. ' + error.message); }
   }
   async function access(auth, key) {
     if (!auth) throw new Error('Sign in with MetaMask to save.');
@@ -59,6 +71,7 @@
           var run = queue[0]; if (!run.events.length) { queue.shift(); continue; }
           var events = run.events.slice(0, 128);
           var result = await rpc('hf_progress', { p_run: run.id, p_events: events }, auth, address, epoch);
+          if (!result || !Number.isSafeInteger(result.ack) || result.ack < events[events.length - 1].seq) throw new Error('Cloud did not acknowledge these events. Pending progress has been kept. Retry the save.');
           run.events = run.events.filter(function (e) { return e.seq > result.ack; });
           if (!run.events.length) queue.shift(); persist(queue, address);
         }
@@ -74,6 +87,7 @@
     outbox = read('-wallet-outbox-' + address, []); if (!Array.isArray(outbox)) outbox = [];
     if (!session) { status = 'Wallet connected. Sign a login message to save.'; notify(); return; }
     try {
+      await requireBackend();
       await rpc('hf_wallet_profile', {}, session, address, epoch);
       if (epoch !== generation) return;
       status = 'Wallet profile saved.'; await flush();
@@ -82,15 +96,18 @@
   }
   async function setWallet(address) {
     address = String(address || '').toLowerCase(); if (address === wallet) return;
-    generation++; wallet = address; session = null; cloud = false; active = null; outbox = []; profile = empty();
-    status = wallet ? 'Checking wallet save…' : 'Guest · this run only. Progress is not saved.';
+    if (active && !active.ranked) record('death', {}, active.lastFrame);
+    generation++; wallet = address; session = null; cloud = false; active = null; outbox = []; profile = guestProfile;
+    status = !CLOUD ? configError : wallet ? 'Checking wallet save…' : 'Guest · this visit only. Progress is not saved.';
     identityChanged(); await restore(generation);
   }
   async function signIn(provider, address, keepLegacy) {
-    if (!CLOUD) throw new Error('Cloud saves are not available on this site yet. Guest play is ready.');
+    if (!CLOUD) throw new Error(configError);
     if (!provider || String(address).toLowerCase() !== wallet) throw new Error('Connect MetaMask on Ethereum Mainnet first.');
     if (cloud) { await flush(); return; }
     var epoch = generation, expected = wallet, ticket = null;
+    await requireBackend();
+    if (generation !== epoch) throw new Error('The account changed during login. Connect again.');
     if (keepLegacy) {
       var old = read('-session', null);
       if (old) {
@@ -109,6 +126,7 @@
     var data = await request('/auth/v1/token?grant_type=web3', { chain: 'ethereum', message: message, signature: signature });
     if (generation !== epoch) throw new Error('The account changed during login. Connect again.');
     var auth = Object.assign(data, { expires_at: Date.now() / 1000 + data.expires_in });
+    if (active && !active.ranked) record('death', {}, active.lastFrame);
     var result = await rpc('hf_wallet_profile', { p_legacy: keepLegacy ? ticket : null }, auth, expected, epoch);
     if (generation !== epoch) throw new Error('The account changed during login. Connect again.');
     session = auth; write('-wallet-session-' + expected, auth);
@@ -127,7 +145,7 @@
       loot = Array.from({ length: 31 }, function () { return window.HamsterRules.drop(Math.random()); });
       monsters = Array.from({ length: 30 }, function () { return window.HamsterRules.monster(Math.random(), Math.random(), map); });
     }
-    active = { id: id, ranked: ranked, seq: 0, lastFrame: 0, claimed: {}, defeated: {}, forage: {}, loot: loot };
+    active = { id: id, ranked: ranked, seq: 0, score: 0, lastFrame: 0, claimed: {}, defeated: {}, forage: {}, loot: loot };
     notify(); return { loot: loot, monsters: monsters, rulesVersion: 4, ranked: ranked, purchases: profile.purchases.slice() };
   }
   function record(kind, data, frame) {
@@ -145,10 +163,11 @@
       run.events.push(event); persist(outbox, wallet);
     } else {
       if (kind === 'pickup') {
-        var drop = active.loot[data.target]; if (drop === 'coin') profile.sqk++; else if (drop === 'small' || drop === 'big') profile.total_score += drop === 'big' ? 5 : 1;
+        var drop = active.loot[data.target]; if (drop === 'coin') guestProfile.sqk++; else if (drop === 'small' || drop === 'big') active.score += drop === 'big' ? 5 : 1;
       }
-      if (kind === 'forage') profile.total_score += window.HamsterRules.forageValue(data.source);
-      if (kind === 'finish') profile.highest_map = Math.max(profile.highest_map, data.map + 1);
+      if (kind === 'forage') active.score += window.HamsterRules.forageValue(data.source);
+      if (kind === 'finish') guestProfile.highest_map = Math.max(guestProfile.highest_map, data.map + 1);
+      if (kind === 'finish' || kind === 'death') guestProfile.total_score += active.score;
       notify();
     }
     if (kind === 'defeat') active.defeated[data.target] = true;
@@ -171,8 +190,17 @@
     await rpc('hf_equip', { p_slot: slot, p_item: id || null });
   }
   async function leaderboard() {
-    if (!CLOUD) throw new Error('Daily rankings are unavailable until cloud saves are enabled. Guests are never ranked.');
-    return request('/rest/v1/rpc/hf_daily_top100', {});
+    if (!CLOUD) throw new Error('Lifetime rankings need the existing Supabase project to be configured. Guests are unranked.');
+    return request('/rest/v1/rpc/hf_lifetime_top100', {});
+  }
+  async function retry() {
+    if (!cloud) { await restore(generation); return; }
+    var epoch = generation;
+    await flush();
+    if (epoch !== generation || outbox.length) return;
+    try { await rpc('hf_wallet_profile'); if (epoch === generation) status = 'Wallet profile saved.'; }
+    catch (error) { if (epoch === generation) status = 'Unable to refresh this wallet profile. ' + error.message + ' Check your connection and retry.'; }
+    notify();
   }
   window.HamsterSave = {
     ready: Promise.resolve(), beginMap: beginMap, record: record, flush: flush,
@@ -181,9 +209,10 @@
     purchase: function (id) { return mutate(function () { return purchase(id); }); },
     equip: function (slot, id) { return mutate(function () { return equip(slot, id); }); }, leaderboard: leaderboard,
     subscribe: function (fn) { listeners.push(fn); },
-    retry: async function () { if (cloud) await flush(); else await restore(generation); },
+    retry: retry,
     snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, status: status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
   };
   window.addEventListener('online', function () { if (cloud) void flush(); });
+  window.addEventListener('pagehide', function () { if (cloud) void flush(); });
   setInterval(function () { if (cloud && outbox.length && !flushing && navigator.onLine) void flush(); }, 4000);
 })();

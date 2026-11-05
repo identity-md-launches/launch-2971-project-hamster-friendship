@@ -152,6 +152,7 @@ a {
 
 /* Buttons */
 .btn {
+  touch-action: manipulation;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -438,3 +439,24 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
 .stage-tools .btn { min-width: 44px; }
 #game:focus-visible { outline-offset: -3px; }
 .pad-btn.is-pressed { background: var(--color-accent-hover); color: var(--color-on-accent); }
+
+/* VisualViewport follows the usable area as browser toolbars/keyboard move.
+   The backing canvas keeps its aspect ratio and square source pixels. */
+.game.page { width: 100vw; width: 100dvw; width: var(--play-width, 100dvw); height: var(--play-height, 100dvh); }
+.game-chrome { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.game-chrome .site-header { min-width: 0; flex-wrap: wrap; }
+.game-chrome .stage-tools { min-width: 0; max-width: 100%; flex-shrink: 1; flex-wrap: wrap; }
+.game-chrome .hud { position: static; inset: auto; translate: none; margin-inline: max(12px, env(safe-area-inset-left)); flex-wrap: wrap; white-space: normal; max-width: calc(100% - 24px); }
+.game-utilities .btn { overflow-wrap: anywhere; }
+.rotate-overlay { position: absolute; z-index: 9; inset: max(150px, calc(50% - 100px)) max(16px, env(safe-area-inset-right)) auto max(16px, env(safe-area-inset-left)); max-height: calc(100% - 180px); display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 16px; background: var(--color-surface); border-radius: var(--radius-md); text-align: center; overflow-y: auto; }
+.rotate-overlay p { max-width: 30ch; color: var(--color-text-muted); }
+.is-rotation-blocked #rotate-hint, .is-rotation-blocked #screen-pause { visibility: hidden; }
+.viewport-notice { position: absolute; z-index: 10; inset: 112px 16px auto; max-width: 420px; margin-inline: auto; display: flex; align-items: start; gap: 8px; padding: 12px; background: var(--color-surface); font-size: var(--text-sm); border-radius: var(--radius-sm); }
+#immersive-help { margin-block-end: 12px; }
+.leaderboard { table-layout: fixed; }
+.leaderboard th:first-child { width: 18%; }
+.leaderboard th:nth-child(2) { width: 32%; }
+.leaderboard th:nth-child(3) { width: 34%; }
+.leaderboard th:last-child { width: 16%; }
+@media (max-width: 28rem) { #btn-fullscreen { display: none; } .leaderboard th, .leaderboard td { padding-inline: 4px; } }
+@media (orientation: landscape) and (max-height: 34rem) { .game-chrome .hud { padding-block: 2px; } }

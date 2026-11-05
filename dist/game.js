@@ -526,7 +526,8 @@
     if (action) held[action] = false;
   });
   window.addEventListener('blur', function () { clearInput(); pauseGame(); });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) { clearInput(); pauseGame(); } });
+  window.addEventListener('hamster:viewport', clearInput);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { clearInput(); pauseGame(); void saves.flush(); } });
 
   var padButtons = document.querySelectorAll('[data-action]');
   Array.prototype.forEach.call(padButtons, function (btn) {
@@ -717,6 +718,7 @@
     game.flash = reduceMotion ? 0 : 16;
     updateHud();
     if (!skipIntro && mapNumber === 1) say(LINES.intro); else focusStage();
+    window.dispatchEvent(new Event('hamster:playing'));
   }
 
   function gameOver() {

@@ -1,72 +1,60 @@
-# Existing Supabase backend: squeek upgrade
+# Existing Supabase project: lifetime persistence
 
-Apply `003_squeek.sql` **after the project’s existing 001 and 002**, in the same Supabase project. For a new database only, apply all three in order. Historical migrations are unchanged. This task neither runs a live migration nor replaces the backend. The delivered public configuration remains empty because the checkout supplies no service URL/key.
+**Production status, 2026-11-05:** original project unidentified; frontend public settings are empty in the checkout and live `config.js`. No production database connection, migration, Auth configuration change or data inspection occurred. The new migration and RPCs were exercised against real PostgreSQL in PGlite with explicit Auth fixtures. This is not a hosted Supabase/signature-verification result.
 
-## Preservation and access
+## Apply safely in the original project
 
-Migration 003 is transactional. It deletes no profile, balance, purchase, Auth user, historical run, badge or old statistic. The old catalogue rows are marked inactive to preserve purchase foreign keys. Old shop items and Badge Exchange cannot be invoked through the new service. The removed mini-game’s public RPC is dropped, while private historical records remain untouched. New profile snapshots omit its statistics and badges.
+Keep migrations 001–003 unchanged. If they are already installed, apply **only `004_lifetime_persistence.sql`**, once. For a genuinely empty test database, apply 001, 002, 003 and 004 in order. Each migration is transactional. Do not replace the existing project or rerun old migrations over populated tables.
 
-Private tables retain RLS and no direct access for anon/authenticated roles. Mutation functions use `SECURITY DEFINER` with an empty search path. A public caller cannot choose a profile ID, award SQK, change prices or set the reset timezone. All mutating gameplay/purchase functions resolve `hf_private.player_id()` from a **trusted `auth.identities` Web3 identity**, not editable user metadata, a passed wallet address or a browser-supplied score.
+Before applying 004, take a backup and run `preservation_snapshot.sql` under owner access during a maintenance window; retain that private output. Repeat after 004, before gameplay resumes. All profile fingerprints, SQK/lifetime sums, inventory and wallet-link fingerprints, profile counts and historical daily totals should match exactly. The new `runs.lifetime_credited` baseline and initially empty ledger are intentional schema additions. Run `verify_lifetime.sql` afterwards. These two SQL files were executed in the local populated-database suite.
 
-The Supabase Auth server must verify the login message and signature. Enable Ethereum Web3 Auth and allow the current HTTPS site URL, including the static hosting/gateway paths, in Auth redirect settings. The frontend uses the documented `POST /auth/v1/token?grant_type=web3` with `chain`, `message`, `signature`. The signing prompt explicitly describes login and never authorizes a transaction. See [Supabase’s Web3 guide](https://supabase.com/docs/guides/auth/auth-web3) and [Auth API schema](https://github.com/supabase/auth/blob/master/openapi.yaml).
+Enable Ethereum Web3 Auth in the same project's Auth settings. Verify the deployed site's domain/URI, expiry and signature using the current [Supabase Web3 guide](https://supabase.com/docs/guides/auth/auth-web3). The frontend uses `POST /auth/v1/token?grant_type=web3` with `chain`, `message`, `signature`. The login message binds the actual origin/host and URI, chain 1, random nonce, issued time and five-minute expiration. It authorizes login only. The owner must confirm real Auth behavior; tests inject Auth identities and do not prove signature validation.
 
-Set only `supabaseUrl` and `supabasePublishableKey` in `src/config.js`; rebuild. Leave `hf_private` unexposed and `public` exposed through the Data API. A service-role key must never enter the static export.
+Expose `public` through the Data API, never `hf_private`. Put only the original project's public URL and publishable/anon key into `src/config.js`; rebuild. Never ship a service-role/private key. The client checks `hf_service_status()` before asking for a signature, so a missing migration fails visibly without an unnecessary signing request.
 
-## Existing profile attachment
+## Permanent totals and history
 
-Earlier versions saved to an anonymous browser Auth user; their wallet connection did not prove ownership. Those rows cannot safely be relabeled from an address alone.
+Migration 004 preserves every existing profile, Auth identity, association, SQK balance, item purchase, cosmetic, badge and historical score row. It does not guess missing historical scores, sum daily bests as though they were complete sessions, or reset totals. Existing `profiles.total_score` is the historical baseline.
 
-1. The original browser session calls `hf_prepare_legacy()`, which locks its existing profile and issues a random one-use ticket valid for 30 minutes. It creates no balance. If already attached, it identifies the wallet instead of issuing another claim.
-2. The player explicitly signs into MetaMask through Supabase Web3 Auth.
-3. `hf_wallet_profile(p_legacy)` locks/consumes the ticket and creates a unique wallet-to-original-profile association. The original `profiles.user_id`, balance, purchases, cosmetics and historical score are retained in place.
-4. An already linked wallet returns its established profile before considering a ticket. It never merges or overwrites an existing wallet. A ticket for another secured profile is refused. Lost responses can be retried safely.
+003 credited points immediately, including active maps. 004 initializes each existing run's `lifetime_credited` to its saved `score`, preventing those historical points from being credited again. New point events update only that run's score. On `active → dead/complete/abandoned`, a trigger settles `max(0, score - lifetime_credited)` into the profile and a unique ledger entry in the same transaction. Restarting or starting on another device uses the existing abandonment path. A retried acknowledgement cannot award twice. Future ended sessions accumulate rather than replacing a daily/map best.
 
-The player may leave the attachment checkbox off to use their wallet’s existing profile. Old browser session/guest/outbox keys are not deleted. Old pre-upgrade pending gameplay is not imported into new wallet queues; historical stored balances remain intact. Without the original anonymous session, that anonymous profile needs owner-assisted recovery with independently verified ownership; the client never guesses an association.
+`hf_retain_lifetime` refuses decreasing a profile's lifetime score or deleting a profile, including cascades from ordinary Auth-user deletion. Keep backups: a privileged administrator can explicitly disable database protections. There is no automated expiry/cleanup/reset for lifetime totals. No cron reset was present in the supplied migrations. The original owner must check production Supabase cron and any external scheduler before release; this migration does not guess or disable unrelated jobs.
 
-## Daily reset timezone
+Old `daily_scores`, settings and calendar columns stay private as historical archives. Current progress never writes them, and the daily ranking RPC is dropped. Immutable historical migration files and old regression fixtures still mention daily behavior; the current runtime has no daily bucket, countdown, timezone filter or reset.
 
-The brief contains an unresolved `[TIMEZONE]`. **UTC is the explicit default assumption.** The database owner may set the intended IANA timezone through the SQL editor, for example:
+## Wallet ownership and preserved legacy profiles
 
-```sql
-update hf_private.settings
-set leaderboard_timezone = 'UTC'
-where singleton;
-```
+Trusted identity comes from `auth.identities`, written by Supabase after Web3 signature verification. Client-editable metadata, a passed address and browser score totals are not proof of ownership. Wallets are canonical lowercase addresses with a unique profile link.
 
-Replace `UTC` with the requester’s actual IANA choice. A trigger validates against PostgreSQL timezone names. Authenticated browser users have no permission to change it. The frontend reads the server’s timezone and reset deadline rather than relying on the device clock/timezone. PostgreSQL timezone conversion handles DST, including 23/25-hour days. Changing the zone selects a separate daily bucket and never affects balances or unlocks.
+004 resolves the unique wallet link by verified address, allowing a new Auth UUID for that same address to reopen the original profile without inserting a duplicate or changing ownership. This addresses the documented [Supabase address-casing identity issue](https://github.com/supabase/auth/issues/2264). A different wallet cannot submit another player's run or spend their SQK.
 
-Daily scores retain historical rows by `(profile_id, score_day, timezone)`. Only the current bucket is publicly ranked. Each run tracks current-day points independently of its full map score; midnight resets that run’s daily contribution before new points are added. The board stores the greatest contribution from any one map run for that wallet/day. Server acknowledgement time determines the day for queued offline events. Only verified, linked profiles are eligible; no historical anonymous or guest scores are backfilled into today’s board.
+The existing legacy attachment remains: the original anonymous Auth session requests a random, one-use 30-minute `hf_prepare_legacy()` ticket; explicit verified Web3 login consumes it through `hf_wallet_profile(p_legacy)`. The original profile and inventory remain in place. A wallet that already has a profile always retains that profile; there is no automatic merge. A legacy profile already linked elsewhere cannot be claimed again. If the original anonymous session is lost, ownership needs independent owner-assisted recovery; no address association is fabricated.
 
 ## Current RPCs
 
 | Function | Behavior |
 | --- | --- |
-| `hf_prepare_legacy()` | Original authenticated browser session issues an expiring profile-attachment ticket. |
-| `hf_wallet_profile(p_legacy?)` | Opens the verified wallet profile; optionally attaches its original browser profile on first use. |
-| `hf_profile(p_name?)` | Loads/renames the current verified profile. Returns preserved SQK, lifetime score, map, inventory, cosmetics and retained skill/contribution badges. |
-| `hf_start_run_v4(p_map)` | Locks the profile, checks unlocked maps and creates 31 exclusive drops, 30 monster specs and scaled HP. Keeps the original one-active-run model. |
-| `hf_progress(p_run,p_events)` | Accepts 1–128 ordered events, acknowledges idempotently, checks ownership, frame timing, damage, HP, weapon entitlement/ammo, attack cooldown, unique pickups and finite forest collectibles. Derives points/SQK itself. |
-| `hf_purchase(p_item)` | Locks the profile; requires an active server catalogue item; atomically deducts its fixed price and inserts its unique purchase. An already-owned item returns the profile without charging. Damage upgrades immediately update active-run skills. |
-| `hf_equip('costume',p_item?)` | Requires an owned active costume; accepts null to unequip; preserves prior cosmetics. |
-| `hf_daily_top100()` | Public `{timezone,day,resetsAt,rows}` projection of up to 100 verified wallet scores, sorted by best daily map score, time reached, profile ID. No wallet address or private IDs are disclosed. |
-| `hf_top100()` | Compatibility projection of the same current-day wallet-only board. |
+| `hf_service_status()` | Public schema contract: `{schemaVersion:4,leaderboard:"lifetime"}`. No account data. |
+| `hf_prepare_legacy()` | Original authenticated browser session requests a one-use attachment ticket. |
+| `hf_wallet_profile(p_legacy?)` | Opens the canonical verified wallet profile; optionally attaches an unclaimed old profile on first use. |
+| `hf_profile(p_name?)` | Loads/renames the current verified profile with saved balance, lifetime score, map, inventory and cosmetics. |
+| `hf_start_run_v4(p_map)` | Existing unlocked-map check, exclusive drops, monster HP and one-active-run behavior. Ending an old active run now settles uncredited lifetime points. |
+| `hf_progress(p_run,p_events)` | Existing validated combat/collectible events, sequence acknowledgements, ownership checks, unique drops and server-derived SQK. New points stay on the run until it ends. |
+| `hf_purchase(p_item)` | Existing profile lock, server prices, atomic deduction and unique purchase. Retry returns existing ownership without a second charge. |
+| `hf_equip('costume',p_item?)` | Existing owned-costume check and equip/unequip. Shared by Marketplace and Change it. |
+| `hf_lifetime_top100()` | Public `{updatedAt,rows}`; positive lifetime totals from verified linked profiles only. Sort total descending, then stable profile UUID; maximum 100. No addresses/private IDs in returned rows. |
+| `hf_top100()` | Compatibility table projection of the same lifetime ranking. |
 
-Old start RPCs tell cached pages to reload. Old rule-version runs remain stored; they cannot mint new-rule rewards. The prior minigame and badge-exchange public RPCs are removed, rather than leaving an alternative SQK-credit path available to cached pages.
+All private tables retain RLS and no direct browser-role access. Security-definer entry points have an empty search path. The lifetime ledger is private. Purchases and event processing continue to lock the profile before a run/attack, preserving the original transaction order.
 
-## Event and economy rules
+## Client durability and limitations
 
-One uniform reward roll per enemy chooses big `[0,.1)`, small `[.1,.5)`, coin `[.5,.7)`, gun `[.7,.8)`, sword `[.8,.9)`, bomb `[.9,1)`. `runs.claimed` is shared across all six kinds, so a defeated monster cannot yield multiple reward types. A new event cannot claim twice; an acknowledged replay cannot credit twice.
+The server is authoritative. Browser storage contains address-partitioned Auth sessions and unsent ordered events, never authoritative balances/rankings. A malformed response or acknowledgement retains the queue. A lost reply after SQL commit replays idempotently. An older account's late response cannot replace the selected wallet's profile. Guest state is memory-only and never imported. Refresh tokens restore sessions without silently requesting another signature; Profile retry reloads acknowledged server changes.
 
-Big/small chestnuts award 5/1 points; coins award 1 SQK. Gun pickup sets ammunition to 100, bomb pickup adds three throws, and sword pickup grants its entitlement. Each gun/bomb attack decrements its own ammunition. Chestnut attacks do not consume ammunition. The original bomb area/burn rules remain eight ticks at least 60 frames apart; upgrade damage applies to every tick. Monster damage scaling is absent; HP retains the 1.2-per-map rule.
+One active map per wallet is still the supported game model. Another device starting a map abandons the older run, settling points already acknowledged by the server. Late unsent events for an ended run fail explicitly and remain in the original browser queue, rather than overwriting another session. This delivery does not add simultaneous-map merging or restoration of a suspended canvas after reload. The inherited event validator checks combat/timing/entitlements, not a full authoritative movement simulation; it cannot certify that a modified client really played every action.
 
-Finite forest entitlements are derived from the original authored map: 34 trail chestnuts, the chest, basket, log, two lanterns and two bushes. The client and SQL share tested values, but SQL derives its own amount from the source identifier. Enemy defeat/map completion no longer add old bonus points; completion still unlocks the next map and retains existing skill badge awards. Purchased legacy chestnut skills remain effective, and old inventory is never deleted.
+## Local validation and release gate
 
-The new catalogue is five 50-SQK costumes plus additive +10%/50, +20%/50, +25%/150 upgrades. This interpretation gives +55% when all three are owned. Each item has one purchase per profile. A profile row lock serializes parallel purchases; a function error rolls back both inventory and balance together.
+`node supabase/tests/lifetime.mjs` executes the migration over populated historical data, checks preservation, permanent session scoring, retries, ownership, permissions, purchases, map completion, no calendar dependence and the deterministic Top 100 cap. `node supabase/tests/squeek-client.mjs` runs the actual client against these PostgreSQL functions with lost replies, malformed acknowledgements, two devices, refresh and wallet-switch fixtures. `scripts/validate-market.mjs` tests the real production-export UI against the SQL functions, including automatic leaderboard refresh with a short simulated clock advance.
 
-## Boundaries and checks
-
-The inherited event-validation model checks submitted combat rules, timing, entitlements and amounts. It does not run a complete authoritative movement/collision simulation, and cannot certify that an unmodified client played every event. One gameplay tab/map per wallet remains the supported model; parallel purchase requests are supported.
-
-Run `node supabase/tests/squeek.mjs` and `node supabase/tests/squeek-client.mjs` with optional PGlite module paths. They execute real PostgreSQL functions against explicit Auth/transport fixtures. Current results are 51 database and 13 client/database checks, including migration over populated data, legacy attachment, privacy, exclusive rewards, 100-shot exhaustion, upgrade parity, full-map completion, midnight rollover, DST, the Top 100 cap, lost replies and account-switch isolation. `scripts/validate-market.mjs` additionally exercises the actual browser UI against those PostgreSQL functions, with fixture Auth only.
-
-These tests do not validate a hosted Supabase service, real message signature, real Auth redirect configuration or owner permissions in production. Those remain owner verification steps before enabling cloud features on the existing site.
+See root `VALIDATION.md` for counts and exact commands. Before release, run the same wallet/save/purchase/restoration flows against the original hosted Supabase project on real devices and compare preserved data. Lifetime Top 100 is operational in the local SQL/UI fixture; it is **not confirmed operational on production**.

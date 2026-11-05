@@ -15,6 +15,11 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Chang the hamster in a pixel-art chestnut forest at dusk">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="squeek.hamster">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./app-icon-192.png">
   <link rel="stylesheet" href="./styles.css">
   <script src="./config.js" defer></script>
   <script src="./rules.js" defer></script>
@@ -23,6 +28,7 @@
   <script src="./game.js" defer></script>
   <script src="./wallet.js" defer></script>
   <script src="./ui.js" defer></script>
+  <script src="./viewport.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#stage">Skip to the game</a>
@@ -35,6 +41,7 @@
         <header class="site-header">
           <h1>squeek.hamster</h1>
           <div class="stage-tools">
+            <button class="btn btn-secondary btn-small" id="btn-change" type="button" aria-haspopup="dialog" aria-controls="player-dialog">Change it</button>
             <button class="btn btn-secondary btn-small" id="btn-fullscreen" type="button" aria-label="Enter fullscreen">⛶<span class="tool-label"> Fullscreen</span></button>
             <button class="btn btn-secondary btn-small" id="btn-menu" type="button" aria-haspopup="dialog" aria-controls="menu-dialog">☰ Menu</button>
           </div>
@@ -43,7 +50,7 @@
           <p class="hud-item"><span>SQK</span><strong class="hud-value" id="hud-sqk">0</strong><span id="hud-pending"></span></p>
           <p class="hud-item"><span>Map</span><strong class="hud-value" id="hud-map">1</strong></p>
           <p class="hud-item"><span>Defeated</span><strong class="hud-value" id="hud-enemies">0/30</strong></p>
-          <p class="hud-item"><span>Score</span><strong class="hud-value" id="hud-score">0</strong></p>
+          <p class="hud-item"><span>Current Map Score</span><strong class="hud-value" id="hud-score">0</strong></p>
         </div>
         <div class="boss-status" id="hud-boss" hidden><span>Cockroach</span><span class="hud-bar" role="img" id="hud-boss-bar" aria-label="Cockroach health full"><span class="hud-bar-fill" id="hud-boss-fill"></span></span></div>
           <p class="rotate-hint" id="rotate-hint">Rotate your phone for landscape play.</p>
@@ -51,6 +58,12 @@
 
 
 
+        <aside id="rotate-overlay" class="rotate-overlay" aria-labelledby="rotate-title" hidden>
+          <h2 id="rotate-title">Turn to the forest</h2>
+          <p>Rotate your device to landscape. Your game and wallet stay here.</p>
+          <button id="btn-portrait" class="btn btn-secondary" type="button">Play in portrait</button>
+        </aside>
+        <div id="viewport-notice" class="viewport-notice" hidden><p id="viewport-message" role="status"></p><button id="close-viewport-notice" class="btn btn-secondary close-dialog" type="button" aria-label="Dismiss fullscreen notice">×</button></div>
         <p id="game-error" class="error game-error" role="alert"></p>
 
 
@@ -87,7 +100,7 @@
           <h2>Congratulations! You Win!</h2>
           <p class="overlay-text">Another step closer to Alice.</p>
           <dl class="stats">
-            <div><dt>Score</dt><dd id="end-score">0</dd></div>
+            <div><dt>Current Map Score</dt><dd id="end-score">0</dd></div>
             <div><dt>Clues found</dt><dd id="end-clues">0 of 3</dd></div>
             <div><dt>Time</dt><dd id="end-time">0:00</dd></div>
           </dl>
@@ -136,7 +149,7 @@
           <dt><kbd>Esc</kbd> or <kbd>P</kbd></dt>
           <dd>Pause, resume or restart</dd>
         </dl>
-        <p>On a phone, rotate to landscape. Drag the joystick to walk; hold Jump for height. Use Attack and weapon slots on the right. Walk over items to collect them. A contextual Read or Talk button appears near story objects. Fullscreen requests landscape orientation when supported; on iPhone, rotate manually.</p>
+        <p>On a phone, rotate to landscape. If your browser cannot lock orientation, use the rotate overlay or choose Play in portrait. On iPhone Safari, use Share → Add to Home Screen for a standalone view; Safari’s browser bars cannot be hidden by the game. Drag the joystick to walk; hold Jump for height. Use Attack and weapon slots on the right. Walk over items to collect them. A contextual Read or Talk button appears near story objects. Fullscreen requests landscape orientation when supported; on iPhone, rotate manually. Change it opens your owned costumes on desktop and mobile; equipping uses the same wallet inventory as Marketplace.</p>
       </details>
       <details class="guild-chapter"><summary>Combat and rewards</summary>
         <ul class="tips">
@@ -149,9 +162,9 @@
           <li>Clear all 30 monsters and the boss, then inspect the metal fragment beyond the gate to continue the story.</li>
         </ul>
       </details>
-      <details class="guild-chapter"><summary>Saves and daily scores</summary>
+      <details class="guild-chapter"><summary>Saves and lifetime scores</summary>
         <p>Guests play without saving. Connect MetaMask and sign a login message to save progress; login never sends a transaction or spends funds. A wallet connection alone does not verify a save account.</p>
-        <p>The daily Top 100 ranks each wallet’s best map score earned today. It resets at midnight in the server’s configured timezone (UTC by default). Lifetime progress, SQK and purchases are kept. Points saved after midnight count toward the new day.</p>
+        <p>Lifetime Top 100 ranks accumulated scores from ended sessions across all maps. Death, completion and restart end a session. Scores never reset. Current Map Score stays separate until the session ends. Existing stored lifetime scores are retained; guests are never ranked.</p>
         <p>Marketplace purchases require a verified wallet profile. Each costume and upgrade can be bought once. Costumes are cosmetic and do not protect against hits.</p>
       </details>
       <details class="guild-chapter"><summary>The story so far</summary>
@@ -177,14 +190,17 @@
 
   <dialog id="menu-dialog" class="player-dialog menu-dialog" aria-labelledby="menu-title">
     <div class="panel-header"><h2 id="menu-title">Forest menu</h2><button id="close-menu" class="btn btn-secondary close-dialog" type="button" aria-label="Close menu">×</button></div>
-    <div class="map-status"><p><strong id="hud-weapon">Chestnut</strong><span id="hud-ammo"> · ∞</span></p><p><span id="hud-season">Autumn</span> · <span id="hud-timer">Boss in 60s</span></p></div>
+    <div class="map-status"><p>Lifetime Score <strong id="hud-lifetime">0</strong></p><p><strong id="hud-weapon">Chestnut</strong><span id="hud-ammo"> · ∞</span></p><p><span id="hud-season">Autumn</span> · <span id="hud-timer">Boss in 60s</span></p></div>
+    <p class="panel-note" id="immersive-help"></p>
     <p class="save-summary" id="save-summary">Guest · this run only</p>
     <nav class="game-utilities" aria-label="Player menu">
       <button class="btn btn-secondary" id="btn-profile" type="button">Profile</button>
+      <button class="btn btn-secondary" id="btn-change-menu" type="button">Change it</button>
       <button class="btn btn-secondary" id="btn-shop" type="button">Marketplace</button>
       <button class="btn btn-secondary" id="btn-guild" type="button" aria-expanded="false" aria-controls="player-dialog">GUILD</button>
       <button class="btn btn-secondary" id="btn-audio" type="button">Audio</button>
-      <button class="btn btn-secondary" id="btn-leaderboard" type="button">Top 100</button>
+      <button class="btn btn-secondary" id="btn-leaderboard" type="button">Lifetime Top 100</button>
+      <button class="btn btn-secondary" id="btn-fullscreen-menu" type="button">Fullscreen</button>
       <button class="btn btn-secondary" id="btn-wallet" type="button">Connect MetaMask</button>
       <button class="btn btn-secondary" id="btn-pause" type="button">Pause</button>
     </nav>

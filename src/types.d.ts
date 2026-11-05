@@ -41,7 +41,7 @@ interface FriendshipSave {
   saveName(name: string): Promise<void>;
   purchase(id: string): Promise<void>;
   equip(slot: string, id: string | null): Promise<void>;
-  leaderboard(): Promise<{day: string; timezone: string; resetsAt: string; rows: Array<{name: string; score: number; highest_map: number}>}>;
+  leaderboard(): Promise<{updatedAt: string; rows: Array<{name: string; score: number; highest_map: number}>}>;
   subscribe(listener: () => void): void;
   retry(): Promise<void>;
   snapshot(): FriendshipSaveSnapshot;
@@ -65,4 +65,4 @@ interface Window {
   ethereum?: FriendshipProvider;
 }
 
-interface ScreenOrientation { lock?(orientation: string): Promise<void>; }
+interface Navigator { readonly standalone?: boolean; }

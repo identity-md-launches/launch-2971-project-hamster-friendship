@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const FILES = ['index.html', 'styles.css', 'game.js', 'audio.js', 'config.js', 'rules.js', 'save.js', 'wallet.js', 'ui.js', 'sqk.svg', 'favicon.svg', 'og-image.svg', 'og-image.png', 'victory.svg'];
+const FILES = ['index.html', 'styles.css', 'game.js', 'audio.js', 'config.js', 'rules.js', 'save.js', 'wallet.js', 'ui.js', 'viewport.js', 'manifest.webmanifest', 'app-icon-192.png', 'app-icon-512.png', 'sqk.svg', 'favicon.svg', 'og-image.svg', 'og-image.png', 'victory.svg'];
 let failures = 0;
 const fail = (msg) => { failures++; console.error(`FAIL ${msg}`); };
 const pass = (msg) => console.log(`ok   ${msg}`);
@@ -32,7 +32,7 @@ const absolute = html.match(/(?:src|href)="\/(?!\/)[^"]*"/g);
 if (absolute) fail(`root-absolute asset URLs: ${absolute.join(', ')}`); else pass('asset URLs are relative');
 
 const ids = [...game.matchAll(/byId\('([^']+)'\)/g)].map((m) => m[1]);
-for (const name of ['wallet.js','ui.js']) {
+for (const name of ['wallet.js','ui.js','viewport.js']) {
   const source = await readFile(join(root,'src',name),'utf8');
   const dynamicIds = [...source.matchAll(/\.id\s*=\s*'([^']+)'/g)].map(m => m[1]);
   ids.push(...[...source.matchAll(/getElementById\('([^']+)'\)/g)].map(m => m[1]).filter(id => !dynamicIds.includes(id)));

@@ -1,87 +1,85 @@
 # squeek.hamster
 
-An in-place update of **Hamster Friendship: The Lost Alice**, retaining the authored forest, canvas engine, original hamster/enemy sprites, story, seasonal environments and procedural audio. The display name is now `squeek.hamster`; the existing website address and hosting configuration are unchanged.
+An in-place update of **Hamster Friendship: The Lost Alice**. The existing forest, pixel renderer, story, characters, audio, combat, drop rates, prices and damage balance remain. The existing production address is unchanged:
 
-**The export is playable as a guest now.** This checkout arrived with empty Supabase settings. Wallet saves, persistent purchases and global rankings are implemented, but require the existing backend owner’s setup below; no live backend was invented or replaced.
+[hamster-friendship-the-lost-alic.identitymd.eth.limo](https://hamster-friendship-the-lost-alic.identitymd.eth.limo/).
 
-## Install, preview and rebuild
+**Production cloud saves are not fixed or verified yet.** Both public Supabase settings were empty in the supplied checkout and the live `config.js` checked on 2026-11-05. No input identifies the original backend. This delivery supplies the tested frontend and migration, but does not invent a replacement project, migrate production or publish the site. Guest play works immediately. See [VALIDATION.md](VALIDATION.md) for actual test coverage and production blockers.
 
-Node 18+ is sufficient; validation used Node 22. The existing dependency-free JavaScript stack, root package manifest and lockfile are retained.
+## Install, build and preview
+
+Use Node 18 or later. This existing application is plain HTML/CSS/JavaScript with no runtime dependencies; its package manifest and lockfile are unchanged. No Vite/React conversion or second project was created.
 
 ```sh
-npm ci
+npm ci --ignore-scripts
 npm run build
-npm run typecheck
+npm run check
 npm run preview
 ```
 
-Preview opens at `http://localhost:4173/`. Stop it with Ctrl+C. Edit `src/`, rebuild and include `dist/` with the source and original lockfile. The production build copies 14 local runtime files; it needs no registry, backend or secrets to build. Assets use relative URLs and work at a static hosting subpath. No server rewrite is required. `dist/` is included in the submission; no publishing or DNS operation is performed here.
+Open `http://localhost:4173/`. The production build copies 18 necessary files from `src/` to root `dist/`. All runtime assets, the manifest and icons use relative URLs and work under a static hosting subpath. No server, secrets, remote fonts, wallet relay or runtime CDN is required for guest play. Wallet cloud features use the owner's existing Supabase service once configured.
 
-## Play
+`npm run typecheck` is the inherited syntax/export checker. Actual JavaScript type analysis was additionally run using TypeScript against `jsconfig.json` and the new viewport module; do not confuse the two checks.
 
-- **Desktop:** arrows or A/D move; Space, W, Up or Z jump. Left mouse button on the canvas or Enter attacks. E collects nearby items and interacts with story objects. X/J/Q and the shield bindings are removed.
-- **Weapons:** 1 = gun, 2 = bomb, 3 = sword. Collect a weapon before selecting its slot. Select the same slot again to return to unlimited chestnuts. Gun pickups refill to 100 bullets, never above 100; the empty gun’s icon/ammo disappear and its slot becomes unavailable. Bomb pickups give three throws; swords have unlimited uses. Weapons remain map-scoped, as before.
-- **Touch:** rotate to landscape, drag the circular joystick, and use Attack, Jump and the three slots over the canvas. Where the primary pointer is touch (`(pointer: coarse)`), walk over drops to collect them; a touchscreen laptop with a mouse still uses E. Story objects show a contextual Open/Read/Talk button. Fullscreen requests `screen.orientation.lock('landscape')` where available; the button is hidden in browsers without element fullscreen (iPhone Safari), where you rotate manually. The canvas widens to the screen’s aspect with square pixels instead of stretching. Portrait remains playable with a rotation hint.
-- **Menu:** Profile, Marketplace, GUILD, Audio, Top 100, wallet connection and Pause/Resume are behind one compact control. Supplemental weapon, season and timer text is also in this menu. All how-to-play content and the original story are in GUILD.
-- **Combat:** one monster/projectile hit or a fall ends the map. Stomping remains an attack. Monster HP starts at 50/100/300 for small/large/boss and increases by 20% per map. Player health, shield and enemy damage scaling are removed. Each map retains 30 regular monsters and the boss after 60 active seconds.
+## Modified features
 
-## Rewards and marketplace
+- **Lifetime Top 100:** replaces the daily board, reset countdown and calendar filtering. Only verified wallet-linked profiles with positive scores qualify. Rankings refresh every 15 seconds while open and on returning to the tab, with manual refresh and an error/retry state. No sample players are shipped.
+- **Separate scores:** Current Map Score shows the current run's points. Lifetime Score in Profile and Menu shows ended sessions across maps. Death, completion and restart/abandonment end a session. Active-run points settle once, in the same database transaction as the terminal event. Existing stored totals are retained exactly, including points credited by earlier versions to then-active runs. Historical daily bests are archived, not added on top of already-counted totals.
+- **Cloud readiness and saves:** the client checks migration 004 before asking for a login signature. Invalid configuration, failed requests and missing migrations remain visible. An unreadable or unacknowledged response cannot discard queued events. Retry also reloads the verified profile, allowing acknowledged changes from another device to appear.
+- **Profile separation:** a guest's temporary profile stays separate in memory when switching wallets or disconnecting. It never uploads into a wallet account. Wallet authentication sessions and unsent event queues remain address-partitioned. Server balances and inventory remain authoritative.
+- **Verified identity:** migration 004 resolves a canonical lowercase verified wallet to its original profile even if Supabase gives that same wallet a different Auth UUID. Original balances and purchase ownership are not merged or overwritten.
+- **Mobile display:** `100dvh`/`100dvw`, VisualViewport resizing, safe-area insets, optional landscape lock after connection/play/fullscreen, and a rotate overlay. Rotation pauses and resumes the same world, rather than creating a map or changing wallet identity. Portrait play remains available.
+- **Fullscreen/Home Screen:** a user-triggered fullscreen option, recoverable denial notice and a relative standalone manifest with local hamster icons. On narrow phones Fullscreen moves into Menu, leaving Change it visible beside Menu. Safari limitations are explained next to these options. No offline cache/service worker is installed.
+- **Touch input:** ordinary buttons use `touch-action: manipulation`; the canvas, joystick and held action buttons retain gesture isolation. Repeated attacks/jumps and simultaneous movement/action touches remain responsive. Pinch zoom is not disabled across the page.
+- **Change it:** visible on desktop and phone entry screens and in Menu. It opens owned costumes and calls the very same equip/unequip logic and Supabase RPC as Marketplace, without buying an item or charging SQK. Empty inventory links to Marketplace. **Interpretation:** the supplied checkout contained no control or handler named Change it; this exposes its existing costume functionality rather than inventing a separate cosmetic store or changing seasonal/gameplay rules.
+- **Branding:** title, visible name, share-card heading and standalone app identity use `squeek.hamster`. The underlying project and original artwork remain Hamster Friendship. [docs/DOMAIN.md](docs/DOMAIN.md) records domain findings and alternatives.
 
-Every defeated monster, including the boss, selects **exactly one** drop with one roll:
+## Play and saved data
 
-| Drop | Chance | Reward |
-| --- | ---: | --- |
-| Big chestnut | 10% | 5 points |
-| Small chestnut | 40% | 1 point |
-| SQK coin | 20% | 1 SQK |
-| Gun | 10% | 100-bullet magazine |
-| Sword | 10% | Unlimited sword uses |
-| Bomb | 10% | 3 bomb throws |
+Start adventure plays immediately as a guest. Keyboard: arrows/A/D move, Space/W/Up/Z jump, Enter or left mouse attack, E interacts, 1/2/3 select gun/bomb/sword, Escape/P pauses. Touch: joystick, Attack, Jump and three weapon slots; nearby drops collect automatically. GUILD retains the existing controls, story and economy details. Marketplace retains all eight products and existing purchase entitlements.
 
-The HUD shows SQK, Map, Defeated and current-map Score. Original trail chestnuts and finite caches also give points. Kill/map-clear score bonuses are replaced by chestnut points; historical lifetime scores are retained. Emergency falling-ammo resupplies are unnecessary with unlimited chestnuts and are removed, preventing endless point farming. A drop and each original forest collectible can be claimed once.
+Menu → Connect MetaMask connects on Ethereum Mainnet without signing, approving or sending a transaction. With cloud configured, **Sign in to save** explicitly requests one domain-bound login message; Supabase verifies ownership. Saved sessions refresh without a new signature. Old browser Auth profiles can still be attached through the existing explicit legacy recovery option; an established wallet profile takes priority.
 
-The new shop contains five 50-SQK costumes: Deadpool, Batman, Spider-Man, Superman and Samurai hamster. They are original pixel overlays on Chang’s existing animated sprite, with matching shop previews. Each can be bought once and equipped/unequipped. Three one-time upgrades add +10% for 50 SQK, +20% for 50 SQK and +25% for 150 SQK. They stack additively to **+55%** and apply immediately to gun, sword and bomb, including the bomb’s burn ticks. Chestnuts and stomps retain their base damage. Existing purchased chestnut skills and cosmetics are preserved, but are no longer sold.
+Permanent data consists of the verified profile, SQK, purchased inventory/upgrades, equipped cosmetics, map unlocks and lifetime score. Collected weapons/ammo remain per-map mechanics. The existing engine does not restore a suspended canvas position after a browser reload. Rotation preserves that live session. Guest progress lasts for the current page visit only. `localStorage` holds Auth sessions, pending-event queues and audio settings; it is not the cloud database or a global leaderboard.
 
-The server locks the profile, uses its own prices and atomically records the unique purchase and deduction. Retrying a request cannot charge twice. Guest shop purchases are disabled. Dice, its statistics/achievements and Badge Exchange are removed from active UI/runtime APIs. Historical private database records are preserved.
+One active map per wallet remains the server model. Starting another map/device ends the earlier server run and settles acknowledged points. Unsent events from a stale run are retained with an error instead of being merged, silently dropped or assigned to another wallet. An abrupt offline close cannot guarantee delivery; reopen the original browser and retry pending saves before starting elsewhere. Browser storage failures explicitly warn the player to keep the page open.
 
-## Saves, wallet identity and daily ranking
+## After launch / before enabling cloud
 
-Guests keep only in-memory progress for this visit. No guest score, SQK or map progression is written to storage, imported into a wallet profile or submitted to rankings. Existing old guest storage is left untouched and ignored.
+These owner actions are required in the **same original Supabase project**, not a new backend:
 
-Connect MetaMask through the retained EIP-6963 connector or its phone browser. **Saving additionally requires an explicit login-message signature**, verified by Supabase Web3 Auth. Connection never silently signs. No transaction, allowance or on-chain deployment is requested. Secure wallet-owned saves replace the earlier display-only wallet/private-browser-session split; an unverified address is never account ownership evidence. See [Supabase Web3 Auth](https://supabase.com/docs/guides/auth/auth-web3).
+1. Identify its real project URL and browser-safe publishable/anon key; set only those public values in `src/config.js`. They remain deliberately empty in this delivery. Never put a private/service-role key in the export.
+2. Back up the existing database. Record [supabase/preservation_snapshot.sql](supabase/preservation_snapshot.sql) before/after migration 004. Establish which of migrations 001–003 are already installed; apply only unapplied files, then `004_lifetime_persistence.sql`. Do not replay installed historical migrations.
+3. Enable Ethereum Web3 Auth; verify the current HTTPS site's login domain/URI and Supabase Auth/Data API configuration. Keep `hf_private` unexposed. Confirm [supabase/verify_lifetime.sql](supabase/verify_lifetime.sql) succeeds.
+4. Audit production cron/external automation for any old game score reset. No scheduled reset exists in this repository. Remove only confirmed reset jobs; their production existence cannot be checked from this checkout. The new total-protection trigger rejects decreases/deletions.
+5. Rebuild, then use two real devices and a real wallet to confirm login, reconnect, saved SQK/inventory/cosmetics, completed-session scoring, permanent rankings and zero duplicate purchases. Compare the preserved records with the backup. Test actual iPhone Safari, Android Chrome and MetaMask Mobile rotation/toolbars/fullscreen.
+6. Review and deliver this same project's `dist/` through the established IMD handoff only after critical production checks pass. No publish command was run here. Do not replace the existing URL. Domain migration additionally needs a confirmed, working address and the recovery checks in [docs/DOMAIN.md](docs/DOMAIN.md).
 
-Existing browser cloud profiles can be attached through the wallet dialog’s “Keep this browser’s existing cloud balance and progress” option. The server issues an expiring one-use ticket to that authenticated old session, then links its original profile row to the verified wallet. It does not copy, delete or reset its balance, progression or purchases. An already established wallet profile takes priority; profiles are never automatically merged or overwritten. Preserve original browser data until migration succeeds.
+[Supabase setup and schema details](supabase/README.md) include the exact migration semantics and access model.
 
-Wallet sessions and pending gameplay queues are partitioned by address. Requests capture their original identity; delayed responses and queued mutations cannot overwrite/spend another wallet’s profile. Failed saves remain queued and Profile offers Retry. Start/restart waits for pending saves. The existing one-active-ranked-map-per-profile model remains: use one gameplay tab; a map started elsewhere abandons the earlier run. Concurrent purchases are safe and tested separately.
+## Reproduce checks
 
-Daily Top 100 ranks each verified wallet’s **best map score saved during the current calendar day**. Midnight starts an empty ranking without deleting SQK, purchases, lifetime points or map unlocks. Only newly acknowledged points count after a run crosses midnight; delayed offline saves use the server’s acknowledgement day. Ties use time the score was reached, then profile ID. The server supplies the day, timezone and next midnight; the open board refreshes at that deadline and at least once per minute. No scheduled destructive reset is needed.
-
-## After launch: owner setup
-
-1. Back up the existing Supabase database. Apply only unapplied migrations in order. A project already on the prior release applies **`supabase/migrations/003_squeek.sql`** after its existing 001 and 002. Do not replay historical migrations over populated tables.
-2. Enable Ethereum Web3 Auth in that same Supabase project. Configure its Site URL/redirect allowlist for the **existing HTTPS website and gateway paths**. Keep the original Auth users/profiles and the old session usable for the legacy attachment flow.
-3. Set only the real public Supabase URL and browser-safe publishable key in `src/config.js`, then rebuild. Never include a service-role key. No backend values were supplied in this checkout.
-4. The brief left `[TIMEZONE]` unspecified. This implementation assumes **UTC**, configurable by the database owner via `hf_private.settings.leaderboard_timezone`. Choose the intended IANA timezone before enabling live rankings. Details and SQL are in [supabase/README.md](./supabase/README.md).
-5. Validate a real MetaMask login, legacy profile attachment and purchase against the hosted backend; test fullscreen/orientation on physical iPhone and Android devices. Those checks require the real service/devices and were not performed here.
-
-No token is deployed, re-minted or replaced. Hosting remains the network’s subsequent handoff of this static export.
-
-## Validation
-
-[VALIDATION.md](./VALIDATION.md) records commands, fixes, coverage and limitations. [DESIGN.md](./DESIGN.md) records the final implemented interface. The latest HUD revision reproduced the landscape clipping, corrected the CSS rule order, and kept enlarged text in the wrapping row below the header. The production build, `npm run typecheck`, real TypeScript `checkJs`, **33 browser checks** and **16/16 taste@1 checks** pass on this revision. The HUD regression checks seven viewport sizes at normal and 200% root text. The original `npm run typecheck` is a syntax/export-integrity check; the separate TypeScript command below checks the existing `jsconfig.json`. PostgreSQL and marketplace/PostgreSQL suites retain their earlier recorded results and were not re-run for this CSS-only change.
-
-Optional verification dependencies belong only in disposable scratch space:
+Test-only dependencies can be installed in disposable scratch space; they are not runtime dependencies or part of the submitted bundle:
 
 ```sh
-npm install --prefix test/scratch --no-save typescript@5.9.3 @electric-sql/pglite@0.5.15 axe-core@4.11.0
-node test/scratch/node_modules/typescript/bin/tsc -p jsconfig.json --noEmit
-node supabase/tests/squeek.mjs
+npm install --prefix test/scratch --package-lock=false --no-audit --no-fund @electric-sql/pglite typescript axe-core
+npm run build
+npm run typecheck
+node test/scratch/node_modules/typescript/bin/tsc --project jsconfig.json
+node test/scratch/node_modules/typescript/bin/tsc --noEmit --allowJs --checkJs --strict false --target ES2022 --lib ES2022,DOM src/types.d.ts src/config.js src/rules.js src/save.js src/wallet.js src/ui.js src/viewport.js
+node supabase/tests/lifetime.mjs
 node supabase/tests/squeek-client.mjs
-PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-squeek.mjs /opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs test/scratch/node_modules/axe-core/axe.min.js
-PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-market.mjs
-IMD_PLAYWRIGHT=/opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste
 ```
 
-The browser commands own their bounded preview and close it afterward. On another machine, pass the installed Playwright module/browser paths instead. The taste script is a pinned job input and is not shipped. Tests use explicit temporary Auth/provider, clock and encounter fixtures; none are in `dist/`. The prior-release test scripts describe superseded rules; the commands above are the current regression suites. No `node_modules`, verification packages or caches are runtime deliverables.
+The browser scripts accept the path to an existing Playwright installation. With this assignment's provided Chromium runtime:
 
-Live Supabase and a real wallet were not exercised. Chromium emulation passed; WebKit was attempted but its local runtime is unavailable. These local results are worker checks, not independent behavior certification. [Existing guide attribution/licenses](./docs/licenses/better-interface.txt) are retained.
+```sh
+PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-squeek.mjs /opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs test/scratch/node_modules/axe-core/axe.min.js
+PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-mobile.mjs
+PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-market.mjs
+IMD_PLAYWRIGHT=/opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste --offline
+```
+
+The pinned taste script is an assignment input and is removed at handoff; its measured result is retained in `docs/validation/results.json`. Browser scripts manage their preview and browser inside a bounded foreground command. Results and screenshots are written to disposable `test/scratch/`; selected final evidence is copied to `docs/validation/`. Older `test-upgrade`/`upgrade`/`squeek` SQL scripts document earlier rule versions; use the commands above for the current delivery.
+
+Full results, failed attempts that were repaired, and unperformed checks are recorded in [VALIDATION.md](VALIDATION.md). [DESIGN.md](DESIGN.md) describes the final implemented design and its six-domain review.

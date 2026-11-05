@@ -1,441 +1,640 @@
 {
-  "scope": "squeek.hamster update of the existing Hamster Friendship v3 tree",
-  "date": "2026-11-05",
+  "recordedAt": "2026-11-05T07:19:59.903830+00:00",
+  "authority": "Worker-run local evidence, not independent service or network certification.",
+  "completion": "Local implementation delivered; production objective incomplete pending original Supabase configuration, owner migration and native-device verification.",
   "build": {
     "passed": true,
-    "files": 14,
-    "bytes": 214871
-  },
-  "syntaxExportCheck": {
-    "passed": true,
-    "referencedIds": 54
-  },
-  "typescriptCheckJs": {
-    "passed": true,
-    "configuration": "jsconfig.json",
-    "version": "5.9.3"
-  },
-  "postgres": {
-    "results": [
+    "files": [
       {
-        "name": "003 applies to a populated project without deleting historical data",
-        "passed": true
+        "path": "dist/app-icon-192.png",
+        "bytes": 1067,
+        "sha256": "4a3d6aa6214f115a517a38ff795d732a8acda95c3689cf6d7317415ee795848d"
       },
       {
-        "name": "an anonymous Supabase user cannot create a wallet profile",
-        "passed": true
+        "path": "dist/app-icon-512.png",
+        "bytes": 2924,
+        "sha256": "ff540689411d1fe7047364889f66adcb2c0d1c4326344dfb8eac61a3c7fc86a6"
       },
       {
-        "name": "guests cannot save or spend through the old RPCs",
-        "passed": true
+        "path": "dist/audio.js",
+        "bytes": 4392,
+        "sha256": "b0544e355016452167b2e550e83937d30603b46ab30e3a13ece87df6736e01f0"
       },
       {
-        "name": "verified wallet links the existing profile without copying or resetting SQK",
-        "passed": true
+        "path": "dist/config.js",
+        "bytes": 411,
+        "sha256": "64312751ab7a06b300fb0929b9e7afc48ec5f7ce7a5a4697a462f0dc589fc330"
       },
       {
-        "name": "retrying wallet profile attachment is idempotent",
-        "passed": true
+        "path": "dist/favicon.svg",
+        "bytes": 856,
+        "sha256": "2e3ba25b9ea954cf8d6cff354cc1ea8abd612431fe990321f68aa38739c73309"
       },
       {
-        "name": "legacy attachment retries identify the already-linked wallet without moving its funds",
-        "passed": true
+        "path": "dist/game.js",
+        "bytes": 89147,
+        "sha256": "4bbba22eee85b2df80f3c1667052488847ec16af2e431229b38c69ecd0ddd702"
       },
       {
-        "name": "an established wallet is never overwritten by a legacy ticket",
-        "passed": true
+        "path": "dist/index.html",
+        "bytes": 15722,
+        "sha256": "af0438f781063728775c5c23bd6bdc36c745fca99f1f7d2dde260258bc39ce87"
       },
       {
-        "name": "authenticated role cannot change private balances",
-        "passed": true
+        "path": "dist/manifest.webmanifest",
+        "bytes": 530,
+        "sha256": "3e7f1650cc914509e90c00c91233f466804aef1bebe61ecad51bf835b6890256"
       },
       {
-        "name": "authenticated role cannot create trusted wallet identities",
-        "passed": true
+        "path": "dist/og-image.png",
+        "bytes": 16367,
+        "sha256": "3f92ee1a9f735341ca87e80e446f01c58e78297f6f45f743154812f64cace5bd"
       },
       {
-        "name": "old marketplace items are no longer purchasable",
-        "passed": true
+        "path": "dist/og-image.svg",
+        "bytes": 2558,
+        "sha256": "83eff1609ab2cf6f49875ed8d114d20100bdc930efed970c8a178b5322022879"
       },
       {
-        "name": "missing balance prevents a costume purchase",
-        "passed": true
+        "path": "dist/rules.js",
+        "bytes": 5703,
+        "sha256": "b853f84a0a8068b27baa151e9fe348e5faa46b2f8de31a4e3320dd80399ec214"
       },
       {
-        "name": "unowned costume cannot be equipped",
-        "passed": true
+        "path": "dist/save.js",
+        "bytes": 15865,
+        "sha256": "afc1129ad0a31be68ecc264c02f3d34d22887358657c396ef0d61863ac60b801"
       },
       {
-        "name": "removed exchange RPC is unavailable",
-        "passed": true
+        "path": "dist/sqk.svg",
+        "bytes": 2544,
+        "sha256": "88a5de5bea90d81cde75551e72aeb31ce9869ea17bc92c917b58ffe2c5625e6e"
       },
       {
-        "name": "removed minigame RPC is unavailable",
-        "passed": true
+        "path": "dist/styles.css",
+        "bytes": 24308,
+        "sha256": "ab0bc4075cda394b0d27b0517472c1392d311eedabe2703b4cd21fd7677de93c"
       },
       {
-        "name": "costume costs exactly 50 and repeated requests deduct only once",
-        "passed": true
+        "path": "dist/ui.js",
+        "bytes": 17821,
+        "sha256": "1a6b08a2249623298ba5802d69aff6c5c4f666e599da06f37a46bf23327aabe7"
       },
       {
-        "name": "equipping and unequipping preserves balance and ownership",
-        "passed": true
+        "path": "dist/victory.svg",
+        "bytes": 10611,
+        "sha256": "301711622fb8c101015e6aa8d194dfa31564ab61bdcd5e6a40c0f597f85b26e2"
       },
       {
-        "name": "all eight active server items agree exactly with the client catalogue",
-        "passed": true
+        "path": "dist/viewport.js",
+        "bytes": 5320,
+        "sha256": "902525cbe50fa0936971d876b393c8c18e19522d51e4516580fe50579c610335"
       },
       {
-        "name": "every item can be bought once at the declared prices",
-        "passed": true
-      },
-      {
-        "name": "map 1 uses 30 existing monster types and 300 boss HP",
-        "passed": true
-      },
-      {
-        "name": "locked map cannot be started",
-        "passed": true
-      },
-      {
-        "name": "unearned drop cannot be picked up",
-        "passed": true
-      },
-      {
-        "name": "gun cannot shoot before pickup",
-        "passed": true
-      },
-      {
-        "name": "boss cannot be hit before 60 seconds",
-        "passed": true
-      },
-      {
-        "name": "six exclusive drop kinds grant exactly their own entitlements",
-        "passed": true
-      },
-      {
-        "name": "new sequence cannot pick up the same drop twice",
-        "passed": true
-      },
-      {
-        "name": "acknowledged event replay cannot double-credit a coin",
-        "passed": true
-      },
-      {
-        "name": "100 legal shots exhaust exactly 100 bullets",
-        "passed": true
-      },
-      {
-        "name": "the 101st gun shot is rejected",
-        "passed": true
-      },
-      {
-        "name": "another gun refills to 100 rather than stacking ammo",
-        "passed": true
-      },
-      {
-        "name": "all three upgrades yield +55% damage for all three weapons",
-        "passed": true
-      },
-      {
-        "name": "forest chestnuts and caches add score once",
-        "passed": true
-      },
-      {
-        "name": "same forest collectible cannot score twice",
-        "passed": true
-      },
-      {
-        "name": "invented forest collectible is rejected",
-        "passed": true
-      },
-      {
-        "name": "client cannot submit arbitrary score totals",
-        "passed": true
-      },
-      {
-        "name": "daily ranking contains the verified wallet\u2019s highest map score",
-        "passed": true
-      },
-      {
-        "name": "yesterday\u2019s scores are invisible without a destructive reset",
-        "passed": true
-      },
-      {
-        "name": "a run crossing midnight credits only new-day points after rollover",
-        "passed": true
-      },
-      {
-        "name": "a shorter later run cannot lower the daily best",
-        "passed": true
-      },
-      {
-        "name": "IANA timezone is an owner setting and invalid names are rejected",
-        "passed": true
-      },
-      {
-        "name": "midnight conversion uses timezone rules including DST",
-        "passed": true
-      },
-      {
-        "name": "monster and boss HP still scale by 20% per map",
-        "passed": true
-      },
-      {
-        "name": "buying an upgrade updates an active run immediately",
-        "passed": true
-      },
-      {
-        "name": "map death keeps balance and purchases",
-        "passed": true
-      },
-      {
-        "name": "no pickup can be saved after death",
-        "passed": true
-      },
-      {
-        "name": "legacy anonymous Auth cannot appear on current rankings via new gameplay",
-        "passed": true
-      },
-      {
-        "name": "public readers can load a daily board without private profiles",
-        "passed": true
-      },
-      {
-        "name": "original forest collectible values match between JavaScript and PostgreSQL",
-        "passed": true
-      },
-      {
-        "name": "every client drop interval has the exact requested share over 10,000 stratified rolls",
-        "passed": true
-      },
-      {
-        "name": "server creates exactly one drop per monster with the requested statistical distribution",
-        "passed": true
-      },
-      {
-        "name": "a full map replay saves only chestnut points and eligible SQK, then unlocks map 2",
-        "passed": true
-      },
-      {
-        "name": "Top 100 is capped, deterministic on ties, and excludes unlinked profiles",
-        "passed": true
-      }
-    ]
-  },
-  "clientPostgres": {
-    "checks": 13,
-    "limitations": "Explicit Auth fixtures; no live signature verification."
-  },
-  "browser": {
-    "results": [
-      {
-        "engine": "chromium",
-        "name": "390 first screen contains the game, branding and Start action",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "compact menu contains all seven utilities and restores focus",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "GUILD contains controls, combat, saving and story; removed UI is absent",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "guest marketplace shows eight real products and no guest spending",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "unconfigured daily board reports missing backend without seeded rows",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "audio controls remain usable and settings persist separately",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "landscape canvas fills the viewport and controls do not overlap",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "joystick and jump work with simultaneous pointers and cancellation",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "Pause freezes gameplay and Resume keeps the same run",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "fullscreen/orientation request gracefully handles browser support",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "menus reflow at 320, 390, 768 and 1440 without clipping",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "desktop movement and the existing jump keys remain available",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "Enter and left mouse attack; X and J no longer attack",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "one defeated monster creates exactly one drop and E is required on desktop",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "1, 2 and 3 switch independent weapons, and selecting again restores chestnuts",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "100 bullets remove the gun; chestnuts remain unlimited",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "bomb ammo is separate, depletes, and falls back to chestnuts",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "small and big chestnuts award exactly 1 and 5 without duplicate collection",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "monster contact causes immediate game over and Restart works",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "a fire projectile causes immediate game over",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "all five costumes render distinct overlays on the original hamster",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "a failed map restart cannot resume a stale untracked world",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "guest progress is never written or restored from browser storage",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "touch automatically collects drops, and tapping slots switches weapons",
-        "passed": true
-      },
-      {
-        "engine": "chromium",
-        "name": "large HUD values reflow without covering the controls",
-        "passed": true
-      },
-      {
-        "engine": "wallet-fixture",
-        "name": "MetaMask connection switches to Mainnet without silently signing or saving a guest",
-        "passed": true
-      },
-      {
-        "engine": "wallet-fixture",
-        "name": "account and network changes drop the save identity immediately",
-        "passed": true
-      },
-      {
-        "engine": "wallet-fixture",
-        "name": "disconnect exposes a normal guest with no retained wallet balance",
-        "passed": true
-      },
-      {
-        "engine": "wallet-fixture",
-        "name": "no JavaScript errors or failed local resources during primary flows",
-        "passed": true
+        "path": "dist/wallet.js",
+        "bytes": 10969,
+        "sha256": "78265c8fb365f59ad1a8270e6ff2e3a38e5caad67993080c40766027758da003"
       }
     ],
-    "limitations": [
-      {
-        "engine": "webkit",
-        "reason": "WebKit browser runtime unavailable; Safari was not tested."
-      }
-    ],
-    "errors": [],
-    "failed": []
+    "fileCount": 18,
+    "bytes": 227115,
+    "relativeSubpath": "/preview/"
   },
-  "marketBrowser": {
-    "results": [
-      {
-        "name": "connecting MetaMask leaves guest saves off until explicit login",
-        "passed": true
-      },
-      {
-        "name": "explicit login opens the existing verified wallet balance",
-        "passed": true
-      },
-      {
-        "name": "buy, equip and unequip a costume through the real UI",
-        "passed": true
-      },
-      {
-        "name": "all upgrades charge exactly once and become active immediately",
-        "passed": true
-      },
-      {
-        "name": "an insufficient-balance error leaves stored balance and inventory intact",
-        "passed": true
-      },
-      {
-        "name": "wallet reload restores owned items and balance without a guest merge",
-        "passed": true
-      },
-      {
-        "name": "daily board renders SQL data and refreshes at the server reset deadline (short clock fixture)",
-        "passed": true
-      },
-      {
-        "name": "two browser tabs buying the same item deduct once in PostgreSQL",
-        "passed": true
-      },
-      {
-        "name": "a committed purchase with a lost HTTP reply can be retried once",
-        "passed": true
-      },
-      {
-        "name": "no script errors in wallet, purchase, error and ranking flows",
-        "passed": true
-      }
-    ],
-    "limitations": "Auth and signatures are test fixtures; SQL and UI are real."
+  "typecheck": {
+    "syntaxAndExportCheck": true,
+    "tscConfiguredProject": true,
+    "tscIncludingViewport": true,
+    "settings": "allowJs, checkJs, noEmit, ES2022 + DOM, strict=false"
+  },
+  "interactionChecks": 124,
+  "suites": {
+    "database": {
+      "results": [
+        {
+          "name": "004 applies over populated 003 without changing any profile fields or historical daily scores",
+          "passed": true
+        },
+        {
+          "name": "an old active run settles only new points beyond its already-credited migration baseline",
+          "passed": true
+        },
+        {
+          "name": "completed session replay cannot credit lifetime points again",
+          "passed": true
+        },
+        {
+          "name": "new score events after a session ended are rejected",
+          "passed": true
+        },
+        {
+          "name": "fresh in-progress map score remains separate from the lifetime total",
+          "passed": true
+        },
+        {
+          "name": "restarting or moving to another device settles an abandoned session exactly once",
+          "passed": true
+        },
+        {
+          "name": "smaller sessions add to the lifetime total instead of replacing a previous best",
+          "passed": true
+        },
+        {
+          "name": "the same verified address under a different Auth UUID resolves the original profile",
+          "passed": true
+        },
+        {
+          "name": "the public board and compatibility reader rank preserved lifetime totals only",
+          "passed": true
+        },
+        {
+          "name": "changing old calendar buckets or the clock cannot hide the lifetime ranking",
+          "passed": true
+        },
+        {
+          "name": "removed daily ranking RPC is no longer callable",
+          "passed": true
+        },
+        {
+          "name": "no replacement for the old daily reset writes remains in the current progress RPC",
+          "passed": true
+        },
+        {
+          "name": "lifetime totals cannot be accidentally reduced even by an ordinary owner SQL update",
+          "passed": true
+        },
+        {
+          "name": "profile deletion cannot cascade away permanent scores",
+          "passed": true
+        },
+        {
+          "name": "browser clients cannot update balances or lifetime totals directly",
+          "passed": true
+        },
+        {
+          "name": "browser clients cannot insert lifetime ledger entries",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_wallet_profile",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_start_run_v4",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_purchase",
+          "passed": true
+        },
+        {
+          "name": "unverified users cannot call hf_equip",
+          "passed": true
+        },
+        {
+          "name": "another wallet cannot submit events to the original wallet\u2019s run",
+          "passed": true
+        },
+        {
+          "name": "purchase retries deduct SQK once and owned costumes use the same equip/unequip RPC",
+          "passed": true
+        },
+        {
+          "name": "arbitrary browser-supplied lifetime totals are rejected",
+          "passed": true
+        },
+        {
+          "name": "pickup acknowledgements remain idempotent and give SQK without counting it as score",
+          "passed": true
+        },
+        {
+          "name": "a new sequence cannot claim the same SQK drop twice",
+          "passed": true
+        },
+        {
+          "name": "an entire legal map completion credits all points once and keeps progression and balance",
+          "passed": true
+        },
+        {
+          "name": "Top 100 is capped, deterministic on ties and excludes anonymous historical profiles",
+          "passed": true
+        }
+      ],
+      "limitations": "Fixture Auth; no hosted Supabase project or real signatures."
+    },
+    "client": {
+      "checks": 19,
+      "limitations": "Explicit Auth fixtures; no live signature verification."
+    },
+    "gameplayBrowser": {
+      "results": [
+        {
+          "engine": "chromium",
+          "name": "390 first screen contains the game, branding and Start action",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "compact menu contains all nine utilities and restores focus",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "GUILD contains controls, combat, saving and story; removed UI is absent",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "guest marketplace shows eight real products and no guest spending",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "unconfigured lifetime board reports missing backend without seeded rows",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "audio controls remain usable and settings persist separately",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "landscape canvas fills the viewport and controls do not overlap",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "joystick and jump work with simultaneous pointers and cancellation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "Pause freezes gameplay and Resume keeps the same run",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "fullscreen/orientation request gracefully handles browser support",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "menus reflow at 320, 390, 768 and 1440 without clipping",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "desktop movement and the existing jump keys remain available",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "Enter and left mouse attack; X and J no longer attack",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "one defeated monster creates exactly one drop and E is required on desktop",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "1, 2 and 3 switch independent weapons, and selecting again restores chestnuts",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "100 bullets remove the gun; chestnuts remain unlimited",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "bomb ammo is separate, depletes, and falls back to chestnuts",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "small and big chestnuts award exactly 1 and 5 without duplicate collection",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "monster contact causes immediate game over and Restart works",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "a fire projectile causes immediate game over",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "all five costumes render distinct overlays on the original hamster",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "a failed map restart cannot resume a stale untracked world",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "guest progress is never written or restored from browser storage",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "a touchscreen desktop with a fine pointer still needs E",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "desktop canvas keeps square pixels",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "landscape phone canvas widens with square pixels and no header band",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "all four HUD counters remain visible through text enlargement and rotation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "touch automatically collects drops, and tapping slots switches weapons",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "large HUD values reflow without covering the controls",
+          "passed": true
+        },
+        {
+          "engine": "wallet-fixture",
+          "name": "MetaMask connection switches to Mainnet without silently signing or saving a guest",
+          "passed": true
+        },
+        {
+          "engine": "wallet-fixture",
+          "name": "account and network changes drop the save identity immediately",
+          "passed": true
+        },
+        {
+          "engine": "wallet-fixture",
+          "name": "disconnect exposes a normal guest with no retained wallet balance",
+          "passed": true
+        },
+        {
+          "engine": "wallet-fixture",
+          "name": "no JavaScript errors or failed local resources during primary flows",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        {
+          "engine": "webkit",
+          "reason": "WebKit browser runtime unavailable; Safari was not tested."
+        }
+      ],
+      "errors": [],
+      "failed": []
+    },
+    "emulatedMobile": {
+      "results": [
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "portrait entry exposes Start adventure and the existing scene",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "connecting requests landscape without a signature, approval or transfer",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "unsupported orientation lock shows a rotate overlay and freezes the same session",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "portrait to landscape preserves wallet, map, enemies and progress",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "toolbar-sized height changes resize the canvas without restarting or stretching",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "repeated attack and jump touches remain responsive without double-tap zoom",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "pinch magnification keeps stage dimensions and is not globally disabled",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "rotation back pauses safely and portrait opt-out resumes the current run",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "fullscreen denial or absence leaves manual rotation and Home Screen guidance usable",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "reload restores wallet connection using eth_accounts with no fresh signature",
+          "passed": true
+        },
+        {
+          "persona": "iPhone Safari emulation",
+          "name": "standalone manifest and original hamster icons load under a static subpath",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "portrait entry exposes Start adventure and the existing scene",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "connecting requests landscape without a signature, approval or transfer",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "unsupported orientation lock shows a rotate overlay and freezes the same session",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "portrait to landscape preserves wallet, map, enemies and progress",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "toolbar-sized height changes resize the canvas without restarting or stretching",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "repeated attack and jump touches remain responsive without double-tap zoom",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "pinch magnification keeps stage dimensions and is not globally disabled",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "rotation back pauses safely and portrait opt-out resumes the current run",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "fullscreen denial or absence leaves manual rotation and Home Screen guidance usable",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "reload restores wallet connection using eth_accounts with no fresh signature",
+          "passed": true
+        },
+        {
+          "persona": "Android Chrome emulation",
+          "name": "standalone manifest and original hamster icons load under a static subpath",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "portrait entry exposes Start adventure and the existing scene",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "connecting requests landscape without a signature, approval or transfer",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "unsupported orientation lock shows a rotate overlay and freezes the same session",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "portrait to landscape preserves wallet, map, enemies and progress",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "toolbar-sized height changes resize the canvas without restarting or stretching",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "repeated attack and jump touches remain responsive without double-tap zoom",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "pinch magnification keeps stage dimensions and is not globally disabled",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "rotation back pauses safely and portrait opt-out resumes the current run",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "fullscreen denial or absence leaves manual rotation and Home Screen guidance usable",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "reload restores wallet connection using eth_accounts with no fresh signature",
+          "passed": true
+        },
+        {
+          "persona": "MetaMask Mobile emulation",
+          "name": "standalone manifest and original hamster icons load under a static subpath",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "limitations": "Chromium emulation with fixture EIP-1193 providers and deliberate API failures. No physical iPhone, Android, MetaMask app, real signature or hosted Supabase was tested."
+    },
+    "sqlBackedMarketBrowser": {
+      "results": [
+        {
+          "name": "connecting MetaMask leaves guest saves off until explicit login",
+          "passed": true
+        },
+        {
+          "name": "explicit login opens the existing verified wallet balance",
+          "passed": true
+        },
+        {
+          "name": "buy, equip and unequip a costume through the real UI",
+          "passed": true
+        },
+        {
+          "name": "all upgrades charge exactly once and become active immediately",
+          "passed": true
+        },
+        {
+          "name": "an insufficient-balance error leaves stored balance and inventory intact",
+          "passed": true
+        },
+        {
+          "name": "wallet reload restores owned items and balance without a guest merge",
+          "passed": true
+        },
+        {
+          "name": "lifetime board refreshes continuously from SQL and supports a manual refresh without any reset",
+          "passed": true
+        },
+        {
+          "name": "ranking failure shows an error and a working retry without fake players",
+          "passed": true
+        },
+        {
+          "name": "Change it on mobile and desktop equips the same owned inventory without charging",
+          "passed": true
+        },
+        {
+          "name": "two browser tabs buying the same item deduct once in PostgreSQL",
+          "passed": true
+        },
+        {
+          "name": "a committed purchase with a lost HTTP reply can be retried once",
+          "passed": true
+        },
+        {
+          "name": "no script errors in wallet, purchase, error and ranking flows",
+          "passed": true
+        }
+      ],
+      "limitations": "Auth and signatures are test fixtures; SQL and UI are real."
+    }
   },
   "taste": {
+    "passed": true,
     "checks": [
       {
         "name": "render",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 8167,
+        "durationMs": 9049,
         "output": "renders, no script errors or missing local files"
       },
       {
@@ -449,7 +648,7 @@
         "name": "targets",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 1,
+        "durationMs": 0,
         "output": "all 4 controls at least 24px or spaced at 390\n0 under the 44px comfortable size"
       },
       {
@@ -457,7 +656,7 @@
         "passed": true,
         "exitCode": 0,
         "durationMs": 0,
-        "output": "all measured text meets 4.5:1 (3:1 large)\n19 text boxes over images, video, canvas or gradients not measured"
+        "output": "all measured text meets 4.5:1 (3:1 large)\n20 text boxes over images, video, canvas or gradients not measured"
       },
       {
         "name": "casing",
@@ -477,15 +676,15 @@
         "name": "eyebrows",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 0,
+        "durationMs": 2,
         "output": "no kicker labels above headings"
       },
       {
         "name": "type-sizes",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 0,
-        "output": "390: 2 sizes in use, 3 with one-offs (14px\u00d711, 16px\u00d73, 20px\u00d71)\n1440: 2 sizes in use, 4 with one-offs (14px\u00d711, 16px\u00d72, 20px\u00d71, 28px\u00d71)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
+        "durationMs": 1,
+        "output": "390: 2 sizes in use, 3 with one-offs (14px\u00d712, 16px\u00d73, 20px\u00d71)\n1440: 2 sizes in use, 4 with one-offs (14px\u00d712, 16px\u00d72, 20px\u00d71, 28px\u00d71)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
       },
       {
         "name": "type-faces",
@@ -498,7 +697,7 @@
         "name": "glyphs",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 1,
+        "durationMs": 0,
         "output": "no em dashes or emoji in text"
       },
       {
@@ -512,15 +711,15 @@
         "name": "repetition",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 0,
+        "durationMs": 7,
         "output": "no repeated lines"
       },
       {
         "name": "copy-budget",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 1,
-        "output": "prose on the first screen: 14 words at 390 (bar 60), 8 at 1440 (bar 90)\nall words on the first screen: 32 at 390, 27 at 1440\nwhole page: 27 words, 8 of them prose"
+        "durationMs": 0,
+        "output": "prose on the first screen: 14 words at 390 (bar 60), 8 at 1440 (bar 90)\nall words on the first screen: 36 at 390, 31 at 1440\nwhole page: 31 words, 8 of them prose"
       },
       {
         "name": "chrome",
@@ -540,74 +739,91 @@
         "name": "share",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 0,
+        "durationMs": 3,
         "output": "title \"squeek.hamster\", favicon, og:title, og:image, description"
       }
     ],
-    "errors": [],
-    "external": []
+    "note": "20 canvas/image-backed text boxes were not contrast-measured."
   },
   "axe": {
-    "chromium-market-axe.json": {
-      "violations": 0,
-      "passes": 16,
-      "incomplete": [
-        "color-contrast"
-      ]
-    },
-    "chromium-guild-axe.json": {
-      "violations": 0,
-      "passes": 16,
-      "incomplete": [
-        "color-contrast"
-      ]
-    },
-    "chromium-audio-axe.json": {
-      "violations": 0,
-      "passes": 17,
-      "incomplete": [
-        "color-contrast"
-      ]
-    },
-    "chromium-entry-axe.json": {
-      "violations": 0,
-      "passes": 22,
+    "entry": {
+      "violations": [],
+      "passes": 23,
       "incomplete": [
         "aria-prohibited-attr",
         "aria-valid-attr-value",
         "color-contrast"
       ]
+    },
+    "guild": {
+      "violations": [],
+      "passes": 17,
+      "incomplete": [
+        "color-contrast",
+        "label-content-name-mismatch"
+      ]
+    },
+    "market": {
+      "violations": [],
+      "passes": 18,
+      "incomplete": [
+        "label-content-name-mismatch"
+      ]
+    },
+    "audio": {
+      "violations": [],
+      "passes": 18,
+      "incomplete": [
+        "label-content-name-mismatch"
+      ]
     }
   },
-  "preservation": {
-    "authoredTileMapUnchanged": true,
-    "baseHamsterPixelsUnchanged": true,
-    "enemyBossSpriteConstructorsUnchanged": true,
-    "rootPackagesAndBuildConfigurationUnchanged": true
+  "tokenContrast": {
+    "creamOnSurface": 15.61,
+    "mutedOnSurface": 11.76,
+    "barkOnAmber": 9.31,
+    "errorOnSurface": 5.81,
+    "focusOnRaised": 11.34
   },
-  "assumptions": {
-    "leaderboardTimezone": "UTC (owner-configurable IANA timezone)",
-    "ranking": "best map score acknowledged during each day",
-    "damageUpgrades": "additive, maximum +55%",
-    "bombPickup": 3,
-    "gunPickup": "refill to 100; cap 100",
-    "touchPickup": "automatic proximity"
+  "production": {
+    "configUrl": "https://hamster-friendship-the-lost-alic.identitymd.eth.limo/config.js",
+    "readOnlyHttpRetrieval": "succeeded on 2026-11-05",
+    "supabaseUrlPresent": false,
+    "supabasePublishableKeyPresent": false,
+    "productionDataAccessed": false,
+    "migrationsAppliedToProduction": false,
+    "published": false,
+    "productionUrlChanged": false,
+    "liveBrowserCheck": "Not completed: browser tool Transport closed; direct Chromium net::ERR_EMPTY_RESPONSE."
   },
-  "externalValidation": {
-    "liveSupabase": false,
-    "realWalletSignature": false,
-    "physicalIPhone": false,
-    "physicalAndroid": false,
-    "nativeScreenReader": false,
-    "nativeBrowserZoom": false
+  "domain": {
+    "literalHamsterTldDelegated": false,
+    "imdDottedLabel": "invalid_label",
+    "alternativeLabel": "squeek-hamster returned unknown_label at check time; not reserved",
+    "report": "docs/DOMAIN.md"
   },
   "screenshots": [
-    "phone-entry.png",
-    "desktop-entry.png",
-    "landscape-weapons.png",
-    "long-values-320.png",
-    "guild.png",
-    "owned-costume.png",
-    "daily-rankings.png"
-  ]
+    "docs/validation/screenshots/desktop-entry.png",
+    "docs/validation/screenshots/guild.png",
+    "docs/validation/screenshots/landscape-weapons.png",
+    "docs/validation/screenshots/lifetime-rankings.png",
+    "docs/validation/screenshots/long-values-320.png",
+    "docs/validation/screenshots/owned-costume.png",
+    "docs/validation/screenshots/phone-entry.png",
+    "docs/validation/screenshots/rotate-overlay.png"
+  ],
+  "limitations": [
+    "No original production Supabase project URL or public key supplied.",
+    "No hosted Auth, real signature or real-wallet cloud restoration verified.",
+    "No physical iPhone Safari, Android Chrome or MetaMask Mobile testing. WebKit launch unavailable.",
+    "No physical Home Screen install, native browser zoom, screen-reader or exhaustive canvas contrast testing.",
+    "One active map per wallet; no suspended canvas restoration or stale offline-run merging.",
+    "No domain registration, DNS changes, publishing or production data mutation performed."
+  ],
+  "bundle": {
+    "eligibleFileCount": 79,
+    "eligibleTreeBytes": 1458439,
+    "limitBytes": 8388608,
+    "method": "Conservative sum of versioned and unignored task files, excluding removed inputs/scratch, caches and dependencies."
+  }
 }

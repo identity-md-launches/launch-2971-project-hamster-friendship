@@ -9,21 +9,21 @@ import {randomUUID} from 'node:crypto';
 const {PGlite}=await import(pathToFileURL(resolve(process.argv[2]||'test/scratch/node_modules/@electric-sql/pglite/dist/index.js')).href);
 const pw=await import(pathToFileURL(resolve(process.argv[3]||'/opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs')).href);
 const db=await PGlite.create(),root=resolve('dist'),out=resolve('test/scratch/market-browser'),uid=randomUUID(),address='0x'+'a'.repeat(40);
-const results=[],errors=[];let browser,server,origin,lose='',quickReset=false,busy=Promise.resolve();await mkdir(out,{recursive:true});
+const results=[],errors=[];let browser,server,origin,lose='',busy=Promise.resolve();await mkdir(out,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png'};
 async function check(name,fn){await fn();results.push({name,passed:true});console.log('ok',name);}
 async function rpc(name,body,authenticated){const work=busy.then(async()=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[authenticated?uid:'']);await db.exec('set role '+(authenticated?'authenticated':'anon'));const keys=Object.keys(body),args=keys.map(k=>k==='p_events'?JSON.stringify(body[k]):body[k]);return(await db.query('select public.'+name+'('+keys.map((k,i)=>k+'=>$'+(i+1)+(k==='p_events'?'::jsonb':'')).join(',')+') as result',args)).rows[0].result;});busy=work.catch(()=>{});return work;}
 async function admin(sql,args=[]){await busy;await db.exec('reset role');return db.query(sql,args);}
 try{
  await db.exec(`create role anon;create role authenticated;create schema auth;grant usage on schema auth to authenticated;create table auth.users(id uuid primary key);create table auth.identities(user_id uuid,provider text,identity_data jsonb);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
- for(const file of['001_friendship.sql','002_seasons_dice_badges.sql','003_squeek.sql'])await db.exec(await readFile('supabase/migrations/'+file,'utf8'));
+ for(const file of['001_friendship.sql','002_seasons_dice_badges.sql','003_squeek.sql','004_lifetime_persistence.sql'])await db.exec(await readFile('supabase/migrations/'+file,'utf8'));
  await db.query('insert into auth.users values($1)',[uid]);await db.query("insert into auth.identities values($1,'web3',$2::jsonb)",[uid,JSON.stringify({address,chain:'ethereum'})]);
  await rpc('hf_wallet_profile',{},true);await admin('update hf_private.profiles set sqk=350 where user_id=$1',[uid]);
  server=createServer(async(req,res)=>{const url=new URL(req.url,'http://localhost'),path=url.pathname;try{
   if(path.startsWith('/rest/v1/rpc/')||path==='/auth/v1/token'){
    let text='';for await(const chunk of req)text+=chunk;const body=JSON.parse(text||'{}');let data;
    if(path==='/auth/v1/token'){assert.equal(body.chain,'ethereum');assert(body.message.includes('wants you to sign in'));data={access_token:'fixture-session',refresh_token:'fixture-refresh',expires_in:3600};}
-   else{const name=path.split('/').pop();data=await rpc(name,body,req.headers.authorization==='Bearer fixture-session');if(name==='hf_daily_top100'&&quickReset){data.resetsAt=new Date(Date.now()+2000).toISOString();quickReset=false;}if(name===lose){lose='';res.writeHead(503,{'content-type':'application/json'}).end(JSON.stringify({message:'Injected uncertain response after commit. Retry the purchase.'}));return;}}
+   else{const name=path.split('/').pop();data=await rpc(name,body,req.headers.authorization==='Bearer fixture-session');if(name===lose){lose='';res.writeHead(503,{'content-type':'application/json'}).end(JSON.stringify({message:'Injected uncertain response after commit. Retry the purchase.'}));return;}}
    return res.writeHead(200,{'content-type':'application/json'}).end(JSON.stringify(data));
   }
   if(path==='/preview/config.js')return res.writeHead(200,{'content-type':'text/javascript'}).end(`window.HAMSTER_CONFIG=Object.freeze({supabaseUrl:${JSON.stringify(origin)},supabasePublishableKey:'fixture-public'});`);
@@ -42,13 +42,27 @@ try{
  await check('an insufficient-balance error leaves stored balance and inventory intact',async()=>{await page.locator('[data-item="costume-batman"]').click();await page.waitForFunction(()=>window.HamsterSave.snapshot().profile.sqk===0);await page.locator('[data-item="costume-samurai"]').click();await page.waitForFunction(()=>document.getElementById('item-error-costume-samurai').textContent.includes('Not enough SQK'));assert(!(await page.evaluate(()=>window.HamsterSave.snapshot())).profile.purchases.includes('costume-samurai'));await page.screenshot({path:resolve(out,'insufficient-balance.png')});});
  await page.keyboard.press('Escape');await page.reload();await page.waitForFunction(()=>window.HamsterSave.snapshot().cloud);
  await check('wallet reload restores owned items and balance without a guest merge',async()=>{const s=await page.evaluate(()=>window.HamsterSave.snapshot());assert.equal(s.profile.sqk,0);assert.equal(s.profile.purchases.length,5);});
- await check('daily board renders SQL data and refreshes at the server reset deadline (short clock fixture)',async()=>{
-  await admin("insert into hf_private.daily_scores(profile_id,score_day,timezone,score) values($1,current_date,'UTC',27)",[uid]);quickReset=true;await menu('btn-leaderboard');await page.waitForSelector('.leaderboard tbody tr');assert.equal(await page.locator('.leaderboard tbody tr td:nth-child(3)').textContent(),'27');assert((await page.locator('#panel-content').textContent()).includes('00:00 UTC'));await page.screenshot({path:resolve(out,'daily-board.png')});
-  await admin("update hf_private.daily_scores set score_day=current_date-1 where profile_id=$1",[uid]);await page.waitForFunction(()=>document.getElementById('panel-content').textContent.includes('No wallet scores today'));assert.equal(await page.locator('.leaderboard tbody tr').count(),0);await page.keyboard.press('Escape');
+ await check('lifetime board refreshes continuously from SQL and supports a manual refresh without any reset',async()=>{
+  await page.clock.install();await admin('update hf_private.profiles set total_score=27 where user_id=$1',[uid]);await menu('btn-leaderboard');await page.waitForSelector('.leaderboard tbody tr');assert.equal(await page.locator('.leaderboard tbody tr td:nth-child(3)').textContent(),'27');assert.equal(await page.locator('#panel-title').textContent(),'Lifetime Top 100');assert(!(await page.locator('#panel-content').textContent()).includes('00:00'));await page.screenshot({path:resolve(out,'lifetime-board.png')});
+  await admin('update hf_private.profiles set total_score=41 where user_id=$1',[uid]);await page.clock.fastForward(15001);await page.waitForFunction(()=>document.querySelector('.leaderboard tbody tr td:nth-child(3)')?.textContent==='41');await admin('update hf_private.profiles set total_score=49 where user_id=$1',[uid]);await page.getByRole('button',{name:'Refresh rankings',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.leaderboard tbody tr td:nth-child(3)')?.textContent==='49');await page.keyboard.press('Escape');
+ });
+ await check('ranking failure shows an error and a working retry without fake players',async()=>{
+   lose='hf_lifetime_top100';await menu('btn-leaderboard');await page.waitForFunction(()=>document.getElementById('panel-content').textContent.includes('Injected uncertain response'));assert.equal(await page.locator('.leaderboard tbody tr').count(),0);await page.getByRole('button',{name:'Refresh rankings',exact:true}).click();await page.waitForSelector('.leaderboard tbody tr');await page.keyboard.press('Escape');
+ });
+ await check('Change it on mobile and desktop equips the same owned inventory without charging',async()=>{
+   for(const[width,control]of[[390,'btn-change'],[390,'btn-change-menu'],[1440,'btn-change']]){
+     await page.setViewportSize({width,height:900});
+     if(control==='btn-change-menu')await menu(control);else await page.locator('#'+control).click();
+     assert.equal(await page.locator('#panel-title').textContent(),'Change it');
+     const before=(await page.evaluate(()=>window.HamsterSave.snapshot())).profile.sqk;
+     await page.locator('[data-item="costume-batman"]').click();await page.waitForFunction(()=>window.HamsterSave.snapshot().profile.cosmetics.costume==='costume-batman');
+     assert.equal((await page.evaluate(()=>window.HamsterSave.snapshot())).profile.sqk,before);
+     await page.locator('[data-item="costume-batman"]').click();await page.waitForFunction(()=>window.HamsterSave.snapshot().profile.cosmetics.costume===null);await page.keyboard.press('Escape');
+   }
  });
  await check('two browser tabs buying the same item deduct once in PostgreSQL',async()=>{await admin('update hf_private.profiles set sqk=100 where user_id=$1',[uid]);await page.evaluate(()=>window.HamsterSave.retry());const second=await context.newPage();await second.goto(origin+'/preview/');await second.waitForFunction(()=>window.HamsterSave.snapshot().cloud);await Promise.all([page.evaluate(()=>window.HamsterSave.purchase('costume-samurai')),second.evaluate(()=>window.HamsterSave.purchase('costume-samurai'))]);const p=await rpc('hf_profile',{},true);assert.equal(p.sqk,50);assert.equal(p.purchases.filter(i=>i==='costume-samurai').length,1);await second.close();});
  await check('a committed purchase with a lost HTTP reply can be retried once',async()=>{lose='hf_purchase';await menu('btn-shop');await page.locator('[data-item="costume-superman"]').click();await page.waitForFunction(()=>document.getElementById('item-error-costume-superman').textContent.length>0);await page.locator('[data-item="costume-superman"]').click();await page.waitForFunction(()=>window.HamsterSave.snapshot().profile.purchases.includes('costume-superman'));assert.equal((await page.evaluate(()=>window.HamsterSave.snapshot())).profile.sqk,0);await page.screenshot({path:resolve(out,'purchase-retried.png')});});
  await check('no script errors in wallet, purchase, error and ranking flows',async()=>assert.deepEqual(errors,[]));
  await writeFile(resolve(out,'results.json'),JSON.stringify({results,limitations:'Auth and signatures are test fixtures; SQL and UI are real.'},null,2));
  console.log(`${results.length} marketplace/wallet browser checks passed.`);
-}finally{if(browser)await browser.close();if(server)await new Promise(done=>server.close(done));await db.close();}
+}catch(error){console.error(error.stack);process.exitCode=1;}finally{if(browser)await browser.close();if(server)await new Promise(done=>server.close(done));await db.close();}

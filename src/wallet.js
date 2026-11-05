@@ -8,6 +8,7 @@
   var status = document.getElementById('wallet-status');
   var providers = [], selected = null, address = '', chain = '', busy = false;
   var remembered = '';
+  var lastConnected = '';
   try { remembered = localStorage.getItem('hamster-wallet-provider') || ''; } catch (_) { /* optional */ }
   var allowed = ['eth_accounts', 'eth_requestAccounts', 'eth_chainId', 'wallet_switchEthereumChain'];
   function request(provider, method, params = undefined) {
@@ -17,6 +18,9 @@
   function short(value) { return value.slice(0, 6) + '…' + value.slice(-4); }
   function renderControl() {
     void window.HamsterSave.setWallet(address && chain === '0x1' ? address : '');
+    var connected = address && chain === '0x1' ? address.toLowerCase() : '';
+    if (connected && connected !== lastConnected) window.dispatchEvent(new Event('hamster:wallet-connected'));
+    lastConnected = connected;
     button.textContent = address ? chain === '0x1' ? short(address) : 'Switch to Mainnet' : 'Connect MetaMask';
     button.setAttribute('aria-label', address ? chain === '0x1' ? 'Wallet ' + short(address) + '. Open connection details' : 'Switch to Mainnet · Ethereum Mainnet' : 'Connect MetaMask');
   }
@@ -68,7 +72,7 @@
       if (chain !== '0x1') throw new Error('Switch your wallet to Ethereum Mainnet, then try again.');
       remembered = entry.id;
       try { localStorage.setItem('hamster-wallet-provider', remembered); } catch (_) { /* optional */ }
-      status.textContent = window.HamsterSave.snapshot().configured ? 'Connected. Sign in below to save your progress.' : 'Connected. Cloud saves are not available yet; guest play is ready.';
+      status.textContent = window.HamsterSave.snapshot().configured ? 'Connected. Sign in below to save your progress.' : window.HamsterSave.snapshot().status;
       renderControl();
     } catch (error) {
       status.textContent = error.code === 4001 ? 'The wallet request was declined. Try again or continue as a guest.' : error.code === -32002 ? 'A request is already open in your wallet. Complete it there, then retry.' : 'Unable to connect. ' + (error.message || 'Open your wallet and retry.');
@@ -90,7 +94,9 @@
       var network = document.createElement('p'); network.className = 'panel-note'; network.textContent = chain === '0x1' ? 'Connected · Ethereum Mainnet (1)' : 'Wrong network · Ethereum Mainnet required'; options.append(network);
       if (chain !== '0x1') row('Switch to Ethereum Mainnet', function () { void connect(selected); });
       var saveState = window.HamsterSave.snapshot();
-      if (chain === '0x1' && !saveState.cloud) {
+      if (chain === '0x1' && !saveState.cloud && !saveState.configured) {
+        var unavailable = document.createElement('p'); unavailable.className = 'error'; unavailable.textContent = saveState.status; options.append(unavailable);
+      } else if (chain === '0x1' && !saveState.cloud) {
         var keepLegacy = null;
         if (saveState.legacyAvailable) {
           var label = document.createElement('label'); label.className = 'mute-label'; keepLegacy = document.createElement('input'); keepLegacy.type = 'checkbox'; keepLegacy.checked = true;
@@ -98,7 +104,8 @@
         }
         row(busy ? 'Signing in…' : 'Sign in to save', async function () {
           if (busy) return; busy = true; status.textContent = 'Confirm the login message in your wallet. This costs no gas.';
-          try { await window.HamsterSave.signIn(selected.provider, address, Boolean(keepLegacy && keepLegacy.checked)); status.textContent = 'Signed in. Restart the map for saved progress.'; }
+          var keep = Boolean(keepLegacy && keepLegacy.checked); renderOptions();
+          try { await window.HamsterSave.signIn(selected.provider, address, keep); status.textContent = 'Signed in. Restart the map for saved progress.'; }
           catch (error) { status.textContent = error.code === 4001 ? 'Login declined. Continue as a guest or retry.' : error.message; }
           finally { busy = false; renderOptions(); }
         });
@@ -133,10 +140,13 @@
   });
   window.dispatchEvent(new Event('eip6963:requestProvider'));
   // Older MetaMask and its mobile browser may not announce EIP-6963 yet.
-  if (window.ethereum && !providers.length) {
+  function legacyProvider() {
+    if (!window.ethereum || providers.length) return;
     var legacy = (window.ethereum.providers || [window.ethereum]).find(function (p) { return p.isMetaMask; }) || window.ethereum;
     add({ id: legacy.isMetaMask ? 'io.metamask' : 'legacy', name: legacy.isMetaMask ? 'MetaMask' : 'Browser wallet', provider: legacy });
   }
+  legacyProvider();
+  window.addEventListener('ethereum#initialized', legacyProvider, { once: true });
   button.addEventListener('click', function () {
     (/** @type {HTMLDialogElement} */ (document.getElementById('menu-dialog'))).close(); window.__hamster.pause(); renderOptions(); status.textContent = ''; dialog.showModal();
   });

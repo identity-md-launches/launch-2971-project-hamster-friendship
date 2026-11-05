@@ -16,12 +16,13 @@
     document.getElementById('hud-pending').textContent = state.pendingCoins ? '(+' + state.pendingCoins + ' pending)' : '';
     document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents ? 'Cloud save pending · open Profile to retry' : 'Wallet profile saved' : 'this run only; not saved');
     if (window.__hamster.snapshot().state === 'title' && state.profile.highest_map > 1) { document.getElementById('btn-start').textContent = 'Continue map ' + state.profile.highest_map; document.getElementById('hud-map').textContent = String(state.profile.highest_map); document.getElementById('start-title').textContent = 'The chestnut forest · Map ' + state.profile.highest_map; document.getElementById('btn-replay').hidden = false; }
+    document.getElementById('hud-lifetime').textContent = state.profile.total_score.toLocaleString();
     if (panel === 'profile') {
       var values = { sqk: state.profile.sqk.toLocaleString(), total_score: state.profile.total_score.toLocaleString(), highest_map: String(state.profile.highest_map), purchases: String(state.profile.purchases.length) };
       Object.keys(values).forEach(function (key) { var node = document.getElementById('profile-' + key); if (node) node.textContent = values[key]; });
       var cloudStatus = document.getElementById('profile-save-state'); if (cloudStatus) cloudStatus.textContent = state.status;
       var accountInfo = document.getElementById('profile-account-info');
-      if (accountInfo) accountInfo.textContent = state.cloud ? 'Saved to your verified wallet profile. Guest progress is never imported. SQK and purchases survive the daily leaderboard reset.' : state.configured ? 'Guest runs are not saved. Open Menu → Connect MetaMask and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
+      if (accountInfo) accountInfo.textContent = state.cloud ? 'Saved to your verified wallet profile. Guest progress is never imported. Lifetime scores, SQK and purchases are retained.' : state.configured ? 'Guest runs are not saved. Open Menu → Connect MetaMask and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
     }
     var balance = document.getElementById('market-balance'); if (balance) balance.textContent = state.profile.sqk.toLocaleString() + ' SQK available' + (state.pendingCoins ? ' · ' + state.pendingCoins + ' awaiting cloud save' : '');
   }
@@ -43,7 +44,7 @@
       finally { submit.disabled = false; submit.textContent = 'Save name'; }
     });
     var stats = el('dl', '', 'profile-stats');
-    [['SQK balance', p.sqk.toLocaleString(), 'sqk'], ['Lifetime points', p.total_score.toLocaleString(), 'total_score'], ['Deepest map', String(p.highest_map), 'highest_map'], ['Owned items', String(p.purchases.length), 'purchases']].forEach(function (pair) { var row = el('div'), value = el('dd', pair[1]); value.id = 'profile-' + pair[2]; row.append(el('dt', pair[0]), value); stats.append(row); });
+    [['SQK balance', p.sqk.toLocaleString(), 'sqk'], ['Lifetime Score', p.total_score.toLocaleString(), 'total_score'], ['Deepest map', String(p.highest_map), 'highest_map'], ['Owned items', String(p.purchases.length), 'purchases']].forEach(function (pair) { var row = el('div'), value = el('dd', pair[1]); value.id = 'profile-' + pair[2]; row.append(el('dt', pair[0]), value); stats.append(row); });
     var cloudStatus = el('p', state.status, 'panel-note'); cloudStatus.id = 'profile-save-state'; cloudStatus.setAttribute('role', 'status');
     var accountInfo = el('p', '', 'panel-note'); accountInfo.id = 'profile-account-info';
     content.append(form, stats, cloudStatus, accountInfo);
@@ -88,16 +89,20 @@
     pixels.forEach(function (p) { var r = document.createElementNS(svg.namespaceURI, 'rect'); ['x','y','width','height','fill'].forEach(function (key, i) { r.setAttribute(key, String(p[i])); }); svg.append(r); });
     box.append(svg); return box;
   }
-  function shopPanel(keepScroll = false) {
+  function shopPanel(keepScroll = false, wardrobe = panel === 'wardrobe') {
     var top = dialog.scrollTop;
-    title.textContent = 'Marketplace'; content.replaceChildren();
+    title.textContent = wardrobe ? 'Change it' : 'Marketplace'; content.replaceChildren();
     var state = save.snapshot(), p = state.profile;
     var balance = el('p', p.sqk.toLocaleString() + ' SQK available' + (state.pendingCoins ? ' · ' + state.pendingCoins + ' awaiting cloud save' : ''), 'balance-label'); balance.id = 'market-balance'; content.append(balance);
-    content.append(el('p', 'Costumes cost 50 SQK each. Buy each item once per account. Damage upgrades stack and apply to gun, sword and bomb immediately.', 'panel-note'));
+    if (wardrobe) content.append(el('p', 'Choose an owned costume, or unequip it to return to Chang’s original look.', 'panel-note'));
+    else content.append(el('p', 'Costumes cost 50 SQK each. Buy each item once per account. Damage upgrades stack and apply to gun, sword and bomb immediately.', 'panel-note'));
     if (!state.cloud) content.append(el('p', state.configured ? 'Connect MetaMask and sign in through Menu to buy and equip items.' : 'Purchases are unavailable until cloud saves are enabled. Guest play is ready.', 'panel-note'));
     var feedback = message(''); feedback.id = 'shop-feedback'; content.append(feedback);
     var list = el('div', '', 'shop-list');
-    rules.catalogue.forEach(function (item) {
+    var items = rules.catalogue.filter(function (item) { return !wardrobe || item.slot === 'costume' && p.purchases.includes(item.id); });
+    if (wardrobe && !items.length) content.append(el('p', 'No costumes owned yet. Find costumes in the Marketplace; purchases require a verified wallet profile.', 'panel-note'));
+    if (wardrobe) content.append(action('Open Marketplace', function () { panel = 'shop'; shopPanel(); }));
+    items.forEach(function (item) {
       var row = el('article', '', 'shop-item'); row.append(itemArt(item));
       var details = el('div', '', 'item-description'); details.append(el('h3', item.name), el('p', item.description, 'panel-note')); row.append(details);
       var owned = p.purchases.includes(item.id), equipped = p.cosmetics[item.slot] === item.id;
@@ -123,33 +128,36 @@
   }
   var boardTimer;
   async function leaderboardPanel() {
-    clearTimeout(boardTimer); title.textContent = 'Daily Top 100'; content.replaceChildren(); var stamp = generation;
-    content.append(el('p', 'Best map score earned today · verified wallet profiles only. A new day clears the ranking, never your SQK or purchases.', 'panel-note'));
-    var state = message('Loading daily rankings…'); content.append(state);
+    clearTimeout(boardTimer); title.textContent = 'Lifetime Top 100'; content.replaceChildren(); var stamp = generation;
+    content.append(el('p', 'Accumulated score from ended sessions · verified wallets only. Scores never reset. Guests are unranked.', 'panel-note'));
+    var state = message('Loading lifetime rankings…'); content.append(state);
     try {
       var board = await save.leaderboard();
       if (stamp !== generation || panel !== 'leaderboard') return;
-      content.append(el('p', board.day + ' · resets at 00:00 ' + board.timezone, 'panel-note'));
       var rows = board.rows;
-      state.textContent = rows.length ? rows.length + ' players ranked' : 'No wallet scores today. Sign in and collect chestnuts to set a score.';
+      state.textContent = rows.length ? rows.length === 1 ? '1 player ranked' : rows.length + ' players ranked' : 'No verified wallet scores yet. Sign in, play a map and end the session to enter.';
       if (rows.length) {
-        var table = el('table', '', 'leaderboard'), caption = el('caption', 'Today’s wallet scores'); caption.className = 'visually-hidden'; table.append(caption);
-        var head = el('thead'), hr = el('tr'); ['Rank', 'Player', 'Score', 'Map'].forEach(function (text) { var th = el('th', text); th.scope = 'col'; hr.append(th); }); head.append(hr); table.append(head);
+        var table = el('table', '', 'leaderboard'), caption = el('caption', 'Lifetime wallet scores'); caption.className = 'visually-hidden'; table.append(caption);
+        var head = el('thead'), hr = el('tr'); ['Rank', 'Player', 'Lifetime Score', 'Map'].forEach(function (text) { var th = el('th', text); th.scope = 'col'; hr.append(th); }); head.append(hr); table.append(head);
         var body = el('tbody'); rows.slice(0, 100).forEach(function (player, index) { var row = el('tr'); [String(index + 1), player.name, Number(player.score).toLocaleString(), String(player.highest_map)].forEach(function (value) { row.append(el('td', value)); }); body.append(row); }); table.append(body); content.append(table);
       }
-      boardTimer = setTimeout(function () { if (panel === 'leaderboard') void leaderboardPanel(); }, Math.max(500, Math.min(60000, Date.parse(board.resetsAt) - Date.now() + 100)));
+      content.append(el('p', 'Refreshes every 15 seconds while open. Current Map Score joins your lifetime total when the session ends, including a defeat or restart.', 'panel-note'));
     } catch (error) {
-      if (stamp !== generation) return; state.textContent = error.message;
-      if (save.snapshot().configured) content.append(action('Retry rankings', function () { generation++; void leaderboardPanel(); }));
+      if (stamp !== generation || panel !== 'leaderboard') return; state.className = 'error'; state.textContent = error.message;
+    }
+    if (stamp !== generation || panel !== 'leaderboard') return;
+    if (save.snapshot().configured) {
+      content.append(action('Refresh rankings', function () { generation++; void leaderboardPanel(); }));
+      boardTimer = setTimeout(function () { if (!document.hidden && panel === 'leaderboard') void leaderboardPanel(); }, 15000);
     }
   }
   function open(which, trigger) {
-    (/** @type {HTMLDialogElement} */ (document.getElementById('menu-dialog'))).close(); window.__hamster.pause(); opener = trigger && trigger.id === 'btn-start-guild' ? trigger : document.getElementById('btn-menu'); panel = which; generation++;
-    if (which === 'profile') profilePanel(); else if (which === 'shop') shopPanel(); else if (which === 'audio') audioPanel(); else if (which === 'guild') guildPanel(); else void leaderboardPanel();
+    (/** @type {HTMLDialogElement} */ (document.getElementById('menu-dialog'))).close(); window.__hamster.pause(); opener = trigger && (trigger.id === 'btn-start-guild' || trigger.id === 'btn-change') ? trigger : document.getElementById('btn-menu'); panel = which; generation++;
+    if (which === 'profile') profilePanel(); else if (which === 'shop' || which === 'wardrobe') shopPanel(); else if (which === 'audio') audioPanel(); else if (which === 'guild') guildPanel(); else void leaderboardPanel();
     document.getElementById('btn-guild').setAttribute('aria-expanded', String(which === 'guild'));
     dialog.showModal(); dialog.scrollTop = 0;
   }
-  [['profile','btn-profile'],['shop','btn-shop'],['leaderboard','btn-leaderboard'],['audio','btn-audio'],['guild','btn-guild'],['guild','btn-start-guild']].forEach(function (pair) { var button = document.getElementById(pair[1]); button.addEventListener('click', function () { open(pair[0], button); }); });
+  [['wardrobe','btn-change'],['wardrobe','btn-change-menu'],['profile','btn-profile'],['shop','btn-shop'],['leaderboard','btn-leaderboard'],['audio','btn-audio'],['guild','btn-guild'],['guild','btn-start-guild']].forEach(function (pair) { var button = document.getElementById(pair[1]); button.addEventListener('click', function () { open(pair[0], button); }); });
   document.getElementById('close-panel').addEventListener('click', function () { dialog.close(); });
   dialog.addEventListener('close', function () { generation++; clearTimeout(boardTimer); if (panel === 'audio') window.HamsterAudio.play(false); panel = ''; document.getElementById('btn-guild').setAttribute('aria-expanded', 'false'); if (opener) opener.focus({ preventScroll: true }); });
   dialog.addEventListener('click', function (event) { var r = dialog.getBoundingClientRect(); if (event.target === dialog && (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom)) dialog.close(); });
@@ -158,24 +166,6 @@
   document.getElementById('close-menu').addEventListener('click', function () { menu.close(); });
   menu.addEventListener('close', function () { document.getElementById('btn-menu').focus({ preventScroll: true }); });
   menu.addEventListener('click', function (e) { var r = menu.getBoundingClientRect(); if (e.target === menu && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) menu.close(); });
-  var fullscreen = document.getElementById('btn-fullscreen');
-  // iPhone Safari has no element fullscreen: no button there; the portrait rotate prompt is the fallback.
-  if (!document.documentElement.requestFullscreen) fullscreen.hidden = true;
-  var noticeTimer = 0;
-  function notice(text) {
-    var hint = document.getElementById('rotate-hint');
-    hint.textContent = text; hint.classList.add('is-notice');
-    clearTimeout(noticeTimer);
-    noticeTimer = window.setTimeout(function () { hint.classList.remove('is-notice'); hint.textContent = 'Rotate your phone for landscape play.'; }, 4000);
-  }
-  fullscreen.addEventListener('click', async function () {
-    if (document.fullscreenElement) { await document.exitFullscreen(); return; }
-    try { await document.documentElement.requestFullscreen(); }
-    catch (_) { notice('Your browser blocked fullscreen. Rotate your phone for landscape play.'); return; }
-    // Orientation lock is optional (desktop and some phones refuse it); fullscreen already worked.
-    try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (_) { /* rotate prompt remains in portrait */ }
-  });
-  document.addEventListener('fullscreenchange', function () { fullscreen.setAttribute('aria-label', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen'); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && panel === 'leaderboard') void leaderboardPanel(); });
   save.subscribe(summary); summary();
 })();

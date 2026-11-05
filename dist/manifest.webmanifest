@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "squeek.hamster",
+  "short_name": "squeek.hamster",
+  "description": "Hamster Friendship: The Lost Alice. A pixel-art forest adventure.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1a110b",
+  "theme_color": "#1a110b",
+  "icons": [
+    { "src": "./app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

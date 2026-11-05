@@ -2,83 +2,73 @@
 
 ## Overview
 
-A playable pixel-art forest adventure for touch and desktop players. The original 192-row pixel renderer (now with an aspect-matched column count), authored world and animated sprites remain the visual anchor. The original five-line opening dialogue remains before first play. Warm bark, cream and amber UI from the existing site now floats over that scene. Utilities are disclosed through a single menu; the opening screen presents the forest and Start adventure immediately, including at 390 pixels wide.
+An existing pixel-art adventure for desktop and touch players. Hamster Friendship remains the project; `squeek.hamster` is the public display/app name. The original forest, sprites, story, animation, seasonal art and audio carry the visual identity. Warm bark, cream and amber controls float over the canvas. The first screen presents the game and Start adventure at 390 pixels wide, with Change it and Menu in the header.
 
-This is a game surface rather than a marketing page. There is no subtitle/footer block, feature grid or new decorative system. Implementation lives in `src/index.html`, `src/styles.css`, `src/game.js`, `src/rules.js`, `src/ui.js` and `src/wallet.js`. The final `.game-chrome` rules in the stylesheet supersede earlier absolute-position values for header/HUD children.
+Source: `src/index.html`, `styles.css`, `game.js`, `ui.js`, `wallet.js`, `save.js`, `viewport.js`. There is no replacement framework, second engine, marketing hero, font download or new decorative system. Final stylesheet rules at `src/styles.css:443` override older header/HUD positioning rules.
 
 ## Colors
 
-Reuse the existing hex primitives and their semantic aliases in `src/styles.css:3`.
+The existing hex primitives and semantic aliases at `src/styles.css:3` remain canonical.
 
-| Semantic token | Actual color | Job |
+| Semantic role | Value | Use |
 | --- | --- | --- |
-| `--color-bg` | `#1a110b` | Page/portrait letterbox and primary-button text |
-| `--color-surface` | `#26180f` | Opaque HUD, dialogs, slots, contextual messages |
-| `--color-surface-raised` | `#352216` | Secondary buttons, fields/controls |
-| `--color-border` | `#563823` | Separators, secondary hover |
-| `--color-border-strong` | `#7a5233` | Inset control structure |
-| `--color-text` | `#fbf3e4` | Primary text |
-| `--color-text-muted` | `#e6d3b5` | Help, labels and secondary text |
-| `--color-accent` | `#f2a93b` | Primary action and selected weapon |
-| `--color-accent-hover` | `#f8c878` | Hover/pressed action |
-| `--color-focus` | `#fbdba6` | 3px keyboard focus perimeter |
-| `--color-danger` | `#e9735f` | Errors and retained monster/boss health indicators |
+| `--color-bg` | `#1a110b` | Page/letterbox and primary-button text |
+| `--color-surface` | `#26180f` | HUD, dialogs, rotation panel, messages |
+| `--color-surface-raised` | `#352216` | Secondary buttons |
+| `--color-border` | `#563823` | Separators and secondary hover |
+| `--color-border-strong` | `#7a5233` | Inset control edges |
+| `--color-text` | `#fbf3e4` | Main text |
+| `--color-text-muted` | `#e6d3b5` | Labels and help |
+| `--color-accent` | `#f2a93b` | Primary action and selected slot |
+| `--color-accent-hover` | `#f8c878` | Action hover/pressed state |
+| `--color-focus` | `#fbdba6` | 3px focus ring |
+| `--color-danger` | `#e9735f` | Errors and existing enemy/boss indicators |
 
-The header has no band: it is transparent, the brand carries a 1px bark outline plus 6px bark glow (`text-shadow`) for legibility over the scene, and the Fullscreen/Menu buttons keep their own opaque surfaces. Joystick at 88%, start/pause/game-over scrim at 68%. Opaque control/text surfaces establish stable contrast over the seasonal artwork. Do not use a separator token for text.
-
-Computed sRGB ratios for the actual opaque pairs are cream/surface **15.61:1**, muted/surface **11.76:1**, bark/amber **9.31:1**, error/surface **5.81:1**, focus/raised **11.34:1**. These are token-pair calculations, supported by the observed opaque panel/button backgrounds; they are not measurements of every antialiased canvas pixel or translucent overlay. The probe also checks measurable rendered text; its canvas-overlay exclusions are recorded in VALIDATION.md.
+Calculated sRGB token pairs: text/surface 15.61:1; muted/surface 11.76:1; bark/amber 9.31:1; error/surface 5.81:1; focus/raised 11.34:1. Opaque dialog/button backgrounds were rendered and inspected. These numbers do not establish contrast for moving pixels or every image-backed label. The taste probe explicitly left 20 image/canvas-backed text boxes unmeasured. No new theme or color ramp was introduced.
 
 ## Typography
 
-- Display: `Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif` for the brand and headings.
-- Body/control: `system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`.
-- Native font stacks; no font dependency/download. DOM weights are 400 and 700.
-- Tokens: `--text-sm: .875rem` (14px), `--text-base: 1rem` (16px), `--text-lg: 1.25rem` (20px), `--text-xl: 1.75rem` (28px). The inherited 2.5rem token remains available but is unused by this layout.
-- Body line height 1.5; display 1.1. Buttons use 1.2. No tracked capitals or kicker labels. Headings balance, descriptions wrap naturally, long field/address values break without clipping.
-- Numeric HUD/leaderboard/ammo/balance values use tabular figures. Input text remains at least 1rem. The retained canvas name label uses bold 10px sans-serif on an opaque bark rectangle.
+`--font-display`: Georgia, Iowan Old Style, Palatino Linotype, Book Antiqua, serif. `--font-body`: system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif. No font asset or dependency is required; exact system fallback appearance varies by OS.
+
+Weights are 400/700. Existing token scale: 14px, 16px, 20px, 28px, 40px at the default root size; unused display steps need not be applied. Active entry screen uses 14/16/20px at 390 and 14/16/20/28px at 1440. Headings use 1.1 line-height, body 1.5, controls 1.2; content keeps natural letter spacing. Numbers use tabular figures. Body/help measure is bounded; wallet addresses, table names and large values wrap rather than truncate. Inputs remain 16px to avoid focus zoom on iPhone. Root text enlargement to 200% was checked; browser-native desktop zoom and physical iOS text settings were not.
 
 ## Layout
 
-The stage fills `100dvh`, with a `100vh` fallback. In landscape the canvas keeps its 192-row height and `fitView()` (`src/game.js`) sets its column count to `round(192 × stage width / stage height)`, clamped to 288–416, on load, `resize` and stage `ResizeObserver`. Both axes therefore scale by the same factor: the view shows more or less of the forest instead of stretching the sprites (844×390 → 416 columns; 1440×900 → 307). Beyond the clamp, `object-fit: contain` letterboxes with the bark stage colour rather than distorting. World tiles, collision and sprites are unchanged; the camera centres on the boss arena when the view is wider than its 384px. Portrait uses 320 columns and centers the original 5:3 strip without cropping, with a rotate hint. Landscape is the intended touch format.
+Spacing tokens are 4, 8, 12, 16, 24, 32 and 48px. The stage uses `100dvw`/`100dvh`, overridden by scale-adjusted VisualViewport dimensions when available. It has no outer margin, page scroll or arbitrary content padding. Controls honor the existing safe-area insets. Pinch magnifies the stage without shrinking its CSS box; toolbar/keyboard viewport changes resize it.
 
-`.game-chrome` is an overlay grid in normal flow: header, four HUD metrics, conditional boss status, rotation hint. Its rows grow for large text/values. The brand stays top-left; Fullscreen and Menu stay top-right. The base HUD is static with `translate: none`. The landscape override follows that base rule and centres the HUD in the header row (`position: absolute`, 50% left inset, `translate: -50% 0`, zero inline margin). It requires both a 48rem-wide landscape viewport and a named `game-chrome` container at least 48em wide. Container em units follow the chrome's text size: at 200% root text, 844px and 1440px layouts retain the untranslated wrapping row below the header, avoiding overlap with the brand/tools. Browsers without container queries retain that same base row. At normal text, the centred row was measured at y=11px at 768px, 844px and 1440px landscape widths. On short wide landscape screens the Fullscreen label collapses to its ⛶ icon to keep that row clear. The wrapper and the header strip do not intercept gameplay pointers; only the tool buttons do. Fullscreen is hidden where `requestFullscreen` is missing (iPhone Safari); a refused request shows a 4-second notice in the rotate-hint slot. Supplementary weapon/season/timer/save text belongs inside the menu.
+The canvas retains 192 source rows and 288–416 aspect-matched columns. `object-fit: contain`, disabled smoothing and `image-rendering: pixelated` preserve square pixels; extreme aspect ratios letterbox. Portrait retains a centered 5:3 scene. Utilities flow below a wrapping header instead of sharing its horizontal center: this accommodates the explicit Current Map Score label and long values without overlapping controls. `minmax(0,1fr)` prevents intrinsic grid expansion at enlarged text.
 
-Spacing tokens are 4/8/12/16/24/32/48px. Safe-area insets pad top tools and bottom controls. The default content inset is 12–16px, not a new centered website container.
+Existing breakpoints remain: 52rem/coarse pointer enables touch controls; 40rem simplifies dialogs/shop; 28rem compacts controls and moves Fullscreen into Menu; 22rem reduces joystick size; landscape height below 34rem compacts overlays. Change it remains visible at narrow widths. Table columns are 18/32/34/16%, with smaller inline cell padding on phones so Rank remains a word. Native dialogs scroll internally. Checked widths include 320, 390, 568, 667, 767, 768, 844 and 1440; Android emulation also uses 393/851.
 
-At coarse-pointer or up-to-52rem widths, touch controls overlay the game: joystick bottom-left; large Attack bottom-right; Jump above Attack; slots in one row left of Attack. At up-to-28rem, slots are 44px wide, Attack 64px and Jump 52px. At up-to-22rem the joystick is 76px wide with an 8px inset, leaving a gap beside the weapon row even at 320px. Ordinary landscape sizes use a 96px joystick, 84px Attack, 60px Jump and 56px-minimum slots. Fine-pointer desktop keeps the three slots and uses mouse/keyboard movement/combat.
+## Elevation & Depth
 
-Dialogs use `min(640px, 100% - 32px)`, 16px corners and at most viewport height minus 48px. They scroll internally with a sticky close/title row. The wallet sheet sits at the bottom on narrow screens. Marketplace rows collapse from art/details/action columns to art/details plus an action row. GUILD controls use one column below 40rem. The page does not scroll horizontally.
+The transparent header has no full-width band. Brand text keeps its existing bark shadow for legibility over the art. HUD/dialogs use opaque tonal surfaces; secondary controls use an inset edge rather than a separate card border plus drop shadow. Start/pause/end use the inherited scrim. Native dialog backdrops occupy the top layer. Touch controls, chrome, rotation panel and fullscreen notice retain separate stacking levels.
 
-## Elevation and shapes
+The compact rotation panel covers its own text area, not the entire scene. While it is shown, redundant rotation text and the paused-screen content are hidden. Gameplay stays paused, while the accessible portrait action and Menu remain available. Fullscreen denial uses a dismissible inline panel with focus returned to the visible Fullscreen control or Menu; important errors are not silently timed away.
 
-The existing system is mostly flat. Inset shadows define secondary controls; no new card stack, glow, gradient text or texture layer is added. Structure/state may use inset borders. Radii: 6px for compact slots/messages, 10px for buttons/context panels, 16px for dialogs, 50% for joystick/Attack/Jump. Modal backdrops separate utility tasks from the paused game.
+## Shapes
 
-## Components and states
+Existing radii: 6px small, 10px medium, 16px dialog. Joystick and action buttons are circular; weapon slots are small rounded rectangles. Pixel art stays on its existing coordinate grid. App icons are raster exports of the existing favicon. The share image only changes its heading to the display name; underlying forest/hamster art is unchanged.
 
-| Component | Reuse and behavior |
+## Components
+
+| Pattern | Source and behavior |
 | --- | --- |
-| `.btn-primary` | Amber fill/dark text for the principal action. Attack is the main live-game action. |
-| `.btn-secondary` | Raised bark with cream text, 44px minimum height; utility buttons wrap when necessary. |
-| `:focus-visible` | 3px cream-amber outline; canvas outline is inset so the viewport cannot hide it. Forced-colors retains visible boundaries. |
-| `.weapon-slot` | Numeric mapping, icon, name, ammo. Unowned is disabled and hides the weapon icon. Owned shows icon/ammo. Selected adds amber fill, inner perimeter and `aria-pressed=true`. Selecting it again restores chestnuts. |
-| `.joystick` | Circular base/thumb; one captured pointer owns movement. Cancel/lost capture resets it while other touches remain available. |
-| `.pad-btn` | Circular direct action; immediate pressed-color feedback. Keyboard/button semantics retained. |
-| `.overlay` | Start, pause, game over and victory; each supplies an actual next action rather than blocking behind explanatory content. |
-| Native `<dialog>` | Menu, player tasks and wallet sheet; Escape/backdrop/close paths and focus return to Menu. Opening utilities pauses the game and clears held input. |
-| Marketplace row | Shared `HamsterRules.costumeArt()` pixel rectangles preview the same costume overlay used on Chang. Prices/owned/equipped states are explicit. Pending buttons disable; errors stay beside the product and allow retry. |
-| Leaderboard | Loading, empty, failure/retry and actual server rows; day/zone/reset text accompanies the table. No sample players. |
-| Status/error | Stable polite status regions; errors use alert text, a recovery instruction and the existing danger token. |
+| Buttons | `.btn`, `.btn-primary`, `.btn-secondary`; minimum 44px, hover/active/focus states, 150ms named-property transitions, `.96` press scale. Ordinary controls use manipulation touch behavior. |
+| Game actions | Existing `.joystick`, `.pad-btn`, `.weapon-slot`; independent pointers, immediate pressed cue, pointer capture/cancellation, owned/disabled/selected/ammo states. Direct gameplay surfaces isolate gestures. |
+| Menus/dialogs | Native dialogs in `index.html`; `ui.js` handles pause, Escape/backdrop/close, focus return. Direct Change it returns focus to its own button; menu-originated panels return to Menu. |
+| Change it / shop | `shopPanel()` shares item art, owned inventory, pending state, row errors and equip RPC. Wardrobe mode lists owned costumes and offers Marketplace when empty. It has no second inventory or price model. |
+| Profile | Labeled name form, format hint, inline validation, saved SQK/Lifetime Score/unlocks/inventory, explicit cloud state and retry. |
+| Lifetime ranking | `leaderboardPanel()`; loading, empty, error/refresh and actual SQL rows. Polls only while open/visible, without a reset deadline. No seed players. |
+| Wallet | Existing EIP-6963/EIP-1193 sheet, named injected wallets, MetaMask deep link, chain check, explicit login and separate disconnect. Connection alone never enables cloud saves. No transactions or approvals. |
+| Rotation/fullscreen | `viewport.js`; preserves the live world and wallet, requests supported landscape lock, offers portrait fallback, hides unsupported fullscreen and explains Home Screen mode. Manifest is relative to this same site. |
 
-The five costume overlays retain Chang’s original body, feet and animation and use the same 16×16 coordinate grid. Deadpool has a red mask/dark eye patches; Batman a cowl/cape/belt; Spider-Man red web lines and blue suit; Superman blue/red with a gold crest; Samurai a horned helmet and layered armor. They do not change collisions or confer protection.
-
-High-frequency control feedback is immediate. Existing button transitions name background/color/scale and last 150ms. Press scale is .96. Reduced motion disables these transforms/transitions and the engine’s decorative movement/shake. Audio remains opt-in through interaction, with separate music/effect volumes and mutes.
+Reduced-motion CSS removes button transitions/press transforms; the engine retains its existing decorative-motion reductions. Audio starts through player interaction and retains separate music/effects controls. Continuous game simulation is gameplay, not a decorative CSS animation.
 
 ## Do and do not
 
-Reuse the bark/cream/amber tokens, native dialogs, existing sprites, numeric slots and compact menu. Put help in GUILD and owner setup in documentation. Keep utility text off the live scene. Preserve labels, visible focus, safe-area padding, retry paths and state cues beyond color.
+Reuse the existing tokens, native dialogs, shared shop handlers and canvas art. Keep input help beside its action or in GUILD. Keep server state, pending state and guest state explicit. Use `--color-danger` with actual error text and a recovery path. Another utility belongs in the existing menu/dialog structure with the same focus/error behavior.
 
-Do not add a landing-page hero, new font, wallet relay, second game engine, fake leaderboard, guest persistence or client-priced purchase. Do not infer that a wallet connection authenticates an account; saved play requires the explicit verified login.
+Do not change game balance/art to solve viewport issues, stretch the canvas, add fonts/hero sections, fake rankings, import guest balances or treat wallet connection as verified ownership. Do not globally disable pinch zoom, request fullscreen automatically, or promise that iOS will hide its browser bars.
 
-## Review and attribution
-
-All six Better Interface domains were reviewed against source and rendered Chromium states; fixes and unperformed subchecks are recorded in VALIDATION.md. Physical-device/Safari, native screen-reader and native browser-zoom checks remain unperformed. The original guide attribution and licenses are preserved at `docs/licenses/better-interface.txt` (Better Interface/MIT and documentation guidance/Apache-2.0).
+Review coverage and repaired findings across all six Better Interface domains are in `VALIDATION.md`. Screen-reader, physical-device and WebKit/native Safari checks remain unperformed. The existing notices remain at `docs/licenses/better-interface.txt`: Jakub Krehel's Better Interface (MIT), plus the adapted Paul Bakaus/Impeccable documentation guidance (Apache-2.0).
