@@ -223,7 +223,7 @@ html, body { width: 100%; min-height: 100%; }
 body { overflow: hidden; }
 .game.page { width: 100%; height: 100vh; height: 100dvh; padding: 0; margin: 0; }
 .stage { width: 100%; height: 100%; position: relative; isolation: isolate; background: var(--color-bg); }
-#game { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
+#game { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; touch-action: none; }
 .site-header { position: absolute; z-index: 8; inset: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: max(6px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); background: rgb(26 17 11 / 0.92); }
 .site-header h1 { font-size: var(--text-lg); white-space: nowrap; }
 .stage-tools { display: flex; gap: var(--space-2); }
@@ -407,8 +407,18 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
 .rotate-hint { inset-block-start: 112px; }
 
 .game-chrome { position: absolute; z-index: 8; inset: 0 0 auto; display: grid; gap: 6px; pointer-events: none; }
-.game-chrome .site-header { position: static; pointer-events: auto; }
-.game-chrome .site-header h1 { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+/* No band: the brand sits in the top-left corner and the tools in the top-right, over the scene. */
+.game-chrome .site-header { position: static; pointer-events: none; background: transparent; }
+.game-chrome .site-header h1 { min-width: 0; white-space: normal; overflow-wrap: anywhere; text-shadow: 0 1px 0 var(--color-bg), 1px 0 0 var(--color-bg), 0 -1px 0 var(--color-bg), -1px 0 0 var(--color-bg), 0 0 6px var(--color-bg); }
+.game-chrome .stage-tools { pointer-events: auto; }
+.rotate-hint.is-notice { display: block; justify-self: center; padding: 6px 10px; border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); }
+/* Wide landscape: the HUD joins the header row, so nothing stacks over the playfield. */
+@media (orientation: landscape) and (min-width: 48rem) {
+  .game-chrome .hud { position: absolute; inset: max(11px, calc(env(safe-area-inset-top) + 5px)) auto auto 50%; translate: -50% 0; margin-inline: 0; flex-wrap: nowrap; white-space: nowrap; max-width: none; }
+}
+@media (orientation: landscape) and (min-width: 48rem) and (max-height: 34rem) {
+  .tool-label { display: none; }
+}
 .stage-tools { flex-shrink: 0; }
 .game-chrome .hud { position: static; justify-self: start; margin-inline: max(12px, env(safe-area-inset-left)); max-width: calc(100% - 24px); }
 .game-chrome .hud-item { flex-wrap: wrap; min-width: 0; }

@@ -8,6 +8,19 @@ Updated the existing Hamster Friendship v3 tree in place. Runtime source is `src
 
 Assumptions: UTC for the unresolved `[TIMEZONE]`; daily best map score, rather than lifetime ranking; additive one-time upgrades (+55% maximum); a gun refills to 100; bomb pickup gives three throws; selecting the active slot restores unlimited chestnuts; touch auto-pickup replaces the removed Look button. Original finite forest chestnuts/caches also score points. Daily attribution uses server acknowledgement time for offline events. These choices are documented in README and GUILD where relevant.
 
+## Revision 2026-11-05: reviewer findings (not re-run)
+
+Four reviewer findings were addressed in `src/` and copied to `dist/` by hand with the same edits (`scripts/build.mjs` is a plain copy, and `npm run typecheck` checks byte parity):
+
+| Finding | Change |
+| --- | --- |
+| High: 320×192 canvas stretched to fill landscape | `src/game.js` `fitView()` sets `canvas.width = clamp(round(192 × stage W/H), 288, 416)` on load, `resize` and stage `ResizeObserver`. The sky is painted at 416, the vignette is repainted per width, and the arena camera centres when the view is wider than the 384px arena. `src/styles.css` `#game` adds `object-fit: contain` beyond the clamp. |
+| Medium: opaque header band over the top of the game | `.game-chrome .site-header` is transparent with a text-shadow outline on the brand. Only `.stage-tools` takes pointer events. At landscape ≥48rem the HUD is centred in the header row; on short landscape screens the Fullscreen label collapses to its icon. |
+| Medium: Fullscreen does nothing on iPhone | `src/ui.js` hides `#btn-fullscreen` when `requestFullscreen` is missing. A refused request shows a visible 4-second notice (`.rotate-hint.is-notice`). Orientation-lock failure no longer reports a fullscreen failure. |
+| Low: walk-over pickup on touchscreen desktops | `src/game.js` uses one live `matchMedia('(pointer: coarse)')` list. `navigator.maxTouchPoints` was removed. |
+
+**Limitation, stated plainly:** on this machine in this round, the Bash sandbox failed to start ("Failed to create bridge sockets") and the browser tool's Chromium was not installed. Because of that, `npm run build`, `npm run typecheck`, the TypeScript pass, the PostgreSQL suites, the Playwright suites and the taste probe were **not re-run after these edits**. The results in the table below are from the previously accepted round. `scripts/validate-squeek.mjs` now has three more checks: canvas width and square pixels at 1440×900 and 844×390, a transparent header with the HUD in the top row, and E still required with `hasTouch` on a fine pointer. Its landscape touch context is now `isMobile`, so it matches `(pointer: coarse)`. None of these have been executed yet. Run the commands below before publishing.
+
 ## Actual commands and results
 
 Commands ran on the final source/export on 2026-11-05. All browser tests serve `dist/` beneath `/preview/` and close their foreground-owned server/browser after completion.

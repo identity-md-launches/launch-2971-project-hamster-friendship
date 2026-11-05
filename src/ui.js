@@ -159,14 +159,21 @@
   menu.addEventListener('close', function () { document.getElementById('btn-menu').focus({ preventScroll: true }); });
   menu.addEventListener('click', function (e) { var r = menu.getBoundingClientRect(); if (e.target === menu && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) menu.close(); });
   var fullscreen = document.getElementById('btn-fullscreen');
-  fullscreen.addEventListener('click', async function () {
+  // iPhone Safari has no element fullscreen: no button there; the portrait rotate prompt is the fallback.
+  if (!document.documentElement.requestFullscreen) fullscreen.hidden = true;
+  var noticeTimer = 0;
+  function notice(text) {
     var hint = document.getElementById('rotate-hint');
+    hint.textContent = text; hint.classList.add('is-notice');
+    clearTimeout(noticeTimer);
+    noticeTimer = window.setTimeout(function () { hint.classList.remove('is-notice'); hint.textContent = 'Rotate your phone for landscape play.'; }, 4000);
+  }
+  fullscreen.addEventListener('click', async function () {
     if (document.fullscreenElement) { await document.exitFullscreen(); return; }
-    try {
-      if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-      else hint.textContent = 'Rotate your phone for landscape play. Fullscreen is unavailable in this browser.';
-      if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
-    } catch (_) { hint.textContent = 'Rotate your phone for landscape play. Your browser controls fullscreen and orientation.'; }
+    try { await document.documentElement.requestFullscreen(); }
+    catch (_) { notice('Your browser blocked fullscreen. Rotate your phone for landscape play.'); return; }
+    // Orientation lock is optional (desktop and some phones refuse it); fullscreen already worked.
+    try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (_) { /* rotate prompt remains in portrait */ }
   });
   document.addEventListener('fullscreenchange', function () { fullscreen.setAttribute('aria-label', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen'); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && panel === 'leaderboard') void leaderboardPanel(); });

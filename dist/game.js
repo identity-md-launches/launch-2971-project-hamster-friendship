@@ -1,13 +1,16 @@
 /* Hamster Friendship: The Lost Alice. Chapter one.
-   Plain browser JavaScript, no dependencies. The canvas renders at 320x192
-   and is scaled up with CSS (image-rendering: pixelated). */
+   Plain browser JavaScript, no dependencies. The canvas renders 192 rows at
+   288-416 columns (matching the stage aspect) and is scaled up with CSS
+   (image-rendering: pixelated, object-fit: contain). */
 (function () {
   'use strict';
 
   // ---------------------------------------------------------------------------
   // Constants
   // ---------------------------------------------------------------------------
+  // H is fixed; W follows the stage aspect (see fitView) so pixels stay square.
   var W = 320, H = 192, T = 16, ROWS = 12, COLS = 224;
+  var MIN_W = 288, MAX_W = 416;
   var WORLD_W = COLS * T;
   var ARENA_L = 184, ARENA_R = 207;
   var GRAVITY = 0.25, JUMP_V = 5.6, MAX_FALL = 5;
@@ -38,6 +41,8 @@
   var reduceMotion = motionQuery.matches;
   if (motionQuery.addEventListener) motionQuery.addEventListener('change', function (e) { reduceMotion = e.matches; });
   var coarseQuery = window.matchMedia('(pointer: coarse), (max-width: 52rem)');
+  // Walk-over pickup only where the primary pointer is touch; mouse users press E.
+  var touchPickupQuery = window.matchMedia('(pointer: coarse)');
 
   // ---------------------------------------------------------------------------
   // Small helpers
@@ -1181,8 +1186,7 @@
       }
       var box = { x: k.x - 2, y: k.y - 2, w: k.w + 4, h: k.h + 4 };
       var nearby = overlap(player, { x: box.x - 8, y: box.y - 5, w: box.w + 16, h: box.h + 10 });
-      var touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
-      if (nearby && (touch || pressed.interact)) {
+      if (nearby && (touchPickupQuery.matches || pressed.interact)) {
         k.taken = true; // Claim before any side effect; an input frame cannot re-collect.
         if (k.kind === 'shell') { audio.sfx('item'); addChestnuts(1, k.forage); }
         else {
@@ -1208,7 +1212,8 @@
     game.camX += (target - game.camX) * 0.1;
     var min = 0, max = WORLD_W - W;
     if (game.arenaLocked) { min = ARENA_L * T; max = (ARENA_R + 1) * T - W; }
-    game.camX = clamp(game.camX, min, max);
+    // A view wider than the arena centres on it instead of clamping to an empty range.
+    game.camX = max < min ? (min + max) / 2 : clamp(game.camX, min, max);
   }
 
   function updateWorld() {
@@ -1274,8 +1279,9 @@
   // ---------------------------------------------------------------------------
   // Pre-rendered art
   // ---------------------------------------------------------------------------
-  var sky = makeLayer(W, H);
+  var sky = makeLayer(MAX_W, H); // painted at the widest view; drawn from x = 0
   function paintSky() {
+    var W = MAX_W; // local: the sky covers every possible view width
     var bands = ['#2e2245', '#3d2850', '#552f55', '#733856', '#933f52', '#b34d4b', '#cf6444', '#e5803f', '#f19c47', '#f6b85a'];
     if (season === 0) bands = ['#3b3458','#494565','#5b5675','#766080','#9b7885','#bd9291','#d9af9e','#e5c0a7','#f0d2b0','#f9dfbd'];
     if (season === 1) bands = ['#294854','#365e67','#4c757b','#678d88','#8ba98f','#b1bd93','#d0ca94','#dfd69f','#eeddab','#f9e6b6'];
@@ -1346,14 +1352,40 @@
     }
   });
 
-  var vignette = makeLayer(W, H);
-  (function () {
+  var vignette;
+  function paintVignette() {
+    vignette = makeLayer(W, H);
     var gr = vignette.g.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, W * 0.62);
     gr.addColorStop(0, 'rgba(20, 10, 20, 0)');
     gr.addColorStop(1, 'rgba(20, 10, 20, 0.42)');
     vignette.g.fillStyle = gr;
     vignette.g.fillRect(0, 0, W, H);
-  })();
+  }
+
+  // The backing store keeps H = 192 rows and widens or narrows its columns to
+  // the stage aspect, so CSS scales both axes by the same factor. Outside
+  // MIN_W..MAX_W (and in portrait, where the canvas is 5:3) object-fit: contain
+  // letterboxes instead of stretching.
+  function viewWidth() {
+    var stage = canvas.parentElement, sw = stage ? stage.clientWidth : 0, sh = stage ? stage.clientHeight : 0;
+    if (!sw || !sh || sw < sh) return 320;
+    return clamp(Math.round(H * sw / sh), MIN_W, MAX_W);
+  }
+  function fitView() {
+    var next = viewWidth();
+    if (vignette && next === W && canvas.width === W) return;
+    W = next;
+    canvas.width = W; canvas.height = H;
+    ctx.imageSmoothingEnabled = false; // resetting the size resets context state
+    paintVignette();
+  }
+  function onViewResize() {
+    var before = W; fitView();
+    if (W !== before && game.state === 'paused') render(); // the loop is idle while paused
+  }
+  fitView();
+  window.addEventListener('resize', onViewResize);
+  if (window.ResizeObserver && canvas.parentElement) new ResizeObserver(onViewResize).observe(canvas.parentElement);
 
   var world = makeLayer(WORLD_W, H);
   function buildWorldArt() {

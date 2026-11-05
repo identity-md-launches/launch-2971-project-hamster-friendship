@@ -21,7 +21,7 @@ Preview opens at `http://localhost:4173/`. Stop it with Ctrl+C. Edit `src/`, reb
 
 - **Desktop:** arrows or A/D move; Space, W, Up or Z jump. Left mouse button on the canvas or Enter attacks. E collects nearby items and interacts with story objects. X/J/Q and the shield bindings are removed.
 - **Weapons:** 1 = gun, 2 = bomb, 3 = sword. Collect a weapon before selecting its slot. Select the same slot again to return to unlimited chestnuts. Gun pickups refill to 100 bullets, never above 100; the empty gun’s icon/ammo disappear and its slot becomes unavailable. Bomb pickups give three throws; swords have unlimited uses. Weapons remain map-scoped, as before.
-- **Touch:** rotate to landscape, drag the circular joystick, and use Attack, Jump and the three slots over the canvas. Walk over drops to collect them. Story objects show a contextual Open/Read/Talk button. Fullscreen requests `screen.orientation.lock('landscape')` where available; otherwise rotate manually. Portrait remains playable with a rotation hint.
+- **Touch:** rotate to landscape, drag the circular joystick, and use Attack, Jump and the three slots over the canvas. Where the primary pointer is touch (`(pointer: coarse)`), walk over drops to collect them; a touchscreen laptop with a mouse still uses E. Story objects show a contextual Open/Read/Talk button. Fullscreen requests `screen.orientation.lock('landscape')` where available; the button is hidden in browsers without element fullscreen (iPhone Safari), where you rotate manually. The canvas widens to the screen’s aspect with square pixels instead of stretching. Portrait remains playable with a rotation hint.
 - **Menu:** Profile, Marketplace, GUILD, Audio, Top 100, wallet connection and Pause/Resume are behind one compact control. Supplemental weapon, season and timer text is also in this menu. All how-to-play content and the original story are in GUILD.
 - **Combat:** one monster/projectile hit or a fall ends the map. Stomping remains an attack. Monster HP starts at 50/100/300 for small/large/boss and increases by 20% per map. Player health, shield and enemy damage scaling are removed. Each map retains 30 regular monsters and the boss after 60 active seconds.
 
@@ -68,7 +68,7 @@ No token is deployed, re-minted or replaced. Hosting remains the network’s sub
 
 ## Validation
 
-[VALIDATION.md](./VALIDATION.md) records commands, fixes, coverage and limitations. [DESIGN.md](./DESIGN.md) records the final implemented interface. Current results: 51 PostgreSQL checks, 13 client/PostgreSQL checks, 29 gameplay/layout browser checks, 10 marketplace/wallet browser checks and all 16 taste@1 checks pass. The original `npm run typecheck` is a syntax/export-integrity check; a real TypeScript `checkJs` pass using the existing `jsconfig.json` also passes.
+[VALIDATION.md](./VALIDATION.md) records commands, fixes, coverage and limitations. [DESIGN.md](./DESIGN.md) records the final implemented interface. The latest revision (square-pixel canvas, bandless header, Fullscreen fallback, coarse-pointer pickup) could not be re-run on its machine. See the revision section at the top of VALIDATION.md. Results from the previously accepted round: 51 PostgreSQL checks, 13 client/PostgreSQL checks, 29 gameplay/layout browser checks, 10 marketplace/wallet browser checks and all 16 taste@1 checks pass. The original `npm run typecheck` is a syntax/export-integrity check; a real TypeScript `checkJs` pass using the existing `jsconfig.json` also passes.
 
 Optional verification dependencies belong only in disposable scratch space:
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A playable pixel-art forest adventure for touch and desktop players. The original 320×192 renderer, authored world and animated sprites remain the visual anchor. The original five-line opening dialogue remains before first play. Warm bark, cream and amber UI from the existing site now floats over that scene. Utilities are disclosed through a single menu; the opening screen presents the forest and Start adventure immediately, including at 390 pixels wide.
+A playable pixel-art forest adventure for touch and desktop players. The original 192-row pixel renderer (now with an aspect-matched column count), authored world and animated sprites remain the visual anchor. The original five-line opening dialogue remains before first play. Warm bark, cream and amber UI from the existing site now floats over that scene. Utilities are disclosed through a single menu; the opening screen presents the forest and Start adventure immediately, including at 390 pixels wide.
 
 This is a game surface rather than a marketing page. There is no subtitle/footer block, feature grid or new decorative system. Implementation lives in `src/index.html`, `src/styles.css`, `src/game.js`, `src/rules.js`, `src/ui.js` and `src/wallet.js`. The final `.game-chrome` rules in the stylesheet supersede earlier absolute-position values for header/HUD children.
 
@@ -24,7 +24,7 @@ Reuse the existing hex primitives and their semantic aliases in `src/styles.css:
 | `--color-focus` | `#fbdba6` | 3px keyboard focus perimeter |
 | `--color-danger` | `#e9735f` | Errors and retained monster/boss health indicators |
 
-The header uses bark at 92% opacity, joystick at 88%, start/pause/game-over scrim at 68%. Opaque control/text surfaces establish stable contrast over the seasonal artwork. Do not use a separator token for text.
+The header has no band: it is transparent, the brand carries a 1px bark outline plus 6px bark glow (`text-shadow`) for legibility over the scene, and the Fullscreen/Menu buttons keep their own opaque surfaces. Joystick at 88%, start/pause/game-over scrim at 68%. Opaque control/text surfaces establish stable contrast over the seasonal artwork. Do not use a separator token for text.
 
 Computed sRGB ratios for the actual opaque pairs are cream/surface **15.61:1**, muted/surface **11.76:1**, bark/amber **9.31:1**, error/surface **5.81:1**, focus/raised **11.34:1**. These are token-pair calculations, supported by the observed opaque panel/button backgrounds; they are not measurements of every antialiased canvas pixel or translucent overlay. The probe also checks measurable rendered text; its canvas-overlay exclusions are recorded in VALIDATION.md.
 
@@ -39,9 +39,9 @@ Computed sRGB ratios for the actual opaque pairs are cream/surface **15.61:1**, 
 
 ## Layout
 
-The stage fills `100dvh`, with a `100vh` fallback. In landscape, the existing renderer scales across the whole viewport. Its internal world resolution and collision coordinates stay unchanged; filling different landscape aspect ratios stretches the presentation. Portrait centers the original 5:3 canvas strip without cropping, with a rotate hint. Landscape is the intended touch format.
+The stage fills `100dvh`, with a `100vh` fallback. In landscape the canvas keeps its 192-row height and `fitView()` (`src/game.js`) sets its column count to `round(192 × stage width / stage height)`, clamped to 288–416, on load, `resize` and stage `ResizeObserver`. Both axes therefore scale by the same factor: the view shows more or less of the forest instead of stretching the sprites (844×390 → 416 columns; 1440×900 → 307). Beyond the clamp, `object-fit: contain` letterboxes with the bark stage colour rather than distorting. World tiles, collision and sprites are unchanged; the camera centres on the boss arena when the view is wider than its 384px. Portrait uses 320 columns and centers the original 5:3 strip without cropping, with a rotate hint. Landscape is the intended touch format.
 
-`.game-chrome` is an overlay grid in normal flow: header, four HUD metrics, conditional boss status, rotation hint. Its rows grow for large text/values. The brand stays left; Fullscreen and Menu stay right. The wrapper does not intercept gameplay pointers; actual header controls do. Supplementary weapon/season/timer/save text belongs inside the menu.
+`.game-chrome` is an overlay grid in normal flow: header, four HUD metrics, conditional boss status, rotation hint. Its rows grow for large text/values. The brand stays top-left; Fullscreen and Menu stay top-right. In landscape at 48rem and wider the HUD leaves the flow and is centred in the header row (`translate: -50% 0`), so only the corners and one small HUD box sit over the scene; on short landscape screens the Fullscreen label collapses to its ⛶ icon to keep that row clear. The wrapper and the header strip do not intercept gameplay pointers; only the tool buttons do. Fullscreen is hidden where `requestFullscreen` is missing (iPhone Safari); a refused request shows a 4-second notice in the rotate-hint slot. Supplementary weapon/season/timer/save text belongs inside the menu.
 
 Spacing tokens are 4/8/12/16/24/32/48px. Safe-area insets pad top tools and bottom controls. The default content inset is 12–16px, not a new centered website container.
 
