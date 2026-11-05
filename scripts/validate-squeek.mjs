@@ -75,6 +75,34 @@ try{
   await check('desktop canvas keeps square pixels',async()=>{const r=await page.evaluate(()=>{const c=document.getElementById('game');return{w:c.width,h:c.height};});assert.equal(r.h,192);assert.equal(r.w,Math.min(416,Math.max(288,Math.round(192*1440/900))));});
   await context.close();context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true});await fixtures(context);page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await play();await page.evaluate(()=>window.fixture.emptyWorld());
   await check('landscape phone canvas widens with square pixels and no header band',async()=>{const r=await page.evaluate(()=>{const c=document.getElementById('game'),h=document.querySelector('.site-header');return{w:c.width,h:c.height,bg:getComputedStyle(h).backgroundColor,hudTop:document.getElementById('hud').getBoundingClientRect().top};});assert.equal(r.h,192);assert.equal(r.w,Math.min(416,Math.max(288,Math.round(192*844/390))));assert.equal(r.bg,'rgba(0, 0, 0, 0)');assert(r.hudTop<20);});
+  await check('all four HUD counters remain visible through text enlargement and rotation',async()=>{
+    const overlaps=(a,b)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.y+a.height;
+    try{
+      for(const[width,height]of[[844,390],[1440,900],[768,390],[767,390],[667,375],[390,844],[320,844]]){
+        await page.setViewportSize({width,height});
+        for(const size of['100%','200%']){
+          await page.evaluate(size=>document.documentElement.style.fontSize=size,size);
+          const r=await page.locator('#hud').evaluate(hud=>{
+            const box=e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height};};
+            const css=getComputedStyle(hud);
+            return{hud:box(hud),position:css.position,translate:css.translate,brand:box(document.querySelector('.site-header h1')),tools:box(document.querySelector('.stage-tools')),items:[...hud.children].map(e=>({...box(e),overflow:e.scrollWidth>e.clientWidth+1})),labels:[...hud.querySelectorAll('.hud-item>span:first-child')].map(e=>e.textContent)};
+          });
+          const at=`${width}x${height}, text ${size}`;
+          assert.deepEqual(r.labels,['SQK','Map','Defeated','Score']);
+          for(const b of[r.hud,...r.items]){
+            assert(b.x>=0&&b.y>=0&&b.x+b.width<=width+1&&b.y+b.height<=height+1,'clipped HUD: '+at);
+            assert(!overlaps(b,r.brand)&&!overlaps(b,r.tools),'HUD overlaps header: '+at);
+            assert(!b.overflow,'HUD text overflow: '+at);
+          }
+          for(let i=0;i<r.items.length;i++)for(let j=i+1;j<r.items.length;j++)assert(!overlaps(r.items[i],r.items[j]),'overlapping counters: '+at);
+          if(width>=768&&width>height&&size==='100%'){
+            assert.equal(r.position,'absolute',at);assert(r.hud.y<20,at);assert(Math.abs(r.hud.x+r.hud.width/2-width/2)<1,'HUD not centred: '+at);
+          }else{assert.equal(r.position,'static',at);assert.equal(r.translate,'none',at);assert(r.hud.y>=r.tools.y+r.tools.height,at);}
+          if(width===844||width===1440)await shot('hud-'+width+'-text-'+size.replace('%',''));
+        }
+      }
+    }finally{await page.evaluate(()=>document.documentElement.style.fontSize='');await page.setViewportSize({width:844,height:390});}
+  });
   await check('touch automatically collects drops, and tapping slots switches weapons',async()=>{for(const[kind,id]of[['gun',0],['bomb',1],['sword',2]]){await page.evaluate(({kind,id})=>window.fixture.drop(kind,id),{kind,id});await page.waitForFunction(kind=>window.__hamster.snapshot().weapons.includes(kind),kind);}for(const[i,kind]of[[1,'gun'],[2,'bomb'],[3,'sword']]){await page.locator('#slot-'+i).tap();await page.waitForTimeout(40);assert.equal((await state()).weapon,kind);assert.equal(await page.locator('#slot-'+i).getAttribute('aria-pressed'),'true');}await page.locator('#slot-1').tap();await page.locator('[data-action="throw"]').tap();await page.waitForTimeout(60);assert.equal((await state()).ammo.gun,99);await shot('touch-weapons');});
   await check('large HUD values reflow without covering the controls',async()=>{await page.setViewportSize({width:320,height:844});await page.evaluate(()=>{document.getElementById('hud-sqk').textContent='999999999999999';window.fixture.score(999999999999);});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),320);await shot('long-values-320');});
   await context.close();await browser.close();browser=null;

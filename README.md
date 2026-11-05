@@ -68,7 +68,7 @@ No token is deployed, re-minted or replaced. Hosting remains the network’s sub
 
 ## Validation
 
-[VALIDATION.md](./VALIDATION.md) records commands, fixes, coverage and limitations. [DESIGN.md](./DESIGN.md) records the final implemented interface. The latest revision (square-pixel canvas, bandless header, Fullscreen fallback, coarse-pointer pickup) could not be re-run on its machine. See the revision section at the top of VALIDATION.md. Results from the previously accepted round: 51 PostgreSQL checks, 13 client/PostgreSQL checks, 29 gameplay/layout browser checks, 10 marketplace/wallet browser checks and all 16 taste@1 checks pass. The original `npm run typecheck` is a syntax/export-integrity check; a real TypeScript `checkJs` pass using the existing `jsconfig.json` also passes.
+[VALIDATION.md](./VALIDATION.md) records commands, fixes, coverage and limitations. [DESIGN.md](./DESIGN.md) records the final implemented interface. The latest HUD revision reproduced the landscape clipping, corrected the CSS rule order, and kept enlarged text in the wrapping row below the header. The production build, `npm run typecheck`, real TypeScript `checkJs`, **33 browser checks** and **16/16 taste@1 checks** pass on this revision. The HUD regression checks seven viewport sizes at normal and 200% root text. The original `npm run typecheck` is a syntax/export-integrity check; the separate TypeScript command below checks the existing `jsconfig.json`. PostgreSQL and marketplace/PostgreSQL suites retain their earlier recorded results and were not re-run for this CSS-only change.
 
 Optional verification dependencies belong only in disposable scratch space:
 
