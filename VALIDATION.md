@@ -1,4 +1,70 @@
-# Squeek major update · local validation
+# Squeek validation
+
+## Production integration · 2026-11-05
+
+**Incomplete in production.** The supplied original-project public URL/key are configured in source and export. Auth connectivity returned 200; service, player, progress and lifetime-ranking RPCs returned 404/PGRST202. No production migration, authenticated record write, score save, refresh recovery or real wallet signature is claimed. Actual tables and policies remain uninspected. See the [complete production report](docs/SUPABASE_REPORT.md), [raw HTTP results](docs/validation/supabase-production.json) and [exact SQL Editor procedure](supabase/SQL_EDITOR.md).
+
+The implementation and local validation below preserve the existing game and scoring rules. Their passing results do not establish production persistence. The current production-integration review and test record follows; older sections after it are historical evidence from earlier assignments.
+
+### Commands and evidence from this assignment
+
+The production build contains **18 complete runtime files / 264,738 bytes**, using relative asset URLs. Source, existing root lockfile and `dist/` remain together. No runtime dependency, vendored package, build-setting change, submodule or ignore-file change was introduced. Test dependencies and browser downloads are confined to disposable `test/scratch/`, which is excluded from delivery by the assignment. The artifact directory is ignored by repository tooling, so delivery copies of reports/evidence are retained under `docs/`; the SQL generator creates its operator-selected output under `artifacts/` when used.
+
+| Command | Actual result and limits |
+| --- | --- |
+| `npm run build` | Passed after the final runtime edit; 18 files / 264,738 bytes. |
+| `npm run check` | Passed: all runtime scripts parse, metadata/relative assets and 69 referenced element IDs checked, every export file equals its source. |
+| `node scripts/typecheck-major.mjs` | Passed on all eight runtime scripts and shared declarations with TypeScript 5.9.3, `allowJs/checkJs/noEmit`. Added an optional declaration for the feature-detected orientation-lock API. The root `typecheck` alias alone is only a syntax/export check. |
+| `node scripts/verify-production.mjs --out docs/validation/supabase-production.json` | **Exit 1, expected unresolved production failure:** Auth 200; service/profile/progress/lifetime RPCs 404; private-schema exposure 406; catalog discovery 401. No successful production record write. |
+| `node supabase/tests/production-handoff.mjs` | 9 local PostgreSQL cases passed: inspect/upgrade every starting version 0–7, preserve existing records, verify permissions/checkpoints, reject replay and incorrect starting versions. No production SQL executed. |
+| `node supabase/tests/connection-state.mjs` | 4 passed: startup failure, no signing before migration readiness, retry recovery without invented authentication, later incompatible/offline failure. HTTP/wallet fixtures only. |
+| `node scripts/test-major.mjs` | 16 game-rule/engine checks passed. Guest-board test now explicitly supplies empty configuration instead of assuming the production config is empty. |
+| `node scripts/test-major-audio.mjs` | 4 passed. |
+| `node supabase/tests/major.mjs` | 11 local PostgreSQL checks passed: populated migration preservation, canonical wallets, permanent checkpoints/replay, ownership/RLS/grants, global Top 100 and legacy recovery. |
+| `node supabase/tests/major-client.mjs` | 11 passed: durable queues, lost acknowledgements, refresh, wallet partitioning, signature gating and public-only key protection. Auth/HTTP/signatures are fixtures. |
+| `node supabase/tests/major-engine.mjs` | 3 passed: actual engine events and four-map progression through SQL, retained permanent fields, no submitted score total. |
+| `node supabase/tests/concurrent-runs.mjs` | 6 passed: independent-device runs, offline retry, replay, preserved historical records, legacy behavior and validators. Local single-connection PostgreSQL, not production contention testing. |
+| `node scripts/validate-major.mjs` | 17 Chromium checks passed at `/squeek/`: actual play/story/keyboard/pause, profile/audio/wardrobe, error states, axe entry/profile, mobile/desktop reflow, landscape controls, 200% root text and RTL. No JS or missing local-resource failures. Expected remote network failures are separate. |
+| `node scripts/validate-major-cloud.mjs` | 8 passed with actual local SQL and explicit wallet/Auth/HTTP fixtures: saved gameplay, board refresh/retry, purchase/equip, refresh and second-device restoration. Not hosted verification. |
+| `node scripts/validate-revision.mjs` | 8 passed: touch/PC weapon pickup, keyboard/pointer focus, offline two-device event preservation, retry, reload and SQL leaderboard. Fixtures only for wallet/Auth/transport. |
+| `node scripts/validate-integration.mjs --relay` | 7 passed on the final export: actual production 404 consumed by the website, readiness never claims saved, 320/390/1440 layout, retry enabled after failure, no fake board rows, wallet focus return and explicitly temporary guest name after refresh. Node forwards real HTTP; it does not simulate a database. |
+| Pinned `taste.mjs --out test/scratch/taste` | 16/16 passed after the final source edit: render, layout, targets, resolved contrast, casing/tracking, headings, type scale/faces, glyphs, copy/repetition, surfaces, motion and sharing metadata. |
+
+Browser commands use `PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers"`. The probe also uses `IMD_PLAYWRIGHT="$PWD/test/scratch/node_modules/playwright/index.mjs"`. Reproduction setup is in README. The raw live endpoint report is [supabase-production.json](docs/validation/supabase-production.json); the worker's local results and the probe checks are retained in [integration-results.json](docs/validation/integration-results.json). These are worker observations, not independent certification.
+
+### Better Interface review: six domains
+
+Scope: the existing entry, Profile, wallet sign-in/connection states, retry, leaderboard and their shared dialog controls. Preserve the warm bark/cream/amber interface, serif titles and original pixel-art game. One visual idea carries the page: a compact set of readable controls over Chang's forest adventure. No unrelated redesign or additional wallet stack was introduced.
+
+| Domain | Coverage | Evidence and explicit limits |
+| --- | --- | --- |
+| Accessibility | Checked | Native controls/dialogs; field label and associated validation; polite startup status; keyboard Tab/Enter/Escape and focus return; original visible focus; axe A/AA checks on entry/profile; all five first-screen controls at least 44px. Screen-reader sessions, native-device assistive tech and forced-colors rendering were not performed. |
+| Layout | Checked | Actual screenshots and overflow checks at 320/390/1440, landscape 844×390, 200% root text and RTL mirror. Start and the game are visible on the first 390-wide screen. Fixed dialog intrinsic-width overflow; profile input stays in bounds. Root text enlargement is not browser-native zoom; translated locales/native zoom are not verified. |
+| Writing | Checked | Configured/ready/authenticated are distinct; guests remain explicitly unsaved; missing records show a retryable error; no seeded live board. Replaced raw SQL/cache details with a plain cloud-setup message and put schema/version instructions in owner docs. Repeat retry failures use a short outcome instead of duplicating the full status. |
+| Typography | Checked | Existing five-token scale, two system-font families and weights 400/700 retained. Probe measures three sizes at 390, four at desktop; labels/numbers wrap without clipping. Mobile input retains 16px baseline. No external font download or new font was introduced. |
+| Colors | Checked | Reused existing semantic roles and opaque dialog surfaces. Probe passes measured solid-background pairs; 23 text boxes over canvas/images/alpha layers are not measured. Declared sRGB token-pair calculations: text/surface 15.61:1, muted/surface 11.76:1, error/surface 5.81:1, focus/surface 12.94:1, dark text/amber primary 9.31:1. These calculations do not certify composited canvas pixels. Only the existing dark interface applies. |
+| UI | Checked | Pending retry disables its action and restores it on failure; buttons/dialog identity and focus-return behavior retained. Actual loading/error/retry/temporary-name states exercised; successful authenticated flows separately exercised with SQL fixtures. No added motion; reduced-motion probe passed. Animations-panel playback at 10% speed and physical Safari were not performed. |
+
+### Findings, corrections and rechecks
+
+| Finding | Source and reproduction | Correction and recheck |
+| --- | --- | --- |
+| High: configuration could imply usable persistence before a backend check | `src/save.js:17`, `src/ui.js:29`; supplied keys exist but the actual service RPC returns 404. | Explicit backend state, startup check and signed-login gating; cloud remains false until an authenticated matching wallet profile is returned. Local connection tests plus actual 404 browser replay passed. |
+| Medium: raw database errors gave players no clear recovery | `src/save.js:35`, `src/wallet.js:100`; request the unavailable service/board. | Plain setup/connection error, unsaved guest wording and explicit connection retry; detailed PGRST response retained in the operator report. Final real-response screenshots show an error with zero invented ranking rows. |
+| Medium: a failed Profile connection retry could reject without a handled result | `src/ui.js:69`; retry while the actual backend is missing. | Catch the failure, display a readable result and re-enable the action. Browser retry check passed with no page errors. |
+| Medium: long dialog action widened the profile form at enlarged text | `src/styles.css:317`, `src/styles.css:321`, `src/styles.css:323`; 390px, 200% root text, RTL, open Profile. | Complete action labels wrap; dialog/form grid tracks use `minmax(0,1fr)`. The previously failing input-bounds assertion now passes in the 17-case browser suite. |
+| Medium: asynchronous entry status lacked a live region | `src/index.html:80`; startup changes checking to unavailable. | Existing status paragraph now uses `role=status`/polite live updates. Native semantics and automated entry audit pass; screen-reader announcement behavior is not claimed. |
+| Low: retry duplicated the same long error paragraph | `src/ui.js:72`; click connection retry after a setup failure. | Retain the detailed status once, show a short retry outcome beneath the button. Rechecked on the final phone failure state. |
+
+Screenshots retained for delivery: [390-wide entry](docs/validation/screenshots/supabase-entry-390.png), [desktop entry](docs/validation/screenshots/supabase-entry-1440.png), [Profile failure/retry](docs/validation/screenshots/supabase-profile-unavailable.png), [leaderboard unavailable](docs/validation/screenshots/supabase-leaderboard-unavailable.png), [keyboard focus after closing the wallet](docs/validation/screenshots/supabase-wallet-focus.png). The last screenshot was inspected: the cream focus perimeter is visible around Connect on its opaque dark surface. The real-HTTP browser run recorded the expected remote 404 console errors separately and had zero unexpected console errors. `DESIGN.md` records final source tokens, components and responsive behavior, with existing MIT/Apache design-guide attribution retained.
+
+### Remaining limitations and completion
+
+The provided browser tool could not initialize (Chromium socket-path limit); local Playwright Chromium provided the rendered checks above. WebKit could not launch because required system libraries are absent, so Safari interaction checks are unperformed. Direct sandbox Chromium requests returned `ERR_EMPTY_RESPONSE`; Node reached production. The transparent test relay preserves actual production responses and is not a runtime fallback shipped to users.
+
+No real wallet key/session was supplied or invented, no Auth identity was seeded in production, and no production table/RLS inspection or mutation was possible. Real signature verification, authenticated writes, score save/refresh/cross-device restoration and live record comparison remain blocked. SQL fixtures validate server-side event ownership/timing/damage/ammunition/replay rules; browser physics/collisions and independent PostgreSQL-connection contention are outside that evidence. A conservative sum of the complete modified/new delivery files is below 1 MiB, within the 8 MiB budget; necessary runtime assets remain complete and protected paths are unchanged. **The website/export and local checks are delivered; production Supabase integration remains incomplete.** Follow `supabase/SQL_EDITOR.md` using authorized access and real wallets to finish the mandatory tests.
+
+## Historical validation from prior revisions
 
 ## Revision validation
 

@@ -14,7 +14,8 @@
   var listeners = [], storageOK = true, generation = 0, wallet = '', session = null;
   var guestProfile = empty(), profile = guestProfile, cloud = false, active = null, outbox = [], recovery = [], flushing = null;
   var status = CLOUD ? 'Guest · connect a wallet to save.' : configError;
-  var mutation = Promise.resolve(), rpcFlight = Promise.resolve(), backendReady = false;
+  var mutation = Promise.resolve(), rpcFlight = Promise.resolve(), backendReady = false, backendFlight = null;
+  var backendState = CLOUD ? 'unchecked' : 'unconfigured', backendError = '', backendCheckedAt = '';
   function empty() { return { name: 'Guest', sqk: 0, total_score: 0, highest_map: 1, produce_points: 0, purchases: [], cosmetics: {} }; }
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(prefix + key) || 'null') || fallback; } catch (_) { storageOK = false; return fallback; } }
   function write(key, data) { try { localStorage.setItem(prefix + key, JSON.stringify(data)); return true; } catch (_) { storageOK = false; return false; } }
@@ -31,17 +32,30 @@
     try {
       var response = await fetch(url + path, { method: method || 'POST', headers: Object.assign({ apikey: config.supabasePublishableKey, 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body), signal: control.signal, keepalive: path === '/rest/v1/rpc/hf_progress' });
       var data = await response.json().catch(function () { throw new Error('Cloud returned an unreadable response. Pending progress has been kept. Retry the save.'); });
-      if (!response.ok) throw new Error(data.msg || data.message || data.error_description || 'Cloud request failed. Check your connection and retry.');
+      if (!response.ok) {
+        if (data.code === 'PGRST202') throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
+        throw new Error(data.msg || data.message || data.error_description || 'Cloud request failed. Check your connection and retry.');
+      }
       return data;
     } finally { clearTimeout(timer); }
   }
-  async function requireBackend() {
-    if (backendReady) return;
-    try {
-      var data = await request('/rest/v1/rpc/hf_service_status', {});
-      if (data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime') throw new Error('The concurrent-run persistence migration is not installed.');
-      backendReady = true;
-    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 007. ' + error.message); }
+  async function requireBackend(force = false) {
+    if (!CLOUD) throw new Error(configError);
+    if (backendFlight) return backendFlight;
+    if (backendReady && !force) return;
+    backendState = 'checking'; backendError = ''; notify();
+    backendFlight = Promise.resolve().then(async function () {
+      try {
+        var data = await request('/rest/v1/rpc/hf_service_status', {});
+        if (!data || data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime') throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
+        backendReady = true; backendState = 'ready';
+      } catch (error) {
+        backendReady = false; backendState = 'unavailable';
+        backendError = /finish cloud setup/.test(error.message) ? error.message : 'Unable to reach cloud saves. Check your connection and retry. If this continues, ask the site owner to check cloud setup.';
+        throw new Error(backendError);
+      } finally { backendCheckedAt = new Date().toISOString(); backendFlight = null; notify(); }
+    });
+    return backendFlight;
   }
   async function access(auth, key) {
     if (!auth) throw new Error('Sign in with MetaMask to save.');
@@ -257,10 +271,11 @@
   }
   async function leaderboard() {
     if (!CLOUD) throw new Error('Lifetime rankings need the existing Supabase project to be configured. Guests are unranked.');
+    await requireBackend();
     return request('/rest/v1/rpc/hf_lifetime_top100', {});
   }
   async function retry() {
-    if (!cloud) { await restore(generation); return; }
+    if (!cloud) { await requireBackend(true); await restore(generation); return; }
     var epoch = generation;
     await flush();
     if (epoch !== generation || outbox.some(function (r) { return !r.conflict; })) return;
@@ -292,7 +307,8 @@
     notify();
   }
   window.HamsterSave = {
-    ready: Promise.resolve(), beginMap: beginMap, record: record, flush: flush,
+    ready: CLOUD ? Promise.resolve().then(function () { return requireBackend(); }).catch(function () {}) : Promise.resolve(),
+    checkConnection: function () { return requireBackend(true); }, beginMap: beginMap, record: record, flush: flush,
     setWallet: setWallet, signIn: signIn,
     saveName: function (name) { return mutate(function () { return saveName(name); }); },
     purchase: function (id) { return mutate(function () { return purchase(id); }); },
@@ -301,7 +317,7 @@
     subscribe: function (fn) { listeners.push(fn); },
     retry: retry, recover: function () { return mutate(recover); },
     recoveryRecord: function () { return JSON.parse(JSON.stringify({ wallet: wallet, runs: recovery.concat(outbox.filter(function (r) { return r.conflict; })) })); },
-    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, status: status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), localLegacyAvailable: Boolean(read('-guest', null)), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
+    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, backendState: backendState, backendError: backendError, backendCheckedAt: backendCheckedAt, status: !cloud && backendState === 'unavailable' ? backendError : status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), localLegacyAvailable: Boolean(read('-guest', null)), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
   };
   window.addEventListener('online', function () { if (cloud) void flush(); });
   window.addEventListener('pagehide', function () { if (cloud) void flush(); });

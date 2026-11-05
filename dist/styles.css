@@ -314,12 +314,13 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
   overflow-wrap: break-word;
 }
 .player-dialog::backdrop { background: rgb(10 7 5 / 0.8); }
+.player-dialog .btn { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-block-end: var(--space-4); position: sticky; inset-block-start: 0; z-index: 1; background: var(--color-surface); }
 .panel-header h2 { font-size: var(--text-lg); min-width: 0; }
 .close-dialog { flex: none; width: 44px; min-height: 44px; padding: 0; font-size: var(--text-lg); }
-#panel-content { display: grid; gap: var(--space-4); }
+#panel-content { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 .panel-note { color: var(--color-text-muted); font-size: var(--text-sm); line-height: 1.5; }
-.profile-form { display: grid; gap: var(--space-2); }
+.profile-form { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: var(--space-2); }
 .profile-form label { font-weight: 700; }
 .profile-form input {
   width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px;

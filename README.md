@@ -2,11 +2,13 @@
 
 An in-place update of the existing Hamster Friendship pixel-art adventure. The original canvas engine, Chang/Alice artwork, story clues, marketplace, costumes, SQK economy, MetaMask connector, audio settings, static build and hosting name remain.
 
-**Production Supabase is not connected or verified.** The supplied `src/config.js` and `dist/config.js` have empty public settings, and the supplied project history identifies no Supabase project. This update implements and locally tests the integration and an additive migration for the **original** database. It does not substitute a new backend or fabricate credentials. Guest play is usable immediately and clearly marked as unsaved. The original project's owner must complete the configuration below before permanent saves and global rankings can be used on the hosted site.
+**Production credentials are configured; production persistence is incomplete.** The supplied public URL/key now identify the existing project `nhtlwcukeyhvkrjveots`. Real requests reached Auth (HTTP 200), but the app's service, player-profile, score-progress and lifetime-leaderboard RPCs returned HTTP 404/PGRST202. No production migration or authenticated player write was possible with the publishable key. The game remains playable as an explicitly unsaved guest. See the [production report](VALIDATION.md#production-integration--2026-11-05) and [exact SQL Editor handoff](supabase/SQL_EDITOR.md).
 
 ## Install, preview and rebuild
 
 Use Node 18 or newer. The website has no runtime npm dependencies; its existing root manifest and lockfile are retained unchanged.
+
+This is **vanilla JavaScript, HTML and CSS with a custom static-copy build**, not Vite, Next.js or React. No framework environment variables are used or configured. The two existing public runtime settings are `window.HAMSTER_CONFIG.supabaseUrl` and `window.HAMSTER_CONFIG.supabasePublishableKey` in [src/config.js](src/config.js); the production build copies them to `dist/config.js`. The supplied URL and publishable key are set there. No `.env` file is required or edited. Publishable keys are browser-safe; secret/service-role keys are rejected locally and must never be shipped.
 
 ```sh
 npm ci
@@ -51,25 +53,37 @@ The revision also fixes the offered weapon pickup range on PC and mobile. Pointe
 
 Existing legacy cloud profiles can be linked through their authenticated, expiring server ticket. An existing verified wallet profile always wins. Older **unverified browser-only totals** are left untouched and offered as a download in Profile for owner review; they cannot overwrite or mint a verified score. Guests remain memory-only and unranked. See [Supabase migration and security details](supabase/README.md).
 
-## After launch: original-project owner configuration
+## Production database handoff
 
-These are owner-settable settings, not invented credentials or a request to replace the backend:
+The existing backend and migrations are retained. Startup now checks backend readiness separately from having credentials and from having an authenticated saved profile. A missing/incompatible backend blocks signing before the wallet prompt, exposes a retry in Profile and the connected-wallet sheet, and keeps guest progress unranked. A healthy service check alone never labels a profile saved.
 
-1. Identify the existing Supabase project. Set its public URL and browser-safe publishable/anon key in `src/config.js`. Keep private/service-role keys out of source and `dist/`.
-2. Back up the original database and inspect its installed migration versions. Keep installed migrations unchanged. A project already on 006 applies **only `supabase/migrations/007_concurrent_runs.sql`**, once. A project on 005 applies 006 then 007. Earlier projects first apply only their missing historical migrations, in order. Never reset the database or replay installed migrations.
-3. Run `supabase/preservation_snapshot.sql` before and after the upgrade during a maintenance window; compare every historical count/fingerprint/SQK/lifetime sum. Enable Ethereum Web3 Auth and allow the actual HTTPS origin/URI in Auth redirect URLs. Expose `public`, never `hf_private`, through the Data API.
-4. Run `supabase/verify_major.sql`, rebuild the export and verify actual signed login, score save, refresh, two devices with an interrupted upload, Top 100 and unauthorized access against that **same** hosted database. The frontend expects schema 7 and rules 6 before requesting a signature.
+1. In the same project's SQL Editor, run `supabase/inspect_production.sql`. It inspects actual columns, indexes, constraints, RLS policies/grants, triggers and version markers. Table presence is currently **unknown**, not assumed empty from a REST error. No Supabase MCP administration tool or direct database credentials were available for this run.
+2. Apply **only** missing files from `supabase/migrations/` in order, including 004 when absent. `node scripts/prepare-supabase.mjs --after 6` is an example **only for an inspected schema 6**; it generates exact guarded SQL for the missing 007. Other inspected versions select their own missing suffix. It never connects to or migrates a database. See [the complete version table and preservation procedure](supabase/SQL_EDITOR.md).
+3. Run `supabase/verify_production.sql`, `supabase/verify_major.sql` and `supabase/test_access.sql`. Keep `hf_private` unexposed and deny direct browser table writes. Enable Ethereum Web3 Auth and allow the actual hosted HTTPS origin/URI in Auth redirect URLs.
+4. Complete the [real-wallet acceptance run](supabase/SQL_EDITOR.md#required-real-wallet-acceptance-run): actual player write/read, score save, refresh, same-wallet recovery on another device, SQL-backed Top 100 and unauthorized modification checks. The frontend expects schema 7/rules 6. Do not mark integration complete until these production tests pass.
 
-No production database was inspected, migrated or reset here. No live signature, real-device wallet or hosted Supabase result is claimed. The browser remains the authority for positions/collisions; server event validation is not a fully authoritative multiplayer anti-cheat engine.
+**Production migrations executed: none.** Actual endpoint results are in [the recorded JSON](docs/validation/supabase-production.json). Auth connectivity is verified; authenticated database read/write, installed table/policy status, real signature, score restoration and live leaderboard records are not verified. The Data API denied private-schema exposure (406); this does not prove installed RLS policies. The browser remains the authority for positions/collisions; server event validation is not a fully authoritative multiplayer anti-cheat engine.
 
 ## Validation
+
+Current integration checks include the production build, source/export integrity, all eight runtime scripts typechecked, SQL migration/preparation and permission tests, score/wallet recovery regressions and browser interactions. Production HTTP probes intentionally exit 1 while the RPCs are unavailable:
+
+```sh
+node scripts/verify-production.mjs --out docs/validation/supabase-production.json
+node supabase/tests/production-handoff.mjs
+node supabase/tests/connection-state.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-integration.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-integration.mjs --relay
+```
+
+The optional `--relay` forwards real Supabase HTTP through Node when this sandbox's Chromium cannot reach the host directly; it supplies no simulated records or successful responses. Direct Chromium networking returned `ERR_EMPTY_RESPONSE`; Node reached the actual project and the relay showed the actual 404 failure in the website. Browser screenshots and local fixture results do not establish production persistence. The shared dialog now wraps long action labels at 200% text size instead of widening the profile form. Current results, six-domain design coverage and limitations supersede the historical validation below; see [VALIDATION.md](VALIDATION.md).
 
 The final production build, existing check script and actual JavaScript typecheck all ran. Local checks exercise real PostgreSQL via disposable PGlite, and actual production-export interactions via Playwright Chromium. Test Auth, wallet and HTTP adapters are confined to test files and never shipped in `dist/`. WebKit could not launch because its system libraries are missing.
 
 To reproduce the additional checks without changing the root dependency/build files:
 
 ```sh
-npm install --prefix test/scratch --cache test/scratch/npm-cache --no-audit --no-fund --package-lock=false @electric-sql/pglite@0.3.14 typescript@7.0.2 playwright@1.56.1 @axe-core/playwright@4.11.0
+npm install --prefix test/scratch --cache test/scratch/npm-cache --no-audit --no-fund --package-lock=false @electric-sql/pglite@0.3.14 typescript@5.9.3 playwright@1.56.1 @axe-core/playwright@4.11.0
 PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node test/scratch/node_modules/playwright/cli.js install chromium webkit
 node scripts/typecheck-major.mjs
 node scripts/test-major.mjs

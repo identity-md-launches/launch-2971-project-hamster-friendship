@@ -32,12 +32,14 @@ interface FriendshipProfile {
 }
 interface FriendshipSaveSnapshot {
   profile: FriendshipProfile; cloud: boolean; configured: boolean; status: string;
+  backendState: string; backendError: string; backendCheckedAt: string;
   storageOK: boolean; pendingCoins: number; pendingEvents: number;
   runConflict: boolean; recoveryEvents: number;
   ranked: boolean; playingGuest: boolean; legacyAvailable: boolean; localLegacyAvailable: boolean; wallet: string;
 }
 interface FriendshipSave {
   ready: Promise<void>;
+  checkConnection(): Promise<void>;
   beginMap(map: number): Promise<{loot: string[]; monsters: FriendshipMonster[]; rulesVersion: number; ranked: boolean; purchases: string[]}>;
   record(kind: string, data: Record<string, unknown>, frame: number): number | null;
   flush(): Promise<void>;
@@ -74,3 +76,4 @@ interface Window {
 }
 
 interface Navigator { readonly standalone?: boolean; }
+interface ScreenOrientation { lock?(orientation: string): Promise<void>; }

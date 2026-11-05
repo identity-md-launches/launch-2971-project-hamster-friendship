@@ -1,0 +1,228 @@
+{
+  "checkedAt": "2026-11-05T17:30:46.189Z",
+  "project": "https://nhtlwcukeyhvkrjveots.supabase.co",
+  "keyType": "publishable",
+  "connectivityPassed": true,
+  "rpcReady": false,
+  "integrationComplete": false,
+  "productionMigrationsExecuted": [],
+  "probes": [
+    {
+      "name": "Project Auth connectivity",
+      "path": "/auth/v1/settings",
+      "method": "GET",
+      "status": 200,
+      "body": {
+        "external": {
+          "anonymous_users": false,
+          "apple": false,
+          "azure": false,
+          "bitbucket": false,
+          "discord": false,
+          "facebook": false,
+          "snapchat": false,
+          "figma": false,
+          "fly": false,
+          "github": false,
+          "gitlab": false,
+          "google": false,
+          "keycloak": false,
+          "kakao": false,
+          "linkedin": false,
+          "linkedin_oidc": false,
+          "notion": false,
+          "spotify": false,
+          "slack": false,
+          "slack_oidc": false,
+          "workos": false,
+          "twitch": false,
+          "twitter": false,
+          "email": true,
+          "phone": false,
+          "zoom": false
+        },
+        "disable_signup": false,
+        "mailer_autoconfirm": false,
+        "phone_autoconfirm": false,
+        "sms_provider": "twilio",
+        "saml_enabled": false,
+        "saml_private_key_next_configured": true,
+        "passkeys_enabled": false
+      }
+    },
+    {
+      "name": "Application schema version",
+      "path": "/rest/v1/rpc/hf_service_status",
+      "method": "POST",
+      "status": 404,
+      "body": {
+        "code": "PGRST202",
+        "details": "Searched for the function public.hf_service_status without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+        "hint": null,
+        "message": "Could not find the function public.hf_service_status without parameters in the schema cache"
+      }
+    },
+    {
+      "name": "Actual lifetime leaderboard",
+      "path": "/rest/v1/rpc/hf_lifetime_top100",
+      "method": "POST",
+      "status": 404,
+      "body": {
+        "code": "PGRST202",
+        "details": "Searched for the function public.hf_lifetime_top100 without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+        "hint": null,
+        "message": "Could not find the function public.hf_lifetime_top100 without parameters in the schema cache"
+      }
+    },
+    {
+      "name": "Unauthenticated profile RPC",
+      "path": "/rest/v1/rpc/hf_wallet_profile",
+      "method": "POST",
+      "status": 404,
+      "body": {
+        "code": "PGRST202",
+        "details": "Searched for the function public.hf_wallet_profile with parameter p_legacy or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+        "hint": null,
+        "message": "Could not find the function public.hf_wallet_profile(p_legacy) in the schema cache"
+      }
+    },
+    {
+      "name": "Unauthenticated progress RPC (no run or events)",
+      "path": "/rest/v1/rpc/hf_progress",
+      "method": "POST",
+      "status": 404,
+      "body": {
+        "code": "PGRST202",
+        "details": "Searched for the function public.hf_progress with parameters p_events, p_run or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+        "hint": null,
+        "message": "Could not find the function public.hf_progress(p_events, p_run) in the schema cache"
+      }
+    },
+    {
+      "name": "Private schema exposure",
+      "path": "/rest/v1/profiles?select=user_id&limit=0",
+      "method": "GET",
+      "status": 406,
+      "body": {
+        "code": "PGRST106",
+        "details": null,
+        "hint": "Only the following schemas are exposed: public, graphql_public",
+        "message": "Invalid schema: hf_private"
+      }
+    },
+    {
+      "name": "Catalog discovery permission",
+      "path": "/rest/v1/",
+      "method": "GET",
+      "status": 401,
+      "body": {
+        "message": "Secret API key required",
+        "hint": "Only secret API keys can be used for this endpoint."
+      }
+    }
+  ],
+  "mandatoryTests": [
+    {
+      "test": "Connect to actual production project",
+      "status": "passed",
+      "evidence": "Auth settings request above"
+    },
+    {
+      "test": "Read and write an authenticated player record",
+      "status": "blocked",
+      "reason": "No verified wallet session; player RPC unavailable if status above is 404"
+    },
+    {
+      "test": "Save a player score",
+      "status": "blocked",
+      "reason": "Requires installed RPCs and real authenticated game events"
+    },
+    {
+      "test": "Refresh and retain score",
+      "status": "not performed",
+      "reason": "No production score was saved"
+    },
+    {
+      "test": "Reconnect same wallet across devices",
+      "status": "not performed",
+      "reason": "No real wallet signature/session available"
+    },
+    {
+      "test": "Leaderboard from actual records",
+      "status": "failed",
+      "reason": "Requires saved production records for comparison"
+    },
+    {
+      "test": "RLS prevents unauthorized score modification",
+      "status": "not verified",
+      "reason": "Missing RPCs or schema-exposure denial cannot prove installed RLS policies"
+    }
+  ],
+  "tables": [
+    {
+      "schema": "hf_private",
+      "name": "profiles",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "catalogue",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "purchases",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "runs",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "attacks",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "badges",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "dice_receipts",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "wallet_profiles",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "legacy_tickets",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "settings",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "daily_scores",
+      "status": "not inspectable with supplied publishable key"
+    },
+    {
+      "schema": "hf_private",
+      "name": "lifetime_entries",
+      "status": "not inspectable with supplied publishable key"
+    }
+  ],
+  "limitations": [
+    "No Supabase MCP or direct database administrative access available.",
+    "No production migration, player creation, score write, refresh recovery or real signature is claimed.",
+    "Execute supabase/inspect_production.sql through the authorized SQL Editor, then only missing migrations."
+  ]
+}

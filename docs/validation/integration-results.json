@@ -1,0 +1,681 @@
+{
+  "recordedAt": "2026-11-05T17:40:48.860Z",
+  "productionIntegrationComplete": false,
+  "notes": [
+    "Worker-reported checks only.",
+    "Only the production HTTP probes and real-HTTP relay contact the hosted project. Other SQL/Auth/HTTP fixtures are local.",
+    "Direct browser requests failed with ERR_EMPTY_RESPONSE; no direct-browser production connectivity is claimed."
+  ],
+  "suites": {
+    "game": {
+      "results": [
+        {
+          "name": "all four map durations, bosses and increasing HP are shared deterministic rules",
+          "passed": true
+        },
+        {
+          "name": "all maps instantiate 30 matching enemies, correct bosses and exact appearance thresholds",
+          "passed": true
+        },
+        {
+          "name": "forest enemies remain airborne, with visible windup and swoop states instead of burrowing",
+          "passed": true
+        },
+        {
+          "name": "glacier, caldera and reef enemies fire only matching ice, fire and water attacks",
+          "passed": true
+        },
+        {
+          "name": "elemental bosses have different timed volley, breath, slide and rush patterns",
+          "passed": true
+        },
+        {
+          "name": "boss defeat advances maps automatically while ordinary enemies remain alive",
+          "passed": true
+        },
+        {
+          "name": "victory cannot be cancelled by a lingering attack or a fall during the defeat animation",
+          "passed": true
+        },
+        {
+          "name": "page exit during a boss celebration records completion once before the next visit",
+          "passed": true
+        },
+        {
+          "name": "fruit and vegetables auto-collect on desktop, once, without any key",
+          "passed": true
+        },
+        {
+          "name": "weapons stay on the ground until E, on desktop and touch; only nearest weapon is claimed",
+          "passed": true
+        },
+        {
+          "name": "every offered weapon in the outer pickup range can be collected by one explicit action",
+          "passed": true
+        },
+        {
+          "name": "one action takes the nearest eligible weapon even if a farther drop is processed first",
+          "passed": true
+        },
+        {
+          "name": "growth triggers at every 20-point boundary and leaves collision dimensions/footing stable",
+          "passed": true
+        },
+        {
+          "name": "SQK world size is exactly 70% of the prior dimensions, and defeat remains idempotent",
+          "passed": true
+        },
+        {
+          "name": "each weapon dispatches its own sound and retains original damage and ammo rules",
+          "passed": true
+        },
+        {
+          "name": "guest scores never become a global board and existing local data stays untouched",
+          "passed": true
+        }
+      ]
+    },
+    "audio": {
+      "results": [
+        {
+          "name": "existing device volume and mute settings survive the upgrade",
+          "passed": true
+        },
+        {
+          "name": "each weapon builds a distinct oscillator/sweep/envelope signature",
+          "passed": true
+        },
+        {
+          "name": "the master compressor, conservative gain, per-effect rate limit and 24-voice ceiling bound overlap",
+          "passed": true
+        },
+        {
+          "name": "SFX mute suppresses every weapon, and changing settings writes the original storage key",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Graph/envelope checks use a Web Audio fixture. Speaker loudness and subjective listening have not been measured."
+      ]
+    },
+    "database": {
+      "results": [
+        {
+          "name": "006 and 007 preserve every profile, wallet, balance, inventory and historical score fingerprint",
+          "passed": true
+        },
+        {
+          "name": "pre-upgrade pending events still settle once through the original v4 protocol",
+          "passed": true
+        },
+        {
+          "name": "same verified wallet and concurrent profile opens return one original profile",
+          "passed": true
+        },
+        {
+          "name": "unverified users, forged metadata and anonymous clients cannot create ranked profiles",
+          "passed": true
+        },
+        {
+          "name": "acknowledged produce points checkpoint immediately and replay cannot double-credit",
+          "passed": true
+        },
+        {
+          "name": "second-device start leaves the first run active; its own death settles points only once",
+          "passed": true
+        },
+        {
+          "name": "all four SQL maps match their duration, enemy families, HP and boss-only progression",
+          "passed": true
+        },
+        {
+          "name": "RLS and grants deny direct writes; event validators reject arbitrary totals, repeats and foreign runs",
+          "passed": true
+        },
+        {
+          "name": "Top 100 is global, capped and ordered by permanent SQL totals without wallet disclosure",
+          "passed": true
+        },
+        {
+          "name": "legacy ticket migration retains a verified server balance; existing wallet always wins",
+          "passed": true
+        },
+        {
+          "name": "the delivered read-only owner verification SQL passes every permission and checkpoint assertion",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Auth identity fixtures; no hosted Supabase/signature validation.",
+        "Single PostgreSQL connection; independent-connection lock contention not exercised."
+      ]
+    },
+    "client": {
+      "results": [
+        {
+          "name": "client restores authoritative wallet profile and starts version-6 ranked play",
+          "passed": true
+        },
+        {
+          "name": "lost network acknowledgement replays safely and lifetime score is saved during play",
+          "passed": true
+        },
+        {
+          "name": "offline events survive refresh in per-run durable storage and sync without totals from the browser",
+          "passed": true
+        },
+        {
+          "name": "malformed acknowledgement retains events and retry cannot increase an already committed score",
+          "passed": true
+        },
+        {
+          "name": "switching wallets isolates pending queues, profiles and later acknowledgements",
+          "passed": true
+        },
+        {
+          "name": "two tabs retain separate queues, and ended-map recovery keeps rejected events downloadable",
+          "passed": true
+        },
+        {
+          "name": "a stale tab acknowledgement cannot erase a newer durable event from another tab",
+          "passed": true
+        },
+        {
+          "name": "signed login binds host, URI, nonce and expiry, uses personal_sign only, and does not import local totals",
+          "passed": true
+        },
+        {
+          "name": "an incompatible backend fails before asking for a signature, and a declined signature leaves the guest intact",
+          "passed": true
+        },
+        {
+          "name": "secret API keys and service-role JWTs fail closed before a network or signing call",
+          "passed": true
+        },
+        {
+          "name": "the leaderboard client reads only the Supabase public RPC, never local scores",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Auth/token and transport fixtures; signatures are not cryptographically verified by this harness."
+      ]
+    },
+    "engineDatabase": {
+      "results": [
+        {
+          "name": "all four maps play through legal engine combat, pickups and automatic SQL-backed progression",
+          "passed": true
+        },
+        {
+          "name": "score, SQK, produce growth, progression and purchased cosmetics survive refresh and reconnect",
+          "passed": true
+        },
+        {
+          "name": "no test path submits a score total, and every accepted score comes through hf_progress",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Position/time/Auth/HTTP fixtures. Actual damage, server validation, loot, scoring and save client execute unchanged."
+      ]
+    },
+    "concurrentRuns": {
+      "results": [
+        {
+          "name": "007 preserves populated records, pending legacy run, validator and RLS/grants",
+          "passed": true
+        },
+        {
+          "name": "another device starting and saving cannot abandon an offline run or strand its actual fruit event",
+          "passed": true
+        },
+        {
+          "name": "independent run retries and lost replies credit each source once into the shared lifetime ledger",
+          "passed": true
+        },
+        {
+          "name": "another run finishing leaves a refreshed offline queue uploadable and both totals permanent",
+          "passed": true
+        },
+        {
+          "name": "legacy starts preserve new devices while retaining legacy settlement and its single-active-run constraint",
+          "passed": true
+        },
+        {
+          "name": "interleaved runs retain ownership, timing, ordered sequence, score and terminal checks",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Auth, HTTP, position and time fixtures; actual engine/save/SQL functions.",
+        "Single PostgreSQL connection: interleaving tested, independent connection lock contention not exercised."
+      ]
+    },
+    "browser": {
+      "results": [
+        {
+          "name": "production export loads at a subpath with complete metadata and no console/resource errors",
+          "passed": true
+        },
+        {
+          "name": "keyboard Tab reaches the game and Connect, and closing the wallet returns focus",
+          "passed": true
+        },
+        {
+          "name": "entry and profile pass automated WCAG A/AA checks",
+          "passed": true
+        },
+        {
+          "name": "desktop start, story, keyboard movement, jump, pause and resume work on the unmodified export",
+          "passed": true
+        },
+        {
+          "name": "profile validation, wardrobe, audio settings and real unavailable-leaderboard state are usable",
+          "passed": true
+        },
+        {
+          "name": "390-wide first screen includes game, Start and Connect with no horizontal overflow",
+          "passed": true
+        },
+        {
+          "name": "phone start, rotate fallback, portrait opt-in and landscape resize preserve the run",
+          "passed": true
+        },
+        {
+          "name": "all four worlds render their own scenery and bosses from the actual engine",
+          "passed": true
+        },
+        {
+          "name": "touch weapon pickup requires a visible PICK UP action; walking near it alone does not claim it",
+          "passed": true
+        },
+        {
+          "name": "one action owns one pointer; a second press cannot release the first held action",
+          "passed": true
+        },
+        {
+          "name": "growth is visible at 20 and 40 points with unchanged collision body",
+          "passed": true
+        },
+        {
+          "name": "rendered map progression is automatic and final boss reaches the ending",
+          "passed": true
+        },
+        {
+          "name": "320-wide modal and entry layout stays within viewport",
+          "passed": true
+        },
+        {
+          "name": "390-wide modal and entry layout stays within viewport",
+          "passed": true
+        },
+        {
+          "name": "1440-wide modal and entry layout stays within viewport",
+          "passed": true
+        },
+        {
+          "name": "200% text and an RTL mirror keep the primary controls and dialogs usable",
+          "passed": true
+        },
+        {
+          "name": "no runtime errors occurred during production and instrumented flows",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "WebKit could not launch: missing system libraries (GTK4, GStreamer and related WebKit runtime dependencies). No Safari interaction result is claimed."
+      ],
+      "errors": [],
+      "failures": []
+    },
+    "browserSqlFixture": {
+      "results": [
+        {
+          "name": "EIP-6963 MetaMask connects, switches network and signs an explicit gas-free login",
+          "passed": true
+        },
+        {
+          "name": "real engine produce events save through HTTP/RPC and the lifetime HUD updates during play",
+          "passed": true
+        },
+        {
+          "name": "leaderboard displays SQL rankings and a transport failure retains them with a working retry",
+          "passed": true
+        },
+        {
+          "name": "marketplace purchase and equip preserve a permanent SQK balance and inventory",
+          "passed": true
+        },
+        {
+          "name": "refresh silently restores the same signed wallet profile, score and cosmetics without a new signature",
+          "passed": true
+        },
+        {
+          "name": "a second device signing the same wallet retrieves one existing profile and permanent records",
+          "passed": true
+        },
+        {
+          "name": "disconnect switches the title and profile back to the guest without exposing wallet records",
+          "passed": true
+        },
+        {
+          "name": "wallet/cloud browser flows produce no JavaScript or unexpected database errors",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "transportErrors": [],
+      "limitations": [
+        "Wallet provider, signatures, Auth and HTTP are fixtures. Database RPCs and rendered game/UI are real. No hosted Supabase or real MetaMask signing is proven."
+      ]
+    },
+    "revisionBrowser": {
+      "results": [
+        {
+          "name": "touch PICK UP succeeds at the reported 24-pixel outer range without stepping closer",
+          "passed": true
+        },
+        {
+          "name": "desktop E claims the offered weapon at the same outer range",
+          "passed": true
+        },
+        {
+          "name": "mouse weapon selection returns focus to gameplay and Space jumps while Enter fires",
+          "passed": true
+        },
+        {
+          "name": "deliberate keyboard activation retains slot focus and native Enter/Space toggling",
+          "passed": true
+        },
+        {
+          "name": "touch weapon slot selection returns focus to the canvas",
+          "passed": true
+        },
+        {
+          "name": "two 390-wide devices save both real fruit events after A goes offline and B starts a new run",
+          "passed": true
+        },
+        {
+          "name": "retry, browser refresh and a fresh SQL leaderboard retain exactly both points without duplicates",
+          "passed": true
+        },
+        {
+          "name": "final revision flows have no JavaScript or unexpected local/SQL resource failures",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "failures": [],
+      "limitations": [
+        "WebKit cannot launch: missing GTK4, GStreamer and related host libraries; no Safari result claimed.",
+        "Auth sessions, HTTP and deterministic position/frame access are fixtures; game/save/UI/SQL are real. No hosted Supabase or physical device proof."
+      ]
+    },
+    "sqlEditorHandoff": {
+      "results": [
+        {
+          "name": "Inspect and upgrade schema 0 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Inspect and upgrade schema 1 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Inspect and upgrade schema 2 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Inspect and upgrade schema 3 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Inspect and upgrade schema 4 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Inspect and upgrade schema 5 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Inspect and upgrade schema 6 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Inspect and upgrade schema 7 → 7; preserve existing records; reject replay",
+          "passed": true
+        },
+        {
+          "name": "Wrong version selection aborts without applying later columns",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Disposable PostgreSQL with explicit Auth fixtures; no production SQL executed."
+      ]
+    },
+    "connectionState": {
+      "results": [
+        {
+          "name": "startup checks configured credentials, but a missing backend never becomes a saved profile",
+          "passed": true
+        },
+        {
+          "name": "missing database migrations block signing before any wallet prompt",
+          "passed": true
+        },
+        {
+          "name": "retry discovers a repaired backend without inventing authentication or importing guest totals",
+          "passed": true
+        },
+        {
+          "name": "a later incompatible or offline backend fails clearly and remains unsaved",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "HTTP and wallet are explicit local fixtures, not production results."
+      ]
+    },
+    "browserRealHttpRelay": {
+      "transport": "Real production HTTP forwarded through Node fetch",
+      "results": [
+        {
+          "name": "configured export checks the actual backend without claiming an authenticated save",
+          "passed": true
+        },
+        {
+          "name": "390-wide first screen shows the game and Start; 320 and 1440 widths do not overflow",
+          "passed": true
+        },
+        {
+          "name": "profile connection retry ends with a readable failure and an enabled retry",
+          "passed": true
+        },
+        {
+          "name": "failed real leaderboard request displays no invented records and offers retry",
+          "passed": true
+        },
+        {
+          "name": "wallet sheet is reachable by keyboard and closes back to its connect control",
+          "passed": true
+        },
+        {
+          "name": "a guest name is clearly temporary and refresh never claims it was saved",
+          "passed": true
+        },
+        {
+          "name": "export interactions have no JavaScript errors, unexpected console errors or missing local assets",
+          "passed": true
+        }
+      ],
+      "backend": {
+        "configured": true,
+        "cloud": false,
+        "backendState": "unavailable",
+        "backendError": "Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved."
+      },
+      "errors": [],
+      "consoleErrors": [
+        {
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "source": "Supabase"
+        },
+        {
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "source": "Supabase"
+        },
+        {
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "source": "Supabase"
+        },
+        {
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "source": "Supabase"
+        }
+      ],
+      "unexpectedConsoleErrors": [],
+      "localFailures": [],
+      "productionResponses": [
+        {
+          "path": "/rest/v1/rpc/hf_service_status",
+          "status": 404
+        },
+        {
+          "path": "/rest/v1/rpc/hf_service_status",
+          "status": 404
+        },
+        {
+          "path": "/rest/v1/rpc/hf_service_status",
+          "status": 404
+        },
+        {
+          "path": "/rest/v1/rpc/hf_service_status",
+          "status": 404
+        }
+      ],
+      "productionFailures": [],
+      "limitations": [
+        "No authenticated production player read/write or real wallet signature.",
+        "Expected production failures are recorded, not counted as successful persistence."
+      ]
+    }
+  },
+  "taste": {
+    "checks": [
+      {
+        "name": "render",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 22508,
+        "output": "renders, no script errors or missing local files\nexternal hosts: nhtlwcukeyhvkrjveots.supabase.co"
+      },
+      {
+        "name": "layout",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no horizontal scroll at 320, 390 or 1440\nno text box overlaps another\nno floating control covers text\nno text cut off by overflow: hidden"
+      },
+      {
+        "name": "targets",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 242,
+        "output": "all 5 controls at least 24px or spaced at 390\n0 under the 44px comfortable size"
+      },
+      {
+        "name": "contrast",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 219,
+        "output": "all measured text meets 4.5:1 (3:1 large)\n23 text boxes over images, video, canvas or gradients not measured"
+      },
+      {
+        "name": "casing",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no all-caps text in content"
+      },
+      {
+        "name": "tracking",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "letter-spacing natural in content (display type may run tight)"
+      },
+      {
+        "name": "eyebrows",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no kicker labels above headings"
+      },
+      {
+        "name": "type-sizes",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 149,
+        "output": "390: 2 sizes in use, 3 with one-offs (14px×15, 16px×3, 20px×1)\n1440: 2 sizes in use, 4 with one-offs (14px×16, 16px×2, 20px×1, 28px×1)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
+      },
+      {
+        "name": "type-faces",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "families (2): georgia, system-ui\nweights (2): 400, 700"
+      },
+      {
+        "name": "glyphs",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no em dashes or emoji in text"
+      },
+      {
+        "name": "slogans",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "1 two-beat lines; a stack is four or more, so keep the best and cut the rest:\n\"Guest play · not saved. Cloud saves unavailable.\" (#entry-save)"
+      },
+      {
+        "name": "repetition",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 105,
+        "output": "no repeated lines"
+      },
+      {
+        "name": "copy-budget",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 16,
+        "output": "prose on the first screen: 13 words at 390 (bar 60), 13 at 1440 (bar 90)\nall words on the first screen: 41 at 390, 42 at 1440\nwhole page: 42 words, 13 of them prose"
+      },
+      {
+        "name": "chrome",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "border and shadow together: 0\ncards inside cards: 0\ngradient text: 0"
+      },
+      {
+        "name": "motion",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "transition: all on 0 elements\nendless animations: 0; still running with reduced motion: 0"
+      },
+      {
+        "name": "share",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 30,
+        "output": "title \"Squeek · The Lost Alice\", favicon, og:title, og:image, description"
+      }
+    ]
+  }
+}

@@ -26,7 +26,7 @@
       document.getElementById('start-title').textContent = map > 1 ? rules.environment(map).name : rules.environment(1).name;
       document.getElementById('btn-replay').hidden = map <= 1;
     }
-    document.getElementById('entry-save').textContent = state.cloud ? 'Verified wallet · progress saves during play.' : state.configured ? 'Guest play is not saved. Sign in with a wallet to save.' : 'Guest play · not saved. Cloud setup is pending.';
+    document.getElementById('entry-save').textContent = state.cloud ? 'Verified wallet · progress saves during play.' : state.backendState === 'unavailable' ? 'Guest play · not saved. Cloud saves unavailable.' : state.backendState === 'checking' ? 'Guest play · not saved. Checking cloud saves…' : state.configured ? 'Guest play is not saved. Sign in with a wallet to save.' : 'Guest play · not saved. Cloud setup is pending.';
     document.getElementById('hud-lifetime').textContent = state.profile.total_score.toLocaleString();
     if (panel === 'profile') {
       var values = { sqk: state.profile.sqk.toLocaleString(), total_score: state.profile.total_score.toLocaleString(), highest_map: String(state.profile.highest_map), purchases: String(state.profile.purchases.length) };
@@ -37,7 +37,7 @@
       var recoveryHint = document.getElementById('profile-recovery-hint'); if (recoveryHint) recoveryHint.hidden = !state.runConflict && !state.recoveryEvents;
       var download = document.getElementById('profile-recovery-download'); if (download) download.hidden = !state.runConflict && !state.recoveryEvents;
       var accountInfo = document.getElementById('profile-account-info');
-      if (accountInfo) accountInfo.textContent = state.cloud ? 'Saved to your verified wallet profile. Guest progress is never imported. Lifetime scores, SQK and purchases are retained.' : state.configured ? 'Guest runs are not saved. Use Connect MetaMask above and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
+      if (accountInfo) accountInfo.textContent = state.cloud ? 'Saved to your verified wallet profile. Guest progress is never imported. Lifetime scores, SQK and purchases are retained.' : state.backendState === 'unavailable' ? 'Guest runs are not saved. Retry the connection below, or continue as a guest.' : state.configured ? 'Guest runs are not saved. Use Connect MetaMask above and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
     }
     var balance = document.getElementById('market-balance'); if (balance) balance.textContent = state.profile.sqk.toLocaleString() + ' SQK available' + (state.pendingCoins ? ' · ' + state.pendingCoins + ' awaiting cloud save' : '');
   }
@@ -66,9 +66,10 @@
     if (!state.storageOK) content.append(message('Browser storage is unavailable. Enable site storage to keep progress after closing this page.', true));
     if (state.configured) {
       var retryResult = message('');
-      var retry = action('Retry cloud save', async function () {
-        retry.disabled = true; retryResult.textContent = 'Connecting…';
+      var retry = action(state.cloud ? 'Retry cloud save' : 'Check cloud connection', async function () {
+        retry.disabled = true; retryResult.className = 'panel-note'; retryResult.textContent = 'Connecting…';
         try { await save.retry(); retryResult.textContent = ''; }
+        catch (error) { retryResult.className = 'error'; retryResult.textContent = error.message === save.snapshot().status ? 'Still unavailable. Try again later or play as a guest.' : error.message; }
         finally { retry.disabled = false; }
       });
       retry.id = 'profile-retry';

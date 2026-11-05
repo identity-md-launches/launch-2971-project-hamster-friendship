@@ -66,7 +66,7 @@ try{
  });
  await check('an incompatible backend fails before asking for a signature, and a declined signature leaves the guest intact',async()=>{
   const fresh=await h.identity();users.set(fresh.id,fresh);
-  const bad=await fixture({game:false,config,fetch:async(url,options)=>url.endsWith('/hf_service_status')?{ok:true,json:async()=>({schemaVersion:6,rulesVersion:6,leaderboard:'lifetime'})}:transport(url,options)});await bad.ctx.HamsterSave.setWallet(fresh.wallet);let signs=0;await assert.rejects(()=>bad.ctx.HamsterSave.signIn({request:async()=>{signs++;}},fresh.wallet),/migration 007/);assert.equal(signs,0);assert.equal(bad.ctx.HamsterSave.snapshot().cloud,false);
+  const bad=await fixture({game:false,config,fetch:async(url,options)=>url.endsWith('/hf_service_status')?{ok:true,json:async()=>({schemaVersion:6,rulesVersion:6,leaderboard:'lifetime'})}:transport(url,options)});await bad.ctx.HamsterSave.setWallet(fresh.wallet);let signs=0;await assert.rejects(()=>bad.ctx.HamsterSave.signIn({request:async()=>{signs++;}},fresh.wallet),/finish cloud setup/);assert.equal(signs,0);assert.equal(bad.ctx.HamsterSave.snapshot().cloud,false);
   const f=await fixture({game:false,config,fetch:transport});await f.ctx.HamsterSave.setWallet(fresh.wallet);await assert.rejects(()=>f.ctx.HamsterSave.signIn({request:async()=>{throw Object.assign(new Error('Declined'),{code:4001});}},fresh.wallet),/Declined/);assert.equal(f.ctx.HamsterSave.snapshot().cloud,false);assert.equal(f.ctx.HamsterSave.snapshot().profile.total_score,0);
  });
  await check('secret API keys and service-role JWTs fail closed before a network or signing call',async()=>{

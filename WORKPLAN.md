@@ -1,5 +1,15 @@
 # Squeek major update: inspection and implementation plan
 
+## Production integration · 2026-11-05
+
+The supplied project is `nhtlwcukeyhvkrjveots`. Before runtime edits, inspected the existing vanilla-JavaScript application, custom static-copy build, public config, persistence client, wallet authentication, migrations 001–007, verification SQL and pinned design references. Root build/dependency files remain unchanged. There is no Vite/Next/React environment-variable substitution; the existing browser configuration is `src/config.js`.
+
+Actual initial requests with the supplied publishable key: Auth settings HTTP 200; service status, wallet-profile and lifetime Top 100 HTTP 404/PGRST202. The Data API OpenAPI root requires a secret key (HTTP 401); a publishable key cannot inspect private database catalogs or apply migrations. No Supabase MCP administration tool is available. A missing RPC does not establish that its underlying tables are absent.
+
+Plan: configure only the supplied public values; surface checked backend readiness separately from configuration and authenticated persistence; keep guest play usable and clearly unsaved; preserve existing validated-event scoring and identity/data recovery. Deliver read-only SQL catalog inspection, the exact existing migration files with a guarded SQL Editor preparation workflow, and post-migration checks. Run live endpoint probes and record their actual failures separately from local PostgreSQL, browser, typecheck and design results. Do not claim successful production writes or migration execution without evidence.
+
+Risks: migrations cannot safely be selected from REST errors alone. An administrator must inspect the existing database first and execute only missing migrations in order. Ethereum Web3 Auth and the hosted origin must be configured in that same project. A real wallet signature is necessary for the mandatory end-to-end production persistence tests. Local fixtures prove implementation behavior only.
+
 ## Revision inspection and plan · 2026-11-05
 
 This revision evaluates only the three supplied findings. Before changing runtime code, read the project context, existing frontend/save/wallet/audio/viewport flow, database migrations, tests, design guide and current documentation. Supabase public settings remain empty; production verification still needs the original owner configuration. No replacement backend or database reset is appropriate.

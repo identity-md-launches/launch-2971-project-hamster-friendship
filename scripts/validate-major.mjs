@@ -18,7 +18,7 @@ async function menu(page,id){await page.locator('#btn-menu').click();await page.
 const injection=`window.probe={startGame,updateHud,updateBoss,updatePickups,updatePlayer,updateEnemy,damageBoss,hitEnemy,render,addChestnuts,get player(){return player;},get enemies(){return enemies;},get boss(){return boss;},get game(){return game;},get pickups(){return pickups;},get shots(){return shots;},press(a){pressed[a]=true;},release(){pressed={};held={};},loot(i,k){mapLoot[i]=k;}};`;
 try{
  browser=await pw.chromium.launch({headless:true});
- const desktop=await browser.newContext({viewport:{width:1440,height:900}}),page=await desktop.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400)failures.push(r.url());});
+ const desktop=await browser.newContext({viewport:{width:1440,height:900}}),page=await desktop.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.url().startsWith(url)&&r.status()>=400)failures.push(r.url());});
  await check('production export loads at a subpath with complete metadata and no console/resource errors',async()=>{
   await page.goto(url);await page.waitForFunction(()=>Boolean(window.__hamster));assert.equal(await page.title(),'Squeek · The Lost Alice');for(const sel of ['link[rel="icon"]','meta[name="description"]','meta[property="og:title"]','meta[property="og:image"]'])assert(await page.locator(sel).getAttribute(sel.startsWith('link')?'href':'content'));
   await page.screenshot({path:'test/scratch/major/shots/desktop-entry.png'});assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);
@@ -39,7 +39,7 @@ try{
  await check('profile validation, wardrobe, audio settings and real unavailable-leaderboard state are usable',async()=>{
   await menu(page,'btn-profile');await page.locator('#player-name').fill('River Mouse');await page.getByRole('button',{name:'Save name',exact:true}).click();await page.getByText('Name set for this visit only.',{exact:true}).waitFor();await page.keyboard.press('Escape');
   await menu(page,'btn-audio');await page.locator('#music-mute').check();await page.locator('#sfx-volume').fill('32');await page.keyboard.press('Escape');await menu(page,'btn-audio');assert(await page.locator('#music-mute').isChecked());assert.equal(await page.locator('#sfx-volume').inputValue(),'32');await page.keyboard.press('Escape');
-  await page.locator('#btn-change').click();await page.getByText(/No costumes owned yet/).waitFor();await page.keyboard.press('Escape');await menu(page,'btn-leaderboard');await page.getByText(/Lifetime rankings need the existing Supabase/).waitFor();assert.equal(await page.locator('.leaderboard tbody tr').count(),0);await page.keyboard.press('Escape');
+  await page.locator('#btn-change').click();await page.getByText(/No costumes owned yet/).waitFor();await page.keyboard.press('Escape');await menu(page,'btn-leaderboard');await page.getByText(/Cloud saves and global rankings are unavailable|Unable to reach cloud saves/).waitFor();assert.equal(await page.locator('.leaderboard tbody tr').count(),0);await page.keyboard.press('Escape');
  });
  const phone=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),mobile=await phone.newPage();mobile.on('pageerror',e=>errors.push(e.message));
  await check('390-wide first screen includes game, Start and Connect with no horizontal overflow',async()=>{

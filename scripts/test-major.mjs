@@ -64,6 +64,6 @@ await check('each weapon dispatches its own sound and retains original damage an
  assert.equal(rules.damage('gun',[]),20);assert.equal(rules.damage('sword',[]),50);assert.equal(rules.damage('bomb',[]),5);assert.equal(rules.damage('gun',['damage-10','damage-20','damage-25']),31);
 });
 await check('guest scores never become a global board and existing local data stays untouched',async()=>{
- const legacy=JSON.stringify({name:'Retained',sqk:275,total_score:9999,purchases:['costume-batman']}),storage=new Map([['hamster-friendship-v2-guest',legacy]]);const a=await fixture({storage});assert.equal(a.ctx.HamsterSave.snapshot().profile.total_score,0);assert(a.ctx.HamsterSave.snapshot().localLegacyAvailable);assert.equal(storage.get('hamster-friendship-v2-guest'),legacy);await assert.rejects(()=>a.ctx.HamsterSave.leaderboard(),/existing Supabase/);
+ const legacy=JSON.stringify({name:'Retained',sqk:275,total_score:9999,purchases:['costume-batman']}),storage=new Map([['hamster-friendship-v2-guest',legacy]]);const a=await fixture({storage,config:{supabaseUrl:'',supabasePublishableKey:''}});assert.equal(a.ctx.HamsterSave.snapshot().profile.total_score,0);assert(a.ctx.HamsterSave.snapshot().localLegacyAvailable);assert.equal(storage.get('hamster-friendship-v2-guest'),legacy);await assert.rejects(()=>a.ctx.HamsterSave.leaderboard(),/existing Supabase/);
 });
 await mkdir('test/scratch/major',{recursive:true});await writeFile('test/scratch/major/game-results.json',JSON.stringify({results},null,2));console.log(results.length+' major engine checks passed.');

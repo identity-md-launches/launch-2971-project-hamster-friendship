@@ -72,7 +72,8 @@
       if (chain !== '0x1') throw new Error('Switch your wallet to Ethereum Mainnet, then try again.');
       remembered = entry.id;
       try { localStorage.setItem('hamster-wallet-provider', remembered); } catch (_) { /* optional */ }
-      status.textContent = window.HamsterSave.snapshot().configured ? 'Connected. Sign in below to save your progress.' : window.HamsterSave.snapshot().status;
+      var saveState = window.HamsterSave.snapshot();
+      status.textContent = saveState.configured && saveState.backendState !== 'unavailable' ? 'Connected. Sign in below to save your progress.' : saveState.status;
       renderControl();
     } catch (error) {
       status.textContent = error.code === 4001 ? 'The wallet request was declined. Try again or continue as a guest.' : error.code === -32002 ? 'A request is already open in your wallet. Complete it there, then retry.' : 'Unable to connect. ' + (error.message || 'Open your wallet and retry.');
@@ -96,6 +97,14 @@
       var saveState = window.HamsterSave.snapshot();
       if (chain === '0x1' && !saveState.cloud && !saveState.configured) {
         var unavailable = document.createElement('p'); unavailable.className = 'error'; unavailable.textContent = saveState.status; options.append(unavailable);
+      } else if (chain === '0x1' && !saveState.cloud && saveState.backendState === 'unavailable') {
+        var failed = document.createElement('p'); failed.className = 'error'; failed.textContent = saveState.backendError; options.append(failed);
+        row('Check cloud connection', async function () {
+          if (busy) return; busy = true; status.textContent = 'Checking cloud saves…'; renderOptions();
+          try { await window.HamsterSave.checkConnection(); status.textContent = 'Cloud connection ready. Sign in below to save.'; }
+          catch (error) { status.textContent = error.message; }
+          finally { busy = false; renderOptions(); }
+        });
       } else if (chain === '0x1' && !saveState.cloud) {
         var keepLegacy = null;
         if (saveState.legacyAvailable) {
@@ -153,5 +162,10 @@
   document.getElementById('close-wallet').addEventListener('click', function () { dialog.close(); });
   dialog.addEventListener('click', function (event) { if (event.target === dialog && (event.clientX < dialog.getBoundingClientRect().left || event.clientX > dialog.getBoundingClientRect().right || event.clientY < dialog.getBoundingClientRect().top || event.clientY > dialog.getBoundingClientRect().bottom)) dialog.close(); });
   dialog.addEventListener('close', function () { button.focus({ preventScroll: true }); });
+  var backendState = window.HamsterSave.snapshot().backendState;
+  window.HamsterSave.subscribe(function () {
+    var next = window.HamsterSave.snapshot().backendState;
+    if (next !== backendState) { backendState = next; if (dialog.open && !busy) renderOptions(); }
+  });
   window.HamsterWallet = { snapshot: function () { return { address: address, chainId: chain, connected: Boolean(address && chain === '0x1'), pending: busy }; } };
 })();
