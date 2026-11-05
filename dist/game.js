@@ -590,6 +590,10 @@
   });
   byId('context-interact').addEventListener('click', function () { if (game.state === 'playing') { var o = nearestThing(); if (o) interact(o); } });
   window.addEventListener('hamster:identity', function () { if (game.state !== 'title') { gameOver(); toast('Profile changed. Restart this map to continue.'); } });
+  window.addEventListener('hamster:run-conflict', function () {
+    if (game.state !== 'title') gameOver();
+    byId('game-error').textContent = 'This map ended in another session. Open Menu → Profile and choose Restart from cloud profile. Unsent events are kept for recovery.';
+  });
 
   // ---------------------------------------------------------------------------
   // Screens, HUD and dialogue
@@ -1896,9 +1900,10 @@
   updateHud(); byId('hud-season').textContent = seasons[season];
   window.requestAnimationFrame(frame);
 
-  // Player menus can pause the game. All gameplay diagnostics are read-only.
+  // Player menus can pause or restart the game. The snapshot is read-only.
   window.__hamster = {
     pause: pauseGame, resume: resumeGame,
+    restart: function () { return startGame(saves.snapshot().profile.highest_map, true); },
     snapshot: function () {
       return { state: game.state, score: game.collected, dead: player.dead, clues: game.clues, x: Math.round(player.x), y: Math.round(player.y),
         bossHp: boss.hp, bossState: boss.state, arenaLocked: game.arenaLocked, bossDefeated: game.bossDefeated,

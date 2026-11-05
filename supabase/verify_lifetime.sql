@@ -1,6 +1,8 @@
 -- Owner-only read-only post-migration verification; no credentials required here.
 begin read only;
-select public.hf_service_status(); -- schemaVersion=4, leaderboard=lifetime
+select public.hf_service_status(); -- schemaVersion=5, leaderboard=lifetime
+select has_function_privilege('authenticated','public.hf_run_state(uuid)','EXECUTE')
+ and not has_function_privilege('anon','public.hf_run_state(uuid)','EXECUTE') as run_recovery_wallet_only;
 select to_regprocedure('public.hf_daily_top100()') is null as daily_rpc_removed;
 select count(*) = 2 as lifetime_triggers_present from pg_catalog.pg_trigger
 where tgname in ('hf_settle_lifetime','hf_retain_lifetime') and tgenabled='O';

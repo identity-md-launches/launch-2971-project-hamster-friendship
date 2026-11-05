@@ -4,6 +4,7 @@ import {readFile, mkdir, writeFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {web3Identity} from './web3-identity.mjs';
 const {PGlite}=await import(pathToFileURL(resolve(process.argv[2]||'test/scratch/node_modules/@electric-sql/pglite/dist/index.js')).href);
 const db=await PGlite.create(), results=[];
 const a=randomUUID(), b=randomUUID(), anonymous=randomUUID(), duplicate=randomUUID();
@@ -24,17 +25,25 @@ try{
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
  for(const file of['001_friendship.sql','002_seasons_dice_badges.sql','003_squeek.sql'])await db.exec(await readFile('supabase/migrations/'+file,'utf8'));
  for(const id of[a,b,anonymous,duplicate])await q('insert into auth.users values($1)',[id]);
- for(const[id,wallet]of[[a,address],[b,otherAddress],[duplicate,address.toUpperCase().replace('0X','0x')]])await q("insert into auth.identities values($1,'web3',$2::jsonb)",[id,JSON.stringify({address:wallet,chain:'ethereum'})]);
- for(const id of[a,b]){await user(id);await rpc('hf_wallet_profile');}
+ for(const[id,wallet]of[[a,address],[b,otherAddress],[duplicate,address.toUpperCase().replace('0X','0x')]])await q("insert into auth.identities values($1,'web3',$2::jsonb)",[id,JSON.stringify(web3Identity(wallet))]);
+ // Historical rows are data fixtures. Do not fake successful 003 Auth by using
+ // its incorrect flat identity format; the real shape fails until upgrade 005.
+ for(const[id,wallet]of[[a,address],[b,otherAddress]]){
+   await q('insert into hf_private.profiles(user_id) values($1)',[id]);
+   await q('insert into hf_private.wallet_profiles values($1,$1,$2)',[id,wallet]);
+ }
  await admin();await q("update hf_private.profiles set name='Old Forest Friend',sqk=275,total_score=1400,highest_map=4,cosmetics=$2::jsonb where user_id=$1",[a,JSON.stringify({shirt:'shirt-blue',costume:'costume-batman'})]);
  await q("insert into hf_private.purchases(user_id,item,paid) values($1,'charged',150),($1,'shirt-blue',20),($1,'costume-batman',50)",[a]);
  await q('insert into hf_private.profiles(user_id,total_score) values($1,99999)',[anonymous]);
  await q("insert into hf_private.daily_scores(profile_id,score_day,timezone,score) values($1,current_date-9,'UTC',97)",[a]);
- await user(a);await start();await send([ev('forage',{source:'chest'})]);
- const oldProfile=await rpc('hf_profile');await admin();const oldDaily=(await q('select * from hf_private.daily_scores order by score_day')).rows;
- await check('004 applies over populated 003 without changing any profile fields or historical daily scores',async()=>{
+ run=(await one("insert into hf_private.runs(user_id,map,hp,loot,rules_version,score,seq,foraged) values($1,1,array_fill(100::double precision,array[31]),array_fill('small'::text,array[31]),4,6,1,array['chest']) returning id",[a]));seq=1;
+ await q('update hf_private.profiles set total_score=total_score+6 where user_id=$1',[a]);
+ const oldProfile=(await one('select hf_private.profile_json($1) as profile',[a])).profile;
+ const oldDaily=(await q('select * from hf_private.daily_scores order by score_day')).rows;
+ await check('004 and 005 apply over populated 003 without changing profile fields, wallet links or historical daily scores',async()=>{
    const snapshots=await readFile('supabase/preservation_snapshot.sql','utf8');const beforeSnapshot=await db.exec(snapshots);
    await db.exec(await readFile('supabase/migrations/004_lifetime_persistence.sql','utf8'));
+   await db.exec(await readFile('supabase/migrations/005_verified_wallet_recovery.sql','utf8'));
    assert.deepEqual(await db.exec(snapshots),beforeSnapshot);
    const verified=await db.exec(await readFile('supabase/verify_lifetime.sql','utf8'));for(const result of verified)for(const row of result.rows)for(const value of Object.values(row))if(typeof value==='boolean')assert.equal(value,true);
    await user(a);assert.deepEqual(await rpc('hf_profile'),oldProfile);await admin();assert.deepEqual((await q('select * from hf_private.daily_scores order by score_day')).rows,oldDaily);await user();

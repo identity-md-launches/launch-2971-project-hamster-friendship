@@ -1,7 +1,7 @@
 {
-  "recordedAt": "2026-11-05T07:19:59.903830+00:00",
+  "recordedAt": "2026-11-05T08:05:55.534696+00:00",
   "authority": "Worker-run local evidence, not independent service or network certification.",
-  "completion": "Local implementation delivered; production objective incomplete pending original Supabase configuration, owner migration and native-device verification.",
+  "completion": "All four reproduced revision findings corrected and locally verified. Production objective remains incomplete pending the original Supabase configuration, owner migration through 005 and real-device checks.",
   "build": {
     "passed": true,
     "files": [
@@ -23,7 +23,7 @@
       {
         "path": "dist/config.js",
         "bytes": 411,
-        "sha256": "64312751ab7a06b300fb0929b9e7afc48ec5f7ce7a5a4697a462f0dc589fc330"
+        "sha256": "b6e3c1bfde129f62112443a3f6dea79e0666177917c2c58db343b9f65fbdccf0"
       },
       {
         "path": "dist/favicon.svg",
@@ -32,8 +32,8 @@
       },
       {
         "path": "dist/game.js",
-        "bytes": 89147,
-        "sha256": "4bbba22eee85b2df80f3c1667052488847ec16af2e431229b38c69ecd0ddd702"
+        "bytes": 89524,
+        "sha256": "1c66b55ace1297ad6c27407525f1f7c7da747660450de30b07fe45085ee92633"
       },
       {
         "path": "dist/index.html",
@@ -62,8 +62,8 @@
       },
       {
         "path": "dist/save.js",
-        "bytes": 15865,
-        "sha256": "afc1129ad0a31be68ecc264c02f3d34d22887358657c396ef0d61863ac60b801"
+        "bytes": 19907,
+        "sha256": "bbca527b7b1c34ea0d542d72c31179cff5ced14a65b3e0ed28fc80406fcc84f6"
       },
       {
         "path": "dist/sqk.svg",
@@ -77,8 +77,8 @@
       },
       {
         "path": "dist/ui.js",
-        "bytes": 17821,
-        "sha256": "1a6b08a2249623298ba5802d69aff6c5c4f666e599da06f37a46bf23327aabe7"
+        "bytes": 20762,
+        "sha256": "318d7e48d4a8be5e6392abcffa04ffeb26d53a20810a8368dfe858275afb30c0"
       },
       {
         "path": "dist/victory.svg",
@@ -97,7 +97,7 @@
       }
     ],
     "fileCount": 18,
-    "bytes": 227115,
+    "bytes": 234475,
     "relativeSubpath": "/preview/"
   },
   "typecheck": {
@@ -106,12 +106,12 @@
     "tscIncludingViewport": true,
     "settings": "allowJs, checkJs, noEmit, ES2022 + DOM, strict=false"
   },
-  "interactionChecks": 124,
+  "interactionChecks": 149,
   "suites": {
     "database": {
       "results": [
         {
-          "name": "004 applies over populated 003 without changing any profile fields or historical daily scores",
+          "name": "004 and 005 apply over populated 003 without changing profile fields, wallet links or historical daily scores",
           "passed": true
         },
         {
@@ -191,7 +191,7 @@
           "passed": true
         },
         {
-          "name": "another wallet cannot submit events to the original wallet\u2019s run",
+          "name": "another wallet cannot submit events to the original wallet’s run",
           "passed": true
         },
         {
@@ -222,7 +222,7 @@
       "limitations": "Fixture Auth; no hosted Supabase project or real signatures."
     },
     "client": {
-      "checks": 19,
+      "checks": 27,
       "limitations": "Explicit Auth fixtures; no live signature verification."
     },
     "gameplayBrowser": {
@@ -608,7 +608,43 @@
           "passed": true
         },
         {
+          "name": "1440: automatic refresh retains the table, focused control and reading position during loading and success",
+          "passed": true
+        },
+        {
+          "name": "1440: a failed automatic refresh keeps the last known ranking readable and manual retry preserves focus",
+          "passed": true
+        },
+        {
+          "name": "390: automatic refresh retains the table, focused control and reading position during loading and success",
+          "passed": true
+        },
+        {
+          "name": "390: a failed automatic refresh keeps the last known ranking readable and manual retry preserves focus",
+          "passed": true
+        },
+        {
+          "name": "a late leaderboard response cannot replace another open panel",
+          "passed": true
+        },
+        {
           "name": "Change it on mobile and desktop equips the same owned inventory without charging",
+          "passed": true
+        },
+        {
+          "name": "1440: disconnect resets all entry labels to the separate guest profile",
+          "passed": true
+        },
+        {
+          "name": "390: disconnect resets all entry labels to the separate guest profile",
+          "passed": true
+        },
+        {
+          "name": "a second device stops the stale world and Profile offers recovery instead of a retry loop",
+          "passed": true
+        },
+        {
+          "name": "recovery download retains rejected progress without Auth credentials and restart restores authoritative data",
           "passed": true
         },
         {
@@ -625,6 +661,43 @@
         }
       ],
       "limitations": "Auth and signatures are test fixtures; SQL and UI are real."
+    },
+    "verifiedWalletUpgrade": {
+      "results": [
+        {
+          "name": "004 reproduces the real-identity failure before the upgrade",
+          "passed": true
+        },
+        {
+          "name": "005 upgrades without rewriting identities, profile links, balances, purchases or history",
+          "passed": true
+        },
+        {
+          "name": "uppercase verified claims and a different Auth UUID reopen the same unique profile",
+          "passed": true
+        },
+        {
+          "name": "flat claims, wrong provider/chain, malformed addresses and editable metadata do not authenticate",
+          "passed": true
+        },
+        {
+          "name": "nested claims take precedence over contradictory top-level address fields",
+          "passed": true
+        },
+        {
+          "name": "owned ended-run state returns the exact acknowledgement and settled authoritative profile",
+          "passed": true
+        },
+        {
+          "name": "another wallet and anonymous clients cannot inspect or recover someone else’s run",
+          "passed": true
+        },
+        {
+          "name": "post-upgrade preservation and permission checks run as SQL",
+          "passed": true
+        }
+      ],
+      "limitations": "Fixture Auth rows; no hosted Supabase login."
     }
   },
   "taste": {
@@ -634,7 +707,7 @@
         "name": "render",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 9049,
+        "durationMs": 7780,
         "output": "renders, no script errors or missing local files"
       },
       {
@@ -676,7 +749,7 @@
         "name": "eyebrows",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 2,
+        "durationMs": 0,
         "output": "no kicker labels above headings"
       },
       {
@@ -684,7 +757,7 @@
         "passed": true,
         "exitCode": 0,
         "durationMs": 1,
-        "output": "390: 2 sizes in use, 3 with one-offs (14px\u00d712, 16px\u00d73, 20px\u00d71)\n1440: 2 sizes in use, 4 with one-offs (14px\u00d712, 16px\u00d72, 20px\u00d71, 28px\u00d71)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
+        "output": "390: 2 sizes in use, 3 with one-offs (14px×12, 16px×3, 20px×1)\n1440: 2 sizes in use, 4 with one-offs (14px×12, 16px×2, 20px×1, 28px×1)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
       },
       {
         "name": "type-faces",
@@ -711,7 +784,7 @@
         "name": "repetition",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 7,
+        "durationMs": 1,
         "output": "no repeated lines"
       },
       {
@@ -739,7 +812,7 @@
         "name": "share",
         "passed": true,
         "exitCode": 0,
-        "durationMs": 3,
+        "durationMs": 0,
         "output": "title \"squeek.hamster\", favicon, og:title, og:image, description"
       }
     ],
@@ -776,6 +849,21 @@
       "incomplete": [
         "label-content-name-mismatch"
       ]
+    },
+    "runConflict": {
+      "violations": [],
+      "passes": 22,
+      "incomplete": [
+        "label-content-name-mismatch"
+      ]
+    },
+    "retainedRankings": {
+      "violations": [],
+      "passes": 19,
+      "incomplete": [
+        "color-contrast",
+        "label-content-name-mismatch"
+      ]
     }
   },
   "tokenContrast": {
@@ -787,14 +875,15 @@
   },
   "production": {
     "configUrl": "https://hamster-friendship-the-lost-alic.identitymd.eth.limo/config.js",
-    "readOnlyHttpRetrieval": "succeeded on 2026-11-05",
+    "readOnlyHttpRetrieval": "Repeated successfully during revision on 2026-11-05; both public settings remain empty.",
     "supabaseUrlPresent": false,
     "supabasePublishableKeyPresent": false,
     "productionDataAccessed": false,
     "migrationsAppliedToProduction": false,
     "published": false,
     "productionUrlChanged": false,
-    "liveBrowserCheck": "Not completed: browser tool Transport closed; direct Chromium net::ERR_EMPTY_RESPONSE."
+    "liveBrowserCheck": "Not completed: browser tool returned Transport closed; foreground Chromium navigation returned net::ERR_EMPTY_RESPONSE. No live gameplay or hosted Auth verified.",
+    "requiredMigration": "005_verified_wallet_recovery.sql after all preceding unapplied migrations in the same original project."
   },
   "domain": {
     "literalHamsterTldDelegated": false,
@@ -810,7 +899,10 @@
     "docs/validation/screenshots/long-values-320.png",
     "docs/validation/screenshots/owned-costume.png",
     "docs/validation/screenshots/phone-entry.png",
-    "docs/validation/screenshots/rotate-overlay.png"
+    "docs/validation/screenshots/rotate-overlay.png",
+    "docs/validation/screenshots/run-conflict-desktop.png",
+    "docs/validation/screenshots/run-conflict-phone.png",
+    "docs/validation/screenshots/retained-rankings-phone.png"
   ],
   "limitations": [
     "No original production Supabase project URL or public key supplied.",
@@ -821,9 +913,28 @@
     "No domain registration, DNS changes, publishing or production data mutation performed."
   ],
   "bundle": {
-    "eligibleFileCount": 79,
-    "eligibleTreeBytes": 1458439,
+    "eligibleFileCount": 85,
+    "eligibleTreeBytes": 1724116,
     "limitBytes": 8388608,
-    "method": "Conservative sum of versioned and unignored task files, excluding removed inputs/scratch, caches and dependencies."
+    "method": "Conservative sum of tracked and unignored task files, excluding removed inputs/scratch, caches and dependencies; no protected build/dependency or ignore file edits."
+  },
+  "revision": {
+    "findings": 4,
+    "reproduced": 4,
+    "fixed": 4,
+    "responses": ".imd-responses.json",
+    "databaseSchemaVersion": 5,
+    "authoritativeDataStore": "Original Supabase project (not configured in supplied or live public config)",
+    "recoveryArchive": "Wallet-partitioned local recovery evidence only; rejected events are not automatically credited.",
+    "scrollRecheck": {
+      "widths": [
+        390,
+        1440
+      ],
+      "rows": 100,
+      "initialScrollTop": 1600,
+      "afterLoadingSuccessAndFailureScrollTop": 1600,
+      "focusedControlRetained": true
+    }
   }
 }

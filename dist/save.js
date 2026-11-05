@@ -10,18 +10,20 @@
   var CLOUD = !configError;
   var url = String(config.supabaseUrl).replace(/\/$/, ''), prefix = 'hamster-friendship-v2';
   var listeners = [], storageOK = true, generation = 0, wallet = '', session = null;
-  var guestProfile = empty(), profile = guestProfile, cloud = false, active = null, outbox = [], flushing = null;
+  var guestProfile = empty(), profile = guestProfile, cloud = false, active = null, outbox = [], recovery = [], flushing = null;
   var status = CLOUD ? 'Guest · connect a wallet to save.' : configError;
   var mutation = Promise.resolve(), rpcFlight = Promise.resolve(), backendReady = false;
   function empty() { return { name: 'Guest', sqk: 0, total_score: 0, highest_map: 1, purchases: [], cosmetics: {} }; }
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(prefix + key) || 'null') || fallback; } catch (_) { storageOK = false; return fallback; } }
-  function write(key, data) { try { localStorage.setItem(prefix + key, JSON.stringify(data)); } catch (_) { storageOK = false; } }
+  function write(key, data) { try { localStorage.setItem(prefix + key, JSON.stringify(data)); return true; } catch (_) { storageOK = false; return false; } }
   function notify() { listeners.forEach(function (fn) { fn(); }); }
   function uuid() { return crypto.randomUUID(); }
   function serialized(fn) { var result = mutation.then(fn); mutation = result.catch(function () {}); return result; }
   function mutate(fn) { var epoch = generation; return serialized(function () { if (epoch !== generation) throw new Error('The wallet changed. Retry the action from the current profile.'); return fn(); }); }
   function identityChanged() { window.dispatchEvent(new Event('hamster:identity')); notify(); }
-  function pendingCoins() { return outbox.reduce(function (n, r) { return n + r.events.filter(function (e) { return e.kind === 'pickup' && r.loot[e.target] === 'coin'; }).length; }, 0); }
+  function hasConflict() { return outbox.some(function (r) { return Boolean(r.conflict); }); }
+  function conflictMessage() { return 'This map has ended in another session. Saved rewards are safe. Unsent events are kept for recovery. Open Profile and choose Restart from cloud profile.'; }
+  function pendingCoins() { return outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.filter(function (e) { return e.kind === 'pickup' && r.loot[e.target] === 'coin'; }).length); }, 0); }
   async function request(path, body, token, method) {
     var control = new AbortController(), timer = setTimeout(function () { control.abort(); }, 10000);
     try {
@@ -35,9 +37,9 @@
     if (backendReady) return;
     try {
       var data = await request('/rest/v1/rpc/hf_service_status', {});
-      if (data.schemaVersion !== 4 || data.leaderboard !== 'lifetime') throw new Error('The lifetime migration is not installed.');
+      if (data.schemaVersion !== 5 || data.leaderboard !== 'lifetime') throw new Error('The verified wallet and recovery migration is not installed.');
       backendReady = true;
-    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 004. ' + error.message); }
+    } catch (error) { throw new Error('Cloud storage is unavailable. Ask the site owner to check the existing Supabase project and migration 005. ' + error.message); }
   }
   async function access(auth, key) {
     if (!auth) throw new Error('Sign in with MetaMask to save.');
@@ -65,26 +67,47 @@
     if (!cloud || !session || !outbox.length) return;
     if (flushing && flushing.generation === generation) return flushing.promise;
     var queue = outbox, address = wallet, auth = session, epoch = generation;
-    var work = (async function () {
+    var work = Promise.resolve().then(async function () {
       try {
-        while (queue.length) {
-          var run = queue[0]; if (!run.events.length) { queue.shift(); continue; }
+        while (queue.some(function (r) { return !r.conflict; })) {
+          var run = queue.find(function (r) { return !r.conflict; });
+          if (!run.events.length) { queue.splice(queue.indexOf(run), 1); continue; }
           var events = run.events.slice(0, 128);
-          var result = await rpc('hf_progress', { p_run: run.id, p_events: events }, auth, address, epoch);
+          var result;
+          try { result = await rpc('hf_progress', { p_run: run.id, p_events: events }, auth, address, epoch); }
+          catch (error) {
+            // Classify by owned server state, never by a transport error string.
+            // An offline/unavailable state check leaves the queue retryable.
+            var remote;
+            try { remote = await rpc('hf_run_state', { p_run: run.id }, auth, address, epoch); } catch (_) { throw error; }
+            if (!remote || !['abandoned', 'dead', 'complete'].includes(remote.status) || !Number.isSafeInteger(remote.ack) || remote.ack < 0) throw error;
+            run.events = run.events.filter(function (e) { return e.seq > remote.ack; });
+            if (!run.events.length && !(epoch === generation && active && active.id === run.id)) {
+              queue.splice(queue.indexOf(run), 1); persist(queue, address); continue;
+            }
+            run.conflict = { status: remote.status, ack: remote.ack };
+            persist(queue, address);
+            if (epoch === generation && active && active.id === run.id) {
+              active = null;
+              window.dispatchEvent(new Event('hamster:run-conflict'));
+            }
+            continue;
+          }
           if (!result || !Number.isSafeInteger(result.ack) || result.ack < events[events.length - 1].seq) throw new Error('Cloud did not acknowledge these events. Pending progress has been kept. Retry the save.');
           run.events = run.events.filter(function (e) { return e.seq > result.ack; });
-          if (!run.events.length) queue.shift(); persist(queue, address);
+          if (!run.events.length) queue.splice(queue.indexOf(run), 1); persist(queue, address);
         }
-        if (epoch === generation) status = 'Wallet profile saved.';
+        if (epoch === generation) status = hasConflict() ? conflictMessage() : 'Wallet profile saved.';
       } catch (error) { if (epoch === generation) status = 'Save pending. ' + error.message + ' Open Profile and retry.'; }
       finally { if (flushing && flushing.generation === epoch) flushing = null; notify(); }
-    })();
+    });
     flushing = { generation: epoch, promise: work }; return work;
   }
   async function restore(epoch) {
     if (!CLOUD || !wallet) return;
     var address = wallet; session = read('-wallet-session-' + address, null);
     outbox = read('-wallet-outbox-' + address, []); if (!Array.isArray(outbox)) outbox = [];
+    recovery = read('-wallet-recovery-' + address, []); if (!Array.isArray(recovery)) recovery = [];
     if (!session) { status = 'Wallet connected. Sign a login message to save.'; notify(); return; }
     try {
       await requireBackend();
@@ -97,7 +120,7 @@
   async function setWallet(address) {
     address = String(address || '').toLowerCase(); if (address === wallet) return;
     if (active && !active.ranked) record('death', {}, active.lastFrame);
-    generation++; wallet = address; session = null; cloud = false; active = null; outbox = []; profile = guestProfile;
+    generation++; wallet = address; session = null; cloud = false; active = null; outbox = []; recovery = []; profile = guestProfile;
     status = !CLOUD ? configError : wallet ? 'Checking wallet save…' : 'Guest · this visit only. Progress is not saved.';
     identityChanged(); await restore(generation);
   }
@@ -134,7 +157,9 @@
     return result;
   }
   async function beginMap(map) {
+    if (hasConflict()) throw new Error(conflictMessage());
     if (active) record('death', {}, active.lastFrame); await flush();
+    if (hasConflict()) throw new Error(conflictMessage());
     var epoch = generation, loot, monsters, id = uuid(), ranked = cloud;
     if (ranked) {
       if (outbox.length) throw new Error('Retry your pending cloud save in Profile before starting another map.');
@@ -182,6 +207,7 @@
     if (!cloud) throw new Error('Connect MetaMask and sign in to buy persistent items.');
     if (!window.HamsterRules.catalogue.some(function (i) { return i.id === id; })) throw new Error('Choose a current marketplace item.');
     var epoch = generation; await flush(); if (epoch !== generation || !cloud) throw new Error('The wallet changed. Open Marketplace again.');
+    if (hasConflict()) throw new Error(conflictMessage());
     if (outbox.length) throw new Error('Retry the pending cloud save before purchasing.');
     await rpc('hf_purchase', { p_item: id });
   }
@@ -197,9 +223,31 @@
     if (!cloud) { await restore(generation); return; }
     var epoch = generation;
     await flush();
-    if (epoch !== generation || outbox.length) return;
-    try { await rpc('hf_wallet_profile'); if (epoch === generation) status = 'Wallet profile saved.'; }
+    if (epoch !== generation || outbox.some(function (r) { return !r.conflict; })) return;
+    try { await rpc('hf_wallet_profile'); if (epoch === generation) status = hasConflict() ? conflictMessage() : 'Wallet profile saved.'; }
     catch (error) { if (epoch === generation) status = 'Unable to refresh this wallet profile. ' + error.message + ' Check your connection and retry.'; }
+    notify();
+  }
+  async function recover() {
+    if (!cloud || !session) throw new Error('Sign in with this wallet before recovering its map.');
+    var epoch = generation, address = wallet;
+    await flush();
+    if (epoch !== generation) throw new Error('The wallet changed. Open Profile again.');
+    if (!hasConflict()) throw new Error('No ended map needs recovery. Retry any pending cloud save.');
+    if (outbox.some(function (r) { return !r.conflict; })) throw new Error('Retry the other pending cloud saves before recovering this map.');
+    await rpc('hf_wallet_profile');
+    if (epoch !== generation) throw new Error('The wallet changed. Open Profile again.');
+    var archived = recovery.slice();
+    outbox.forEach(function (run) {
+      var index = archived.findIndex(function (r) { return r.id === run.id; });
+      var copy = Object.assign({}, run, { recoveredAt: new Date().toISOString() });
+      if (index < 0) archived.push(copy); else archived[index] = copy;
+    });
+    // Do not unblock play by silently throwing away rejected progress. Keep a
+    // durable, wallet-specific recovery record before retiring the active queue.
+    if (!write('-wallet-recovery-' + address, archived)) throw new Error('Browser storage could not keep the recovery record. Keep this page open and download the record from Profile before freeing site storage and trying again.');
+    recovery = archived; outbox = []; persist(outbox, address);
+    status = 'Cloud profile restored. Unsent events are kept in the recovery record on this browser; they have not been credited.';
     notify();
   }
   window.HamsterSave = {
@@ -209,8 +257,9 @@
     purchase: function (id) { return mutate(function () { return purchase(id); }); },
     equip: function (slot, id) { return mutate(function () { return equip(slot, id); }); }, leaderboard: leaderboard,
     subscribe: function (fn) { listeners.push(fn); },
-    retry: retry,
-    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, status: status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
+    retry: retry, recover: function () { return mutate(recover); },
+    recoveryRecord: function () { return JSON.parse(JSON.stringify({ wallet: wallet, runs: recovery.concat(outbox.filter(function (r) { return r.conflict; })) })); },
+    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, status: status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
   };
   window.addEventListener('online', function () { if (cloud) void flush(); });
   window.addEventListener('pagehide', function () { if (cloud) void flush(); });

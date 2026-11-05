@@ -14,13 +14,23 @@
     var state = save.snapshot();
     document.getElementById('hud-sqk').textContent = state.profile.sqk.toLocaleString();
     document.getElementById('hud-pending').textContent = state.pendingCoins ? '(+' + state.pendingCoins + ' pending)' : '';
-    document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents ? 'Cloud save pending · open Profile to retry' : 'Wallet profile saved' : 'this run only; not saved');
-    if (window.__hamster.snapshot().state === 'title' && state.profile.highest_map > 1) { document.getElementById('btn-start').textContent = 'Continue map ' + state.profile.highest_map; document.getElementById('hud-map').textContent = String(state.profile.highest_map); document.getElementById('start-title').textContent = 'The chestnut forest · Map ' + state.profile.highest_map; document.getElementById('btn-replay').hidden = false; }
+    document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.runConflict ? 'Map ended elsewhere · open Profile to recover' : state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents ? 'Cloud save pending · open Profile to retry' : 'Wallet profile saved' : 'this run only; not saved');
+    if (window.__hamster.snapshot().state === 'title') {
+      var map = state.profile.highest_map;
+      document.getElementById('btn-start').textContent = map > 1 ? 'Continue map ' + map : 'Start adventure';
+      document.getElementById('hud-map').textContent = String(map);
+      document.getElementById('start-title').textContent = map > 1 ? 'The chestnut forest · Map ' + map : 'The chestnut forest';
+      document.getElementById('btn-replay').hidden = map <= 1;
+    }
     document.getElementById('hud-lifetime').textContent = state.profile.total_score.toLocaleString();
     if (panel === 'profile') {
       var values = { sqk: state.profile.sqk.toLocaleString(), total_score: state.profile.total_score.toLocaleString(), highest_map: String(state.profile.highest_map), purchases: String(state.profile.purchases.length) };
       Object.keys(values).forEach(function (key) { var node = document.getElementById('profile-' + key); if (node) node.textContent = values[key]; });
       var cloudStatus = document.getElementById('profile-save-state'); if (cloudStatus) cloudStatus.textContent = state.status;
+      var retry = document.getElementById('profile-retry'); if (retry) retry.hidden = state.runConflict;
+      var recover = document.getElementById('profile-recover'); if (recover) recover.hidden = !state.runConflict;
+      var recoveryHint = document.getElementById('profile-recovery-hint'); if (recoveryHint) recoveryHint.hidden = !state.runConflict && !state.recoveryEvents;
+      var download = document.getElementById('profile-recovery-download'); if (download) download.hidden = !state.runConflict && !state.recoveryEvents;
       var accountInfo = document.getElementById('profile-account-info');
       if (accountInfo) accountInfo.textContent = state.cloud ? 'Saved to your verified wallet profile. Guest progress is never imported. Lifetime scores, SQK and purchases are retained.' : state.configured ? 'Guest runs are not saved. Open Menu → Connect MetaMask and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
     }
@@ -56,7 +66,20 @@
         try { await save.retry(); retryResult.textContent = ''; }
         finally { retry.disabled = false; }
       });
-      content.append(retry, retryResult);
+      retry.id = 'profile-retry';
+      var recover = action('Restart from cloud profile', async function () {
+        recover.disabled = true; retryResult.className = 'panel-note'; retryResult.textContent = 'Restoring cloud profile…';
+        try { await save.recover(); dialog.close(); await window.__hamster.restart(); }
+        catch (error) { retryResult.className = 'error'; retryResult.textContent = error.message; }
+        finally { recover.disabled = false; }
+      }, 'btn-primary');
+      recover.id = 'profile-recover';
+      var recoveryHint = el('p', 'An ended map cannot accept unsent events. Restart uses your saved wallet balance, inventory and map unlocks. The rejected events stay in a recovery record on this browser and are not credited. Download a copy before clearing site data.', 'panel-note'); recoveryHint.id = 'profile-recovery-hint';
+      var download = action('Download recovery record', function () {
+        var blob = new Blob([JSON.stringify(save.recoveryRecord(), null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob), link = el('a'); link.href = url; link.download = 'squeek-recovery.json'; link.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }); download.id = 'profile-recovery-download';
+      content.append(retry, recoveryHint, recover, download, retryResult);
     }
     var earned = (p.badges || []).filter(function (b) { return b.source === 'skill' || b.source === 'contribution'; });
     if (earned.length) content.append(el('p', 'Earned badges: ' + earned.map(function (b) { return b.tier + ' ' + b.source; }).join(', '), 'panel-note'));
@@ -126,30 +149,48 @@
     content.append(list);
     if (keepScroll) dialog.scrollTop = top;
   }
-  var boardTimer;
-  async function leaderboardPanel() {
-    clearTimeout(boardTimer); title.textContent = 'Lifetime Top 100'; content.replaceChildren(); var stamp = generation;
+  var boardTimer, refreshBoard = function () {};
+  function leaderboardPanel() {
+    clearTimeout(boardTimer); title.textContent = 'Lifetime Top 100'; content.replaceChildren(); var stamp = generation, loading = false;
     content.append(el('p', 'Accumulated score from ended sessions · verified wallets only. Scores never reset. Guests are unranked.', 'panel-note'));
     var state = message('Loading lifetime rankings…'); content.append(state);
-    try {
-      var board = await save.leaderboard();
-      if (stamp !== generation || panel !== 'leaderboard') return;
-      var rows = board.rows;
-      state.textContent = rows.length ? rows.length === 1 ? '1 player ranked' : rows.length + ' players ranked' : 'No verified wallet scores yet. Sign in, play a map and end the session to enter.';
-      if (rows.length) {
-        var table = el('table', '', 'leaderboard'), caption = el('caption', 'Lifetime wallet scores'); caption.className = 'visually-hidden'; table.append(caption);
-        var head = el('thead'), hr = el('tr'); ['Rank', 'Player', 'Lifetime Score', 'Map'].forEach(function (text) { var th = el('th', text); th.scope = 'col'; hr.append(th); }); head.append(hr); table.append(head);
-        var body = el('tbody'); rows.slice(0, 100).forEach(function (player, index) { var row = el('tr'); [String(index + 1), player.name, Number(player.score).toLocaleString(), String(player.highest_map)].forEach(function (value) { row.append(el('td', value)); }); body.append(row); }); table.append(body); content.append(table);
+    var table = el('table', '', 'leaderboard'), caption = el('caption', 'Lifetime wallet scores'); caption.className = 'visually-hidden'; table.append(caption); table.hidden = true;
+    var head = el('thead'), hr = el('tr'); ['Rank', 'Player', 'Lifetime Score', 'Map'].forEach(function (text) { var th = el('th', text); th.scope = 'col'; hr.append(th); }); head.append(hr); table.append(head);
+    var body = el('tbody'); table.append(body); content.append(table);
+    content.append(el('p', 'Refreshes every 15 seconds while open. Current Map Score joins your lifetime total when the session ends, including a defeat or restart.', 'panel-note'));
+    var refresh = action('Refresh rankings', function () { void update(); });
+    async function update() {
+      if (loading || stamp !== generation || panel !== 'leaderboard') return;
+      clearTimeout(boardTimer); loading = true; refresh.setAttribute('aria-busy', 'true');
+      try {
+        var board = await save.leaderboard();
+        if (stamp !== generation || panel !== 'leaderboard') return;
+        var rows = board.rows.slice(0, 100), top = dialog.scrollTop;
+        state.className = 'panel-note';
+        state.textContent = rows.length ? rows.length === 1 ? '1 player ranked' : rows.length + ' players ranked' : 'No verified wallet scores yet. Sign in, play a map and end the session to enter.';
+        // Keep the table and controls mounted. Unchanged cells are untouched.
+        rows.forEach(function (player, index) {
+          var row = body.rows[index];
+          if (!row) { row = el('tr'); for (var i = 0; i < 4; i++) row.append(el('td')); body.append(row); }
+          [String(index + 1), player.name, Number(player.score).toLocaleString(), String(player.highest_map)].forEach(function (value, i) { if (row.cells[i].textContent !== value) row.cells[i].textContent = value; });
+        });
+        while (body.rows.length > rows.length) body.deleteRow(body.rows.length - 1);
+        table.hidden = !rows.length; dialog.scrollTop = top;
+      } catch (error) {
+        if (stamp !== generation || panel !== 'leaderboard') return;
+        var top = dialog.scrollTop;
+        state.className = 'error'; state.textContent = (body.rows.length ? 'Showing the last loaded rankings. ' : '') + error.message;
+        dialog.scrollTop = top;
+      } finally {
+        loading = false; refresh.removeAttribute('aria-busy');
+        if (stamp === generation && panel === 'leaderboard' && save.snapshot().configured) boardTimer = setTimeout(function () { if (!document.hidden) void update(); }, 15000);
       }
-      content.append(el('p', 'Refreshes every 15 seconds while open. Current Map Score joins your lifetime total when the session ends, including a defeat or restart.', 'panel-note'));
-    } catch (error) {
-      if (stamp !== generation || panel !== 'leaderboard') return; state.className = 'error'; state.textContent = error.message;
     }
-    if (stamp !== generation || panel !== 'leaderboard') return;
+    refreshBoard = function () { void update(); };
     if (save.snapshot().configured) {
-      content.append(action('Refresh rankings', function () { generation++; void leaderboardPanel(); }));
-      boardTimer = setTimeout(function () { if (!document.hidden && panel === 'leaderboard') void leaderboardPanel(); }, 15000);
+      content.append(refresh);
     }
+    void update();
   }
   function open(which, trigger) {
     (/** @type {HTMLDialogElement} */ (document.getElementById('menu-dialog'))).close(); window.__hamster.pause(); opener = trigger && (trigger.id === 'btn-start-guild' || trigger.id === 'btn-change') ? trigger : document.getElementById('btn-menu'); panel = which; generation++;
@@ -166,6 +207,6 @@
   document.getElementById('close-menu').addEventListener('click', function () { menu.close(); });
   menu.addEventListener('close', function () { document.getElementById('btn-menu').focus({ preventScroll: true }); });
   menu.addEventListener('click', function (e) { var r = menu.getBoundingClientRect(); if (e.target === menu && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) menu.close(); });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && panel === 'leaderboard') void leaderboardPanel(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && panel === 'leaderboard') refreshBoard(); });
   save.subscribe(summary); summary();
 })();

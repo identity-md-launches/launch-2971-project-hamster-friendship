@@ -38,7 +38,7 @@ Spacing tokens are 4, 8, 12, 16, 24, 32 and 48px. The stage uses `100dvw`/`100dv
 
 The canvas retains 192 source rows and 288–416 aspect-matched columns. `object-fit: contain`, disabled smoothing and `image-rendering: pixelated` preserve square pixels; extreme aspect ratios letterbox. Portrait retains a centered 5:3 scene. Utilities flow below a wrapping header instead of sharing its horizontal center: this accommodates the explicit Current Map Score label and long values without overlapping controls. `minmax(0,1fr)` prevents intrinsic grid expansion at enlarged text.
 
-Existing breakpoints remain: 52rem/coarse pointer enables touch controls; 40rem simplifies dialogs/shop; 28rem compacts controls and moves Fullscreen into Menu; 22rem reduces joystick size; landscape height below 34rem compacts overlays. Change it remains visible at narrow widths. Table columns are 18/32/34/16%, with smaller inline cell padding on phones so Rank remains a word. Native dialogs scroll internally. Checked widths include 320, 390, 568, 667, 767, 768, 844 and 1440; Android emulation also uses 393/851.
+Existing breakpoints remain: 52rem/coarse pointer enables touch controls; 40rem simplifies dialogs/shop; 28rem compacts controls and moves Fullscreen into Menu; 22rem reduces joystick size; landscape height below 34rem compacts overlays. Change it remains visible at narrow widths. Table columns are 18/32/34/16%, with smaller inline cell padding on phones so Rank remains a word. Native dialogs scroll internally. Lifetime rankings keep their table and controls mounted during refresh; cells update in place while the dialog retains scroll and focus. A refresh error leaves the last known rows readable. Checked widths include 320, 390, 568, 667, 767, 768, 844 and 1440; Android emulation also uses 393/851.
 
 ## Elevation & Depth
 
@@ -58,12 +58,14 @@ Existing radii: 6px small, 10px medium, 16px dialog. Joystick and action buttons
 | Game actions | Existing `.joystick`, `.pad-btn`, `.weapon-slot`; independent pointers, immediate pressed cue, pointer capture/cancellation, owned/disabled/selected/ammo states. Direct gameplay surfaces isolate gestures. |
 | Menus/dialogs | Native dialogs in `index.html`; `ui.js` handles pause, Escape/backdrop/close, focus return. Direct Change it returns focus to its own button; menu-originated panels return to Menu. |
 | Change it / shop | `shopPanel()` shares item art, owned inventory, pending state, row errors and equip RPC. Wardrobe mode lists owned costumes and offers Marketplace when empty. It has no second inventory or price model. |
-| Profile | Labeled name form, format hint, inline validation, saved SQK/Lifetime Score/unlocks/inventory, explicit cloud state and retry. |
-| Lifetime ranking | `leaderboardPanel()`; loading, empty, error/refresh and actual SQL rows. Polls only while open/visible, without a reset deadline. No seed players. |
+| Profile | Labeled name form, format hint, inline validation, saved SQK/Lifetime Score/unlocks/inventory. Transient saves offer retry; ended maps offer an explicit Restart from cloud profile plus a downloadable recovery record. Explanatory text distinguishes already saved rewards from uncredited events. Existing button/panel tokens and native scrolling are reused. |
+| Lifetime ranking | `leaderboardPanel()`; loading, empty, error/refresh and actual SQL rows. Polls only while open/visible, without a reset deadline. Stable rows/controls retain reading position and keyboard focus through loading, updates and errors; last known rows stay readable on failure. No seed players. |
 | Wallet | Existing EIP-6963/EIP-1193 sheet, named injected wallets, MetaMask deep link, chain check, explicit login and separate disconnect. Connection alone never enables cloud saves. No transactions or approvals. |
 | Rotation/fullscreen | `viewport.js`; preserves the live world and wallet, requests supported landscape lock, offers portrait fallback, hides unsupported fullscreen and explains Home Screen mode. Manifest is relative to this same site. |
 
 Reduced-motion CSS removes button transitions/press transforms; the engine retains its existing decorative-motion reductions. Audio starts through player interaction and retains separate music/effects controls. Continuous game simulation is gameplay, not a decorative CSS animation.
+
+The title-screen Start/Continue label, heading, map counter and replay visibility are always derived from the selected profile, including a guest after wallet disconnect. No layout tokens, artwork or responsive breakpoints changed in this revision. Recovery was rendered at 390 and 1440, and its action was activated by keyboard; 100-row ranking refresh preserved scrollTop=1600 and focus at both widths. Axe reported no violations in these two affected states; incomplete checks remain documented.
 
 ## Do and do not
 

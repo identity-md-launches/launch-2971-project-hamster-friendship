@@ -29,6 +29,7 @@ interface FriendshipProfile {
 interface FriendshipSaveSnapshot {
   profile: FriendshipProfile; cloud: boolean; configured: boolean; status: string;
   storageOK: boolean; pendingCoins: number; pendingEvents: number;
+  runConflict: boolean; recoveryEvents: number;
   ranked: boolean; playingGuest: boolean; legacyAvailable: boolean; wallet: string;
 }
 interface FriendshipSave {
@@ -44,6 +45,8 @@ interface FriendshipSave {
   leaderboard(): Promise<{updatedAt: string; rows: Array<{name: string; score: number; highest_map: number}>}>;
   subscribe(listener: () => void): void;
   retry(): Promise<void>;
+  recover(): Promise<void>;
+  recoveryRecord(): {wallet: string; runs: Array<Record<string, unknown>>};
   snapshot(): FriendshipSaveSnapshot;
 }
 interface FriendshipProvider {
@@ -61,7 +64,7 @@ interface Window {
   HamsterRules: FriendshipRules;
   HamsterSave: FriendshipSave;
   HamsterWallet: {snapshot(): {address: string; chainId: string; connected: boolean; pending: boolean}};
-  __hamster: {pause(): void; resume(): void; snapshot(): Record<string, unknown>};
+  __hamster: {pause(): void; resume(): void; restart(): Promise<void>; snapshot(): Record<string, unknown>};
   ethereum?: FriendshipProvider;
 }
 

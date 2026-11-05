@@ -6,6 +6,10 @@ An in-place update of **Hamster Friendship: The Lost Alice**. The existing fores
 
 **Production cloud saves are not fixed or verified yet.** Both public Supabase settings were empty in the supplied checkout and the live `config.js` checked on 2026-11-05. No input identifies the original backend. This delivery supplies the tested frontend and migration, but does not invent a replacement project, migrate production or publish the site. Guest play works immediately. See [VALIDATION.md](VALIDATION.md) for actual test coverage and production blockers.
 
+## Reviewed revision
+
+All four reopened findings reproduced and are corrected in place: verified Web3 identities now use Supabase's nested claims through migration 005; ended maps have an explicit recovery/restart with a retained downloadable record; leaderboard refresh retains rows, scroll and focus; disconnect renders the guest's actual entry labels. No game rules, artwork, root build/dependency files or production URL changed. The revision responses are in `.imd-responses.json`; the detailed reproduction and checks are in [VALIDATION.md](VALIDATION.md).
+
 ## Install, build and preview
 
 Use Node 18 or later. This existing application is plain HTML/CSS/JavaScript with no runtime dependencies; its package manifest and lockfile are unchanged. No Vite/React conversion or second project was created.
@@ -25,9 +29,9 @@ Open `http://localhost:4173/`. The production build copies 18 necessary files fr
 
 - **Lifetime Top 100:** replaces the daily board, reset countdown and calendar filtering. Only verified wallet-linked profiles with positive scores qualify. Rankings refresh every 15 seconds while open and on returning to the tab, with manual refresh and an error/retry state. No sample players are shipped.
 - **Separate scores:** Current Map Score shows the current run's points. Lifetime Score in Profile and Menu shows ended sessions across maps. Death, completion and restart/abandonment end a session. Active-run points settle once, in the same database transaction as the terminal event. Existing stored totals are retained exactly, including points credited by earlier versions to then-active runs. Historical daily bests are archived, not added on top of already-counted totals.
-- **Cloud readiness and saves:** the client checks migration 004 before asking for a login signature. Invalid configuration, failed requests and missing migrations remain visible. An unreadable or unacknowledged response cannot discard queued events. Retry also reloads the verified profile, allowing acknowledged changes from another device to appear.
+- **Cloud readiness and saves:** the client checks migration 005 before asking for a login signature. Invalid configuration, failed requests and missing migrations remain visible. An unreadable or unacknowledged response cannot discard queued events. Retry also reloads the verified profile, allowing acknowledged changes from another device to appear. Terminal run conflicts use recovery rather than retry.
 - **Profile separation:** a guest's temporary profile stays separate in memory when switching wallets or disconnecting. It never uploads into a wallet account. Wallet authentication sessions and unsent event queues remain address-partitioned. Server balances and inventory remain authoritative.
-- **Verified identity:** migration 004 resolves a canonical lowercase verified wallet to its original profile even if Supabase gives that same wallet a different Auth UUID. Original balances and purchase ownership are not merged or overwritten.
+- **Verified identity:** migration 005 reads the verified address/chain from `auth.identities.identity_data.custom_claims`; it retains migration 004’s resolution of a canonical lowercase verified wallet to its original profile even if Supabase gives that same wallet a different Auth UUID. Original balances and purchase ownership are not merged or overwritten.
 - **Mobile display:** `100dvh`/`100dvw`, VisualViewport resizing, safe-area insets, optional landscape lock after connection/play/fullscreen, and a rotate overlay. Rotation pauses and resumes the same world, rather than creating a map or changing wallet identity. Portrait play remains available.
 - **Fullscreen/Home Screen:** a user-triggered fullscreen option, recoverable denial notice and a relative standalone manifest with local hamster icons. On narrow phones Fullscreen moves into Menu, leaving Change it visible beside Menu. Safari limitations are explained next to these options. No offline cache/service worker is installed.
 - **Touch input:** ordinary buttons use `touch-action: manipulation`; the canvas, joystick and held action buttons retain gesture isolation. Repeated attacks/jumps and simultaneous movement/action touches remain responsive. Pinch zoom is not disabled across the page.
@@ -42,14 +46,14 @@ Menu → Connect MetaMask connects on Ethereum Mainnet without signing, approvin
 
 Permanent data consists of the verified profile, SQK, purchased inventory/upgrades, equipped cosmetics, map unlocks and lifetime score. Collected weapons/ammo remain per-map mechanics. The existing engine does not restore a suspended canvas position after a browser reload. Rotation preserves that live session. Guest progress lasts for the current page visit only. `localStorage` holds Auth sessions, pending-event queues and audio settings; it is not the cloud database or a global leaderboard.
 
-One active map per wallet remains the server model. Starting another map/device ends the earlier server run and settles acknowledged points. Unsent events from a stale run are retained with an error instead of being merged, silently dropped or assigned to another wallet. An abrupt offline close cannot guarantee delivery; reopen the original browser and retry pending saves before starting elsewhere. Browser storage failures explicitly warn the player to keep the page open.
+One active map per wallet remains the server model. Starting another map/device ends the earlier server run and settles acknowledged points. When another device ends a run, the client checks its authoritative acknowledgement, stops the stale world and retains only rejected events for recovery. Profile → Restart from cloud profile first loads the authoritative wallet profile and archives those events on this browser, then starts its unlocked map. Profile also offers Download recovery record, containing run events but no Auth credentials. Rejected events are not automatically credited or merged. Ordinary offline failures remain retryable. An abrupt offline close cannot guarantee delivery; reopen the original browser to retry or recover. Browser storage failures explicitly warn the player to keep the page open.
 
 ## After launch / before enabling cloud
 
 These owner actions are required in the **same original Supabase project**, not a new backend:
 
 1. Identify its real project URL and browser-safe publishable/anon key; set only those public values in `src/config.js`. They remain deliberately empty in this delivery. Never put a private/service-role key in the export.
-2. Back up the existing database. Record [supabase/preservation_snapshot.sql](supabase/preservation_snapshot.sql) before/after migration 004. Establish which of migrations 001–003 are already installed; apply only unapplied files, then `004_lifetime_persistence.sql`. Do not replay installed historical migrations.
+2. Back up the existing database. Record [supabase/preservation_snapshot.sql](supabase/preservation_snapshot.sql) before/after upgrades. Establish which migrations are already installed; apply only unapplied files in order, including `004_lifetime_persistence.sql` and `005_verified_wallet_recovery.sql`. A project already on 004 applies only 005. Do not replay installed historical migrations.
 3. Enable Ethereum Web3 Auth; verify the current HTTPS site's login domain/URI and Supabase Auth/Data API configuration. Keep `hf_private` unexposed. Confirm [supabase/verify_lifetime.sql](supabase/verify_lifetime.sql) succeeds.
 4. Audit production cron/external automation for any old game score reset. No scheduled reset exists in this repository. Remove only confirmed reset jobs; their production existence cannot be checked from this checkout. The new total-protection trigger rejects decreases/deletions.
 5. Rebuild, then use two real devices and a real wallet to confirm login, reconnect, saved SQK/inventory/cosmetics, completed-session scoring, permanent rankings and zero duplicate purchases. Compare the preserved records with the backup. Test actual iPhone Safari, Android Chrome and MetaMask Mobile rotation/toolbars/fullscreen.
@@ -67,6 +71,7 @@ npm run build
 npm run typecheck
 node test/scratch/node_modules/typescript/bin/tsc --project jsconfig.json
 node test/scratch/node_modules/typescript/bin/tsc --noEmit --allowJs --checkJs --strict false --target ES2022 --lib ES2022,DOM src/types.d.ts src/config.js src/rules.js src/save.js src/wallet.js src/ui.js src/viewport.js
+node supabase/tests/verified-wallet.mjs
 node supabase/tests/lifetime.mjs
 node supabase/tests/squeek-client.mjs
 ```
@@ -76,7 +81,7 @@ The browser scripts accept the path to an existing Playwright installation. With
 ```sh
 PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-squeek.mjs /opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs test/scratch/node_modules/axe-core/axe.min.js
 PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-mobile.mjs
-PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-market.mjs
+PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node scripts/validate-market.mjs test/scratch/node_modules/@electric-sql/pglite/dist/index.js /opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs test/scratch/node_modules/axe-core/axe.min.js
 IMD_PLAYWRIGHT=/opt/imd-tools/playwright-mcp/node_modules/playwright/index.mjs PLAYWRIGHT_BROWSERS_PATH=/opt/imd-tools/ms-playwright node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste --offline
 ```
 
