@@ -1,5 +1,11 @@
 # Squeek major update: inspection and implementation plan
 
+## Reward-loss revision · 2026-11-05
+
+Scope: evaluate finding `8591f286…` and preserve the accepted game/interface. Reproduced unchanged 001–008 with the exact real-clock walk: 75.18 seconds, 280 earned, 150 paid, acknowledgements 46/46/46/46, withheld 0/0/60/70, replay unchanged. Reproduced the four save clients retiring every queue and reporting saved. No production writes were used.
+
+Implementation plan carried out: add 009 rather than editing historical migrations; retain reachability, budget and four-open-run checks; store unpaid entitlements per run and settle through the existing wallet budget; recover 008’s already-consumed entitlements from server records; retain unpaid client batches and a truthful pending state; recover server-held rewards from any verified device. Update SQL preparation/version checks, rebuild the static export, test SQL/client/real-clock/browser behavior, review the six design domains and record the finding response. Production Auth/RPC access was rechecked separately and remains insufficient to inspect/migrate/write the actual database. See the current VALIDATION.md section.
+
 ## Production integration · 2026-11-05
 
 The supplied project is `nhtlwcukeyhvkrjveots`. Before runtime edits, inspected the existing vanilla-JavaScript application, custom static-copy build, public config, persistence client, wallet authentication, migrations 001–007, verification SQL and pinned design references. Root build/dependency files remain unchanged. There is no Vite/Next/React environment-variable substitution; the existing browser configuration is `src/config.js`.

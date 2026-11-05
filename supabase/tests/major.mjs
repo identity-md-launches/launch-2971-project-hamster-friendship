@@ -74,6 +74,10 @@ try {
   const original=await h.rpc(a,'hf_wallet_profile',{p_legacy:ticket});assert.equal(original.name,'Preserved Friend');assert.equal(original.sqk,275);
  });
  await check('the delivered read-only owner verification SQL passes every permission and checkpoint assertion',async()=>{
+  // The scenarios above intentionally exercise historical 005–007 behavior.
+  // Owner verification targets the current schema, so upgrade before checking it.
+  await h.admin('select 1');
+  for(const file of ['008_reward_guard','009_deferred_rewards'])await h.db.exec(await readFile('supabase/migrations/'+file+'.sql','utf8'));
   await h.admin('select 1');const checks=await h.db.exec(await readFile('supabase/verify_major.sql','utf8'));let booleans=0;for(const result of checks)for(const row of result.rows)for(const value of Object.values(row))if(typeof value==='boolean'){assert.equal(value,true);booleans++;}assert(booleans>=10);
  });
  await mkdir('test/scratch/major',{recursive:true});await writeFile('test/scratch/major/sql-results.json',JSON.stringify({results,limitations:['Auth identity fixtures; no hosted Supabase/signature validation.','Single PostgreSQL connection; independent-connection lock contention not exercised.']},null,2));

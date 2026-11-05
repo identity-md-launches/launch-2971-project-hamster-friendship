@@ -25,8 +25,10 @@
   function mutate(fn) { var epoch = generation; return serialized(function () { if (epoch !== generation) throw new Error('The wallet changed. Retry the action from the current profile.'); return fn(); }); }
   function identityChanged() { window.dispatchEvent(new Event('hamster:identity')); notify(); }
   function hasConflict() { return outbox.some(function (r) { return Boolean(r.conflict); }); }
+  function pendingRewards() { return Number(profile.pending_rewards || 0); }
+  function savedStatus() { return hasConflict() ? conflictMessage() : outbox.length || pendingRewards() ? 'Save pending. Earned rewards are kept until fully credited.' : 'Wallet profile saved.'; }
   function conflictMessage() { return 'This map has ended in another session. Saved rewards are safe. Unsent events are kept for recovery. Open Profile and choose Restart from cloud profile.'; }
-  function pendingCoins() { return outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.filter(function (e) { return e.kind === 'pickup' && r.loot[e.target] === 'coin'; }).length); }, 0); }
+  function pendingCoins() { return outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.filter(function (e) { return e.seq > (r.validatedAck || 0) && e.kind === 'pickup' && r.loot[e.target] === 'coin'; }).length); }, 0); }
   async function request(path, body, token, method) {
     var control = new AbortController(), timer = setTimeout(function () { control.abort(); }, 10000);
     try {
@@ -47,7 +49,7 @@
     backendFlight = Promise.resolve().then(async function () {
       try {
         var data = await request('/rest/v1/rpc/hf_service_status', {});
-        if (!data || data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime') throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
+        if (!data || data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime' || data.migration < 9 || !Number.isSafeInteger(data.migration)) throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
         backendReady = true; backendState = 'ready';
       } catch (error) {
         backendReady = false; backendState = 'unavailable';
@@ -84,7 +86,7 @@
   function mergedRun(run, address, through) {
     var stored = read(runKey(address, run.id), null), ack = Math.max(run.ack || 0, stored && stored.ack || 0, through || 0), events = {};
     (stored && stored.events || []).concat(run.events).forEach(function (e) { if (e.seq > ack) events[e.seq] = e; });
-    return Object.assign({}, stored, run, { ack: ack, events: Object.values(events).sort(function (a, b) { return a.seq - b.seq; }) });
+    return Object.assign({}, stored, run, { ack: ack, validatedAck: Math.max(ack, run.validatedAck || 0, stored && stored.validatedAck || 0), events: Object.values(events).sort(function (a, b) { return a.seq - b.seq; }) });
   }
   function persist(queue, address) {
     queue.forEach(function (run) { var merged = mergedRun(run, address); Object.assign(run, merged); write(runKey(address, run.id), merged); }); notify();
@@ -114,13 +116,17 @@
     return queue;
   }
   async function flush() {
-    if (!cloud || !session || !outbox.length) return;
+    if (!cloud || !session || (!outbox.length && !pendingRewards())) return;
     if (flushing && flushing.generation === generation) return flushing.promise;
     var queue = outbox, address = wallet, auth = session, epoch = generation;
     var work = Promise.resolve().then(async function () {
       try {
-        while (queue.some(function (r) { return !r.conflict; })) {
-          var run = queue.find(function (r) { return !r.conflict; });
+        // Recover server-held rewards even on a new device with no local queue.
+        // Retry once per flush; never spin while the real-time budget refills.
+        if (pendingRewards()) await rpc('hf_settle_rewards', {}, auth, address, epoch);
+        var deferred = new Set();
+        while (queue.some(function (r) { return !r.conflict && !deferred.has(r.id); })) {
+          var run = queue.find(function (r) { return !r.conflict && !deferred.has(r.id); });
           if (!run.events.length) { queue.splice(queue.indexOf(run), 1); retire(run, address); continue; }
           var events = run.events.slice(0, 128);
           var result;
@@ -130,7 +136,11 @@
             // An offline/unavailable state check leaves the queue retryable.
             var remote;
             try { remote = await rpc('hf_run_state', { p_run: run.id }, auth, address, epoch); } catch (_) { throw error; }
-            if (!remote || !['abandoned', 'dead', 'complete'].includes(remote.status) || !Number.isSafeInteger(remote.ack) || remote.ack < 0) throw error;
+            if (!remote || !['abandoned', 'dead', 'complete'].includes(remote.status) || !Number.isSafeInteger(remote.ack) || remote.ack < 0 || !Number.isSafeInteger(remote.pendingPoints) || remote.pendingPoints < 0) throw error;
+            run.validatedAck = Math.max(run.validatedAck || 0, remote.ack);
+            if (remote.pendingPoints > 0 && run.events.every(function (e) { return e.seq <= remote.ack; })) {
+              deferred.add(run.id); persist(queue, address); continue;
+            }
             run.ack = remote.ack;
             run.events = run.events.filter(function (e) { return e.seq > remote.ack; });
             if (!run.events.length && !(epoch === generation && active && active.id === run.id)) {
@@ -145,11 +155,20 @@
             continue;
           }
           if (!result || !Number.isSafeInteger(result.ack) || result.ack < events[events.length - 1].seq) throw new Error('Cloud did not acknowledge these events. Pending progress has been kept. Retry the save.');
+          if (!Number.isSafeInteger(result.pendingPoints) || result.pendingPoints < 0) throw new Error('Cloud did not confirm reward settlement. Pending progress has been kept. Retry the save.');
+          // SQK is paid on validation, even if ranked fruit points must wait.
+          // Retaining the batch must not label its already-paid coin pending.
+          run.validatedAck = Math.max(run.validatedAck || 0, result.ack);
+          if (result.pendingPoints > 0) {
+            // ack means validated, not fully paid. Keep this batch durable for
+            // replay (including its terminal event) until all its points land.
+            deferred.add(run.id); persist(queue, address); continue;
+          }
           run.ack = result.ack;
           run.events = run.events.filter(function (e) { return e.seq > result.ack; });
           if (!run.events.length) { queue.splice(queue.indexOf(run), 1); retire(run, address); } persist(queue, address);
         }
-        if (epoch === generation) status = hasConflict() ? conflictMessage() : 'Wallet profile saved.';
+        if (epoch === generation) status = savedStatus();
       } catch (error) { if (epoch === generation) status = 'Save pending. ' + error.message + ' Open Profile and retry.'; }
       finally { if (flushing && flushing.generation === epoch) flushing = null; notify(); }
     });
@@ -165,7 +184,7 @@
       await requireBackend();
       await rpc('hf_wallet_profile', {}, session, address, epoch);
       if (epoch !== generation) return;
-      status = 'Wallet profile saved.'; await flush();
+      status = savedStatus(); await flush();
     } catch (error) { if (epoch === generation) { session = null; cloud = false; status = 'Sign in again. ' + error.message; } }
     notify();
   }
@@ -279,7 +298,7 @@
     var epoch = generation;
     await flush();
     if (epoch !== generation || outbox.some(function (r) { return !r.conflict; })) return;
-    try { await rpc('hf_wallet_profile'); if (epoch === generation) status = hasConflict() ? conflictMessage() : 'Wallet profile saved.'; }
+    try { await rpc('hf_wallet_profile'); if (epoch === generation) { await flush(); status = savedStatus(); } }
     catch (error) { if (epoch === generation) status = 'Unable to refresh this wallet profile. ' + error.message + ' Check your connection and retry.'; }
     notify();
   }
@@ -317,9 +336,9 @@
     subscribe: function (fn) { listeners.push(fn); },
     retry: retry, recover: function () { return mutate(recover); },
     recoveryRecord: function () { return JSON.parse(JSON.stringify({ wallet: wallet, runs: recovery.concat(outbox.filter(function (r) { return r.conflict; })) })); },
-    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, backendState: backendState, backendError: backendError, backendCheckedAt: backendCheckedAt, status: !cloud && backendState === 'unavailable' ? backendError : status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), localLegacyAvailable: Boolean(read('-guest', null)), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
+    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, backendState: backendState, backendError: backendError, backendCheckedAt: backendCheckedAt, status: !cloud && backendState === 'unavailable' ? backendError : status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), pendingRewards: pendingRewards(), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), localLegacyAvailable: Boolean(read('-guest', null)), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
   };
   window.addEventListener('online', function () { if (cloud) void flush(); });
   window.addEventListener('pagehide', function () { if (cloud) void flush(); });
-  setInterval(function () { if (cloud && outbox.length && !flushing && navigator.onLine) void flush(); }, 4000);
+  setInterval(function () { if (cloud && (outbox.length || pendingRewards()) && !flushing && navigator.onLine) void flush(); }, 4000);
 })();

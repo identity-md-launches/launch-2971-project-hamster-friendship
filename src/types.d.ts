@@ -27,13 +27,14 @@ interface FriendshipAudio {
 interface FriendshipProfile {
   name: string; sqk: number; total_score: number; highest_map: number; produce_points?: number;
   wallet?: string;
+  pending_rewards?: number;
   badges?: FriendshipBadge[];
   purchases: string[]; cosmetics: Record<string, string | null>;
 }
 interface FriendshipSaveSnapshot {
   profile: FriendshipProfile; cloud: boolean; configured: boolean; status: string;
   backendState: string; backendError: string; backendCheckedAt: string;
-  storageOK: boolean; pendingCoins: number; pendingEvents: number;
+  storageOK: boolean; pendingCoins: number; pendingEvents: number; pendingRewards: number;
   runConflict: boolean; recoveryEvents: number;
   ranked: boolean; playingGuest: boolean; legacyAvailable: boolean; localLegacyAvailable: boolean; wallet: string;
 }

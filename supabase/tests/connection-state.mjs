@@ -8,7 +8,7 @@ const f=await fixture({game:false,fetch:async()=>{
  calls++;
  if(mode==='offline')throw new TypeError('Network unavailable in test');
  if(mode==='missing')return{ok:false,json:async()=>({code:'PGRST202',message:'Missing function'})};
- return{ok:true,json:async()=>({schemaVersion:mode==='ready'?7:6,rulesVersion:6,leaderboard:'lifetime'})};
+ return{ok:true,json:async()=>({schemaVersion:mode==='ready'?7:6,rulesVersion:6,leaderboard:'lifetime',migration:9})};
 }});
 async function check(name,fn){await fn();results.push({name,passed:true});console.log('ok',name);}
 await check('startup checks configured credentials, but a missing backend never becomes a saved profile',async()=>{

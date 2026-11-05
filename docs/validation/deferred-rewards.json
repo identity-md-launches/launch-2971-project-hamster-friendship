@@ -1,0 +1,1929 @@
+{
+  "date": "2026-11-05",
+  "finding": "8591f2861f6253cacac03098729bcba0ac4f7a6cf89075eff7ea6b96315caa4f",
+  "scope": "Bounded offline reward-loss revision; existing Squeek game/export preserved",
+  "before": {
+    "observations": [
+      {
+        "case": "unchanged 001\u2013008 real-clock SQL replay",
+        "elapsedSeconds": 75.18,
+        "totalScore": 150,
+        "producePoints": 150,
+        "acks": [
+          46,
+          46,
+          46,
+          46
+        ],
+        "withheld": [
+          0,
+          0,
+          60,
+          70
+        ],
+        "afterReplay": 150
+      },
+      {
+        "case": "unchanged save.js, four independent offline stores; run elapsed time backdated only",
+        "totalScore": 150,
+        "producePoints": 150,
+        "clients": [
+          {
+            "pendingEvents": 0,
+            "outboxKeys": 0,
+            "status": "Wallet profile saved."
+          },
+          {
+            "pendingEvents": 0,
+            "outboxKeys": 0,
+            "status": "Wallet profile saved."
+          },
+          {
+            "pendingEvents": 0,
+            "outboxKeys": 0,
+            "status": "Wallet profile saved."
+          },
+          {
+            "pendingEvents": 0,
+            "outboxKeys": 0,
+            "status": "Wallet profile saved."
+          }
+        ]
+      }
+    ],
+    "production": false
+  },
+  "sqlClient": {
+    "results": [
+      {
+        "name": "four valid offline runs conserve all 280 points: 150 paid + 130 durably pending",
+        "passed": true
+      },
+      {
+        "name": "replay before refill neither loses nor duplicates pending rewards",
+        "passed": true
+      },
+      {
+        "name": "partial refill pays exactly the budget; final refill pays all terminal runs exactly once",
+        "passed": true
+      },
+      {
+        "name": "four independent save clients keep unpaid durable batches and pending status until settled",
+        "passed": true
+      },
+      {
+        "name": "a stale same-tab acknowledgement preserves newer durable events from another tab",
+        "passed": true
+      },
+      {
+        "name": "validated produce drops defer points while SQK pickup remains immediate and idempotent",
+        "passed": true
+      },
+      {
+        "name": "retained reward batches do not label already-credited SQK as pending after refresh",
+        "passed": true
+      },
+      {
+        "name": "fresh device and canonical wallet alias recover unpaid rewards with no browser queue",
+        "passed": true
+      },
+      {
+        "name": "ended-run error reconciliation cannot discard a validated but unpaid batch",
+        "passed": true
+      },
+      {
+        "name": "missing payment confirmations and malformed lost-reply state fail closed without retiring a batch",
+        "passed": true
+      },
+      {
+        "name": "abandoned and completed runs retain unpaid rewards and settle without new events",
+        "passed": true
+      },
+      {
+        "name": "legacy v4 settlement still waits for death, then pays deferred deltas exactly once without produce growth",
+        "passed": true
+      },
+      {
+        "name": "reachability, teleport, elapsed-time, sequence and server-owned score checks remain enforced",
+        "passed": true
+      },
+      {
+        "name": "RLS/grants and verified ownership protect the new entitlement/settlement path",
+        "passed": true
+      },
+      {
+        "name": "008 \u2192 009 recovers already discarded rewards without changing historical balances/inventory",
+        "passed": true
+      },
+      {
+        "name": "an old migration-8 backend is rejected before any signed-in save or wallet prompt",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Disposable PGlite PostgreSQL, fixture Auth/HTTP; not Supabase production.",
+      "Run elapsed time and budget refill accelerated explicitly for fast edge cases. Real-clock regression is separate.",
+      "Single connection; independent database-connection lock contention not exercised."
+    ]
+  },
+  "realClock": {
+    "passed": true,
+    "observations": [
+      {
+        "seconds": 75.182,
+        "score": 150,
+        "produce": 150,
+        "pending": 130,
+        "acks": [
+          46,
+          46,
+          46,
+          46
+        ],
+        "pendingPerRun": [
+          0,
+          0,
+          60,
+          70
+        ]
+      },
+      {
+        "seconds": 76.191,
+        "score": 151,
+        "pending": 129
+      },
+      {
+        "seconds": 77.199,
+        "score": 152,
+        "pending": 128
+      },
+      {
+        "seconds": 78.207,
+        "score": 153,
+        "pending": 127
+      },
+      {
+        "seconds": 79.215,
+        "score": 154,
+        "pending": 126
+      },
+      {
+        "seconds": 80.223,
+        "score": 155,
+        "pending": 125
+      },
+      {
+        "seconds": 206.393,
+        "score": 280,
+        "produce": 280,
+        "pending": 0,
+        "leaderboard": 280,
+        "replayScore": 280
+      }
+    ],
+    "limitations": [
+      "Disposable PGlite PostgreSQL with explicit Auth fixtures, not production Supabase.",
+      "No game/budget/clock database fields edited; no client-side time acceleration."
+    ]
+  },
+  "browser": {
+    "results": [
+      {
+        "name": "four 390-wide browsers keep 46 offline events in each independent durable store",
+        "passed": true
+      },
+      {
+        "name": "reconnect saves 150 points and retains two unpaid batches with truthful pending status",
+        "passed": true
+      },
+      {
+        "name": "pending Profile remains usable at 320/390/1440 widths and 200% root text",
+        "passed": true
+      },
+      {
+        "name": "pending status and retry controls pass automated WCAG A/AA checks",
+        "passed": true
+      },
+      {
+        "name": "refresh keeps the unpaid queue; fresh device has server-held pending rewards without local events",
+        "passed": true
+      },
+      {
+        "name": "partial refill and lost response preserve the remaining batch and exact paid total",
+        "passed": true
+      },
+      {
+        "name": "automatic retry settles all 280 points; original queues retire only after complete payment",
+        "passed": true
+      },
+      {
+        "name": "wallet reconnect, page reload and actual SQL leaderboard preserve 280 without duplication",
+        "passed": true
+      },
+      {
+        "name": "no JavaScript or unexpected local/SQL resource failures in the revised flow",
+        "passed": true
+      }
+    ],
+    "errors": [],
+    "failures": [],
+    "limitations": [
+      "WebKit could not launch in this environment; no Safari result claimed.",
+      "Auth/signature/session and HTTP are explicit fixtures. SQL and the production save/UI files run unchanged.",
+      "Run start/refill times accelerated for UI edge cases; see separate real-clock regression.",
+      "No Supabase production write, real wallet signature or physical device test."
+    ]
+  },
+  "handoff": {
+    "results": [
+      {
+        "name": "Inspect and upgrade schema 0 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 1 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 2 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 3 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 4 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 5 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 6 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 7 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 8 \u2192 9; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Wrong version selection aborts without applying later columns",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Disposable PostgreSQL with explicit Auth fixtures; no production SQL executed."
+    ]
+  },
+  "connectionState": {
+    "results": [
+      {
+        "name": "startup checks configured credentials, but a missing backend never becomes a saved profile",
+        "passed": true
+      },
+      {
+        "name": "missing database migrations block signing before any wallet prompt",
+        "passed": true
+      },
+      {
+        "name": "retry discovers a repaired backend without inventing authentication or importing guest totals",
+        "passed": true
+      },
+      {
+        "name": "a later incompatible or offline backend fails clearly and remains unsaved",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "HTTP and wallet are explicit local fixtures, not production results."
+    ]
+  },
+  "game": {
+    "results": [
+      {
+        "name": "all four map durations, bosses and increasing HP are shared deterministic rules",
+        "passed": true
+      },
+      {
+        "name": "all maps instantiate 30 matching enemies, correct bosses and exact appearance thresholds",
+        "passed": true
+      },
+      {
+        "name": "forest enemies remain airborne, with visible windup and swoop states instead of burrowing",
+        "passed": true
+      },
+      {
+        "name": "glacier, caldera and reef enemies fire only matching ice, fire and water attacks",
+        "passed": true
+      },
+      {
+        "name": "elemental bosses have different timed volley, breath, slide and rush patterns",
+        "passed": true
+      },
+      {
+        "name": "boss defeat advances maps automatically while ordinary enemies remain alive",
+        "passed": true
+      },
+      {
+        "name": "victory cannot be cancelled by a lingering attack or a fall during the defeat animation",
+        "passed": true
+      },
+      {
+        "name": "page exit during a boss celebration records completion once before the next visit",
+        "passed": true
+      },
+      {
+        "name": "fruit and vegetables auto-collect on desktop, once, without any key",
+        "passed": true
+      },
+      {
+        "name": "weapons stay on the ground until E, on desktop and touch; only nearest weapon is claimed",
+        "passed": true
+      },
+      {
+        "name": "every offered weapon in the outer pickup range can be collected by one explicit action",
+        "passed": true
+      },
+      {
+        "name": "one action takes the nearest eligible weapon even if a farther drop is processed first",
+        "passed": true
+      },
+      {
+        "name": "growth triggers at every 20-point boundary and leaves collision dimensions/footing stable",
+        "passed": true
+      },
+      {
+        "name": "SQK world size is exactly 70% of the prior dimensions, and defeat remains idempotent",
+        "passed": true
+      },
+      {
+        "name": "each weapon dispatches its own sound and retains original damage and ammo rules",
+        "passed": true
+      },
+      {
+        "name": "guest scores never become a global board and existing local data stays untouched",
+        "passed": true
+      }
+    ]
+  },
+  "audio": {
+    "results": [
+      {
+        "name": "existing device volume and mute settings survive the upgrade",
+        "passed": true
+      },
+      {
+        "name": "each weapon builds a distinct oscillator/sweep/envelope signature",
+        "passed": true
+      },
+      {
+        "name": "the master compressor, conservative gain, per-effect rate limit and 24-voice ceiling bound overlap",
+        "passed": true
+      },
+      {
+        "name": "SFX mute suppresses every weapon, and changing settings writes the original storage key",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Graph/envelope checks use a Web Audio fixture. Speaker loudness and subjective listening have not been measured."
+    ]
+  },
+  "generalBrowser": {
+    "results": [
+      {
+        "name": "production export loads at a subpath with complete metadata and no console/resource errors",
+        "passed": true
+      },
+      {
+        "name": "keyboard Tab reaches the game and Connect, and closing the wallet returns focus",
+        "passed": true
+      },
+      {
+        "name": "entry and profile pass automated WCAG A/AA checks",
+        "passed": true
+      },
+      {
+        "name": "desktop start, story, keyboard movement, jump, pause and resume work on the unmodified export",
+        "passed": true
+      },
+      {
+        "name": "profile validation, wardrobe, audio settings and real unavailable-leaderboard state are usable",
+        "passed": true
+      },
+      {
+        "name": "390-wide first screen includes game, Start and Connect with no horizontal overflow",
+        "passed": true
+      },
+      {
+        "name": "phone start, rotate fallback, portrait opt-in and landscape resize preserve the run",
+        "passed": true
+      },
+      {
+        "name": "all four worlds render their own scenery and bosses from the actual engine",
+        "passed": true
+      },
+      {
+        "name": "touch weapon pickup requires a visible PICK UP action; walking near it alone does not claim it",
+        "passed": true
+      },
+      {
+        "name": "one action owns one pointer; a second press cannot release the first held action",
+        "passed": true
+      },
+      {
+        "name": "growth is visible at 20 and 40 points with unchanged collision body",
+        "passed": true
+      },
+      {
+        "name": "rendered map progression is automatic and final boss reaches the ending",
+        "passed": true
+      },
+      {
+        "name": "320-wide modal and entry layout stays within viewport",
+        "passed": true
+      },
+      {
+        "name": "390-wide modal and entry layout stays within viewport",
+        "passed": true
+      },
+      {
+        "name": "1440-wide modal and entry layout stays within viewport",
+        "passed": true
+      },
+      {
+        "name": "200% text and an RTL mirror keep the primary controls and dialogs usable",
+        "passed": true
+      },
+      {
+        "name": "no runtime errors occurred during production and instrumented flows",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "WebKit could not launch: missing system libraries (GTK4, GStreamer and related WebKit runtime dependencies). No Safari interaction result is claimed."
+    ],
+    "errors": [],
+    "failures": []
+  },
+  "historicalSql": {
+    "results": [
+      {
+        "name": "006 and 007 preserve every profile, wallet, balance, inventory and historical score fingerprint",
+        "passed": true
+      },
+      {
+        "name": "pre-upgrade pending events still settle once through the original v4 protocol",
+        "passed": true
+      },
+      {
+        "name": "same verified wallet and concurrent profile opens return one original profile",
+        "passed": true
+      },
+      {
+        "name": "unverified users, forged metadata and anonymous clients cannot create ranked profiles",
+        "passed": true
+      },
+      {
+        "name": "acknowledged produce points checkpoint immediately and replay cannot double-credit",
+        "passed": true
+      },
+      {
+        "name": "second-device start leaves the first run active; its own death settles points only once",
+        "passed": true
+      },
+      {
+        "name": "all four SQL maps match their duration, enemy families, HP and boss-only progression",
+        "passed": true
+      },
+      {
+        "name": "RLS and grants deny direct writes; event validators reject arbitrary totals, repeats and foreign runs",
+        "passed": true
+      },
+      {
+        "name": "Top 100 is global, capped and ordered by permanent SQL totals without wallet disclosure",
+        "passed": true
+      },
+      {
+        "name": "legacy ticket migration retains a verified server balance; existing wallet always wins",
+        "passed": true
+      },
+      {
+        "name": "the delivered read-only owner verification SQL passes every permission and checkpoint assertion",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Auth identity fixtures; no hosted Supabase/signature validation.",
+      "Single PostgreSQL connection; independent-connection lock contention not exercised."
+    ]
+  },
+  "taste": {
+    "checks": [
+      {
+        "name": "render",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 8312,
+        "output": "renders, no script errors or missing local files\nexternal hosts: nhtlwcukeyhvkrjveots.supabase.co"
+      },
+      {
+        "name": "layout",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no horizontal scroll at 320, 390 or 1440\nno text box overlaps another\nno floating control covers text\nno text cut off by overflow: hidden"
+      },
+      {
+        "name": "targets",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "all 5 controls at least 24px or spaced at 390\n0 under the 44px comfortable size"
+      },
+      {
+        "name": "contrast",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "all measured text meets 4.5:1 (3:1 large)\n23 text boxes over images, video, canvas or gradients not measured"
+      },
+      {
+        "name": "casing",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "no all-caps text in content"
+      },
+      {
+        "name": "tracking",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "letter-spacing natural in content (display type may run tight)"
+      },
+      {
+        "name": "eyebrows",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "no kicker labels above headings"
+      },
+      {
+        "name": "type-sizes",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "390: 2 sizes in use, 3 with one-offs (14px\u00d715, 16px\u00d73, 20px\u00d71)\n1440: 2 sizes in use, 4 with one-offs (14px\u00d716, 16px\u00d72, 20px\u00d71, 28px\u00d71)\nbar: 6 sizes used more than once, 8 counting one-offs, per width"
+      },
+      {
+        "name": "type-faces",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "families (2): georgia, system-ui\nweights (2): 400, 700"
+      },
+      {
+        "name": "glyphs",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "no em dashes or emoji in text"
+      },
+      {
+        "name": "slogans",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "1 two-beat lines; a stack is four or more, so keep the best and cut the rest:\n\"Guest play \u00b7 not saved. Cloud saves unavailable.\" (#entry-save)"
+      },
+      {
+        "name": "repetition",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 1,
+        "output": "no repeated lines"
+      },
+      {
+        "name": "copy-budget",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "prose on the first screen: 13 words at 390 (bar 60), 13 at 1440 (bar 90)\nall words on the first screen: 41 at 390, 42 at 1440\nwhole page: 42 words, 13 of them prose"
+      },
+      {
+        "name": "chrome",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "border and shadow together: 0\ncards inside cards: 0\ngradient text: 0"
+      },
+      {
+        "name": "motion",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "transition: all on 0 elements\nendless animations: 0; still running with reduced motion: 0"
+      },
+      {
+        "name": "share",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 0,
+        "output": "title \"Squeek \u00b7 The Lost Alice\", favicon, og:title, og:image, description"
+      }
+    ],
+    "target": "dist",
+    "at": "2026-11-05T18:39:01.919Z",
+    "bar": {
+      "sizes": 6,
+      "strays": 8,
+      "faces": 3,
+      "weights": 3,
+      "target": 24,
+      "comfortable": 44,
+      "proseMobile": 60,
+      "proseDesktop": 90,
+      "tracking": 0.04,
+      "repeatWords": 5,
+      "contrast": 4.5,
+      "contrastLarge": 3,
+      "slogans": 3
+    },
+    "views": {
+      "390": {
+        "vw": 390,
+        "vh": 844,
+        "art": 0,
+        "scrollWidth": 390,
+        "height": 844,
+        "texts": 19,
+        "offenders": [],
+        "overlaps": [],
+        "floating": [],
+        "clipped": [],
+        "ellipsized": [],
+        "targets": [
+          {
+            "sel": "#btn-wallet",
+            "w": 170,
+            "h": 44,
+            "cx": 96.890625,
+            "cy": 73.59375,
+            "label": "Connect MetaMask"
+          },
+          {
+            "sel": "#btn-change",
+            "w": 96,
+            "h": 44,
+            "cx": 235.5546875,
+            "cy": 73.59375,
+            "label": "Change it"
+          },
+          {
+            "sel": "#btn-menu",
+            "w": 81,
+            "h": 44,
+            "cx": 329.7265625,
+            "cy": 73.59375,
+            "label": "\u2630 Menu"
+          },
+          {
+            "sel": "#btn-start",
+            "w": 180,
+            "h": 44,
+            "cx": 195,
+            "cy": 503,
+            "label": "Start adventure"
+          },
+          {
+            "sel": "#btn-start-guild",
+            "w": 144,
+            "h": 44,
+            "cx": 194.9921875,
+            "cy": 555,
+            "label": "Open GUILD"
+          }
+        ],
+        "borderShadow": [],
+        "nested": [],
+        "gradientText": [],
+        "transitionAll": [],
+        "infinite": [],
+        "marquees": [],
+        "slogans": [
+          {
+            "sel": "#entry-save",
+            "text": "Guest play \u00b7 not saved. Cloud saves unavailable."
+          }
+        ],
+        "head": {
+          "title": "Squeek \u00b7 The Lost Alice",
+          "icon": true,
+          "ogTitle": "squeek.hamster",
+          "ogImage": "./og-image.png",
+          "description": "A pixel-art adventure across forest, glacier, volcano and reef. Collect produce, grow Chang and defeat four bosses to find Alice."
+        }
+      },
+      "1440": {
+        "vw": 1440,
+        "vh": 900,
+        "art": 0,
+        "scrollWidth": 1440,
+        "height": 900,
+        "texts": 20,
+        "offenders": [],
+        "overlaps": [],
+        "floating": [],
+        "clipped": [],
+        "ellipsized": [],
+        "targets": [
+          {
+            "sel": "#btn-wallet",
+            "w": 174,
+            "h": 44,
+            "cx": 1009.828125,
+            "cy": 28,
+            "label": "Connect MetaMask"
+          },
+          {
+            "sel": "#btn-change",
+            "w": 100,
+            "h": 44,
+            "cx": 1154.4921875,
+            "cy": 28,
+            "label": "Change it"
+          },
+          {
+            "sel": "#btn-fullscreen",
+            "w": 123,
+            "h": 44,
+            "cx": 1273.734375,
+            "cy": 28,
+            "label": "\u26f6 Fullscreen"
+          },
+          {
+            "sel": "#btn-menu",
+            "w": 85,
+            "h": 44,
+            "cx": 1385.6015625,
+            "cy": 28,
+            "label": "\u2630 Menu"
+          },
+          {
+            "sel": "#btn-start",
+            "w": 180,
+            "h": 44,
+            "cx": 643.78125,
+            "cy": 525.890625,
+            "label": "Start adventure"
+          },
+          {
+            "sel": "#btn-start-guild",
+            "w": 144,
+            "h": 44,
+            "cx": 813.8828125,
+            "cy": 525.890625,
+            "label": "Open GUILD"
+          }
+        ],
+        "borderShadow": [],
+        "nested": [],
+        "gradientText": [],
+        "transitionAll": [],
+        "infinite": [],
+        "marquees": [],
+        "slogans": [
+          {
+            "sel": "#entry-save",
+            "text": "Guest play \u00b7 not saved. Cloud saves unavailable."
+          }
+        ],
+        "head": {
+          "title": "Squeek \u00b7 The Lost Alice",
+          "icon": true,
+          "ogTitle": "squeek.hamster",
+          "ogImage": "./og-image.png",
+          "description": "A pixel-art adventure across forest, glacier, volcano and reef. Collect produce, grow Chang and defeat four bosses to find Alice."
+        }
+      }
+    },
+    "texts390": [
+      {
+        "sel": "#stage > div.game-chrome:nth-of-type(1) > header.site-header > h1",
+        "text": "squeek.hamster",
+        "words": 1,
+        "tag": "h1",
+        "size": 16,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 16.87,
+        "large": false,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 12,
+        "y": 6,
+        "w": 107.109375,
+        "h": 37.59375,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-wallet",
+        "text": "Connect MetaMask",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 12,
+        "y": 51.59375,
+        "w": 169.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-change",
+        "text": "Change it",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 187.78125,
+        "y": 51.59375,
+        "w": 95.546875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-menu",
+        "text": "\u2630 Menu",
+        "words": 1,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 289.328125,
+        "y": 51.59375,
+        "w": 80.796875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(1) > span:nth-of-type(1)",
+        "text": "SQK",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 113.59375,
+        "w": 29.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-sqk",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 57.09375,
+        "y": 113.59375,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(2) > span",
+        "text": "Map",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 84.84375,
+        "y": 113.59375,
+        "w": 29.546875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-map",
+        "text": "1",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 120.390625,
+        "y": 113.59375,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(3) > span",
+        "text": "Defeated",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 142.140625,
+        "y": 113.59375,
+        "w": 64.515625,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-enemies",
+        "text": "0/30",
+        "words": 2,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 212.65625,
+        "y": 113.59375,
+        "w": 34.34375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.75
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(4) > span",
+        "text": "Current Map Score",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 138.59375,
+        "w": 130.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-score",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 158.25,
+        "y": 138.59375,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud-environment",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "span",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 15.61,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 175.59375,
+        "w": 115.171875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-countdown",
+        "text": "Cockroach in 60s",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 11.76,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 153.171875,
+        "y": 175.59375,
+        "w": 120.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.125
+      },
+      {
+        "sel": "#start-title",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "h2",
+        "size": 20,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": true,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 129.34375,
+        "y": 414,
+        "w": 131.3125,
+        "h": 22,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#screen-start > p.overlay-text:nth-of-type(1)",
+        "text": "A pixel-art adventure to find Alice.",
+        "words": 6,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 74.875,
+        "y": 448,
+        "w": 240.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start",
+        "text": "Start adventure",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 105.109375,
+        "y": 481,
+        "w": 179.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start-guild",
+        "text": "Open GUILD",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 13.68,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 122.78125,
+        "y": 533,
+        "w": 144.421875,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#entry-save",
+        "text": "Guest play \u00b7 not saved. Cloud saves unavailable.",
+        "words": 7,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": 12.71,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 43.578125,
+        "y": 589,
+        "w": 302.84375,
+        "h": 42,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      }
+    ],
+    "texts1440": [
+      {
+        "sel": "#stage > div.game-chrome:nth-of-type(1) > header.site-header > h1",
+        "text": "squeek.hamster",
+        "words": 1,
+        "tag": "h1",
+        "size": 20,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": true,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 12,
+        "y": 17,
+        "w": 133.890625,
+        "h": 22,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-wallet",
+        "text": "Connect MetaMask",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 922.9375,
+        "y": 6,
+        "w": 173.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-change",
+        "text": "Change it",
+        "words": 2,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 1104.71875,
+        "y": 6,
+        "w": 99.546875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-fullscreen > span.tool-label",
+        "text": "Fullscreen",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 1242.265625,
+        "y": 19.59375,
+        "w": 80.9375,
+        "h": 16.796875,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-menu",
+        "text": "\u2630 Menu",
+        "words": 1,
+        "tag": "button",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 1343.203125,
+        "y": 6,
+        "w": 84.796875,
+        "h": 44,
+        "fixed": false,
+        "chrome": true,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(1) > span:nth-of-type(1)",
+        "text": "SQK",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 68,
+        "w": 29.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-sqk",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 57.09375,
+        "y": 68,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(2) > span",
+        "text": "Map",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 88.84375,
+        "y": 68,
+        "w": 29.546875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-map",
+        "text": "1",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 124.390625,
+        "y": 68,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(3) > span",
+        "text": "Defeated",
+        "words": 1,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 150.140625,
+        "y": 68,
+        "w": 64.515625,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-enemies",
+        "text": "0/30",
+        "words": 2,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 220.65625,
+        "y": 68,
+        "w": 34.34375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.75
+      },
+      {
+        "sel": "#hud > p.hud-item:nth-of-type(4) > span",
+        "text": "Current Map Score",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 271,
+        "y": 68,
+        "w": 130.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-score",
+        "text": "0",
+        "words": 1,
+        "tag": "strong",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 407.25,
+        "y": 68,
+        "w": 9.75,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 1
+      },
+      {
+        "sel": "#hud-environment",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "span",
+        "size": 14,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 22,
+        "y": 105,
+        "w": 115.171875,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#hud-countdown",
+        "text": "Cockroach in 60s",
+        "words": 3,
+        "tag": "span",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 153.171875,
+        "y": 105,
+        "w": 120.09375,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0.125
+      },
+      {
+        "sel": "#start-title",
+        "text": "Amber Canopy",
+        "words": 2,
+        "tag": "h2",
+        "size": 28,
+        "weight": 700,
+        "family": "georgia",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": true,
+        "inCode": false,
+        "heading": true,
+        "pill": false,
+        "x": 628.078125,
+        "y": 428.09375,
+        "w": 183.84375,
+        "h": 30.796875,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#screen-start > p.overlay-text:nth-of-type(1)",
+        "text": "A pixel-art adventure to find Alice.",
+        "words": 6,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 599.875,
+        "y": 470.890625,
+        "w": 240.25,
+        "h": 21,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start",
+        "text": "Start adventure",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 553.890625,
+        "y": 503.890625,
+        "w": 179.78125,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#btn-start-guild",
+        "text": "Open GUILD",
+        "words": 2,
+        "tag": "button",
+        "size": 16,
+        "weight": 700,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": true,
+        "x": 741.671875,
+        "y": 503.890625,
+        "w": 144.421875,
+        "h": 44,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      },
+      {
+        "sel": "#entry-save",
+        "text": "Guest play \u00b7 not saved. Cloud saves unavailable.",
+        "words": 7,
+        "tag": "p",
+        "size": 14,
+        "weight": 400,
+        "family": "system-ui",
+        "mono": false,
+        "upper": false,
+        "authoredCaps": false,
+        "tracking": 0,
+        "ratio": null,
+        "large": false,
+        "inCode": false,
+        "heading": false,
+        "pill": false,
+        "x": 568.578125,
+        "y": 559.890625,
+        "w": 302.84375,
+        "h": 42,
+        "fixed": false,
+        "chrome": false,
+        "data": false,
+        "digits": 0
+      }
+    ],
+    "external": [
+      "nhtlwcukeyhvkrjveots.supabase.co"
+    ],
+    "errors": []
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "files": 18,
+    "bytes": 266746,
+    "relativeAssets": true,
+    "completeLocalRuntimeAssets": true
+  },
+  "check": {
+    "command": "npm run check",
+    "passed": true,
+    "notes": "All runtime scripts parse, metadata and relative assets present, 69 referenced IDs checked, every export file equals source."
+  },
+  "typecheck": {
+    "command": "node scripts/typecheck-major.mjs",
+    "passed": true,
+    "compiler": "TypeScript 5.9.3",
+    "mode": "allowJs/checkJs/noEmit",
+    "runtimeScripts": 8
+  },
+  "production": {
+    "evidence": "docs/validation/deferred-production.json",
+    "integrationComplete": false,
+    "productionMigrationsExecuted": [],
+    "authenticatedReadWrite": "not performed",
+    "tablesAndPolicies": "not inspectable with supplied publishable key",
+    "environmentVariablesConfigured": [],
+    "publicRuntimeConfig": "existing src/config.js; supplied URL/publishable key unchanged"
+  },
+  "screenshots": [
+    "docs/validation/screenshots/deferred-entry-390.png",
+    "docs/validation/screenshots/deferred-pending-390.png",
+    "docs/validation/screenshots/deferred-fresh-device-390.png",
+    "docs/validation/screenshots/deferred-paid-390.png",
+    "docs/validation/screenshots/deferred-leaderboard-390.png"
+  ],
+  "limitations": [
+    "Local SQL uses disposable PGlite PostgreSQL with Auth fixtures; not production Supabase.",
+    "Fast SQL/UI edge cases explicitly accelerate run/refill times. Separate real-clock regression edits no database/game/clock fields.",
+    "Single database connection; independent-connection lock contention untested.",
+    "Browser tool initialization failed. Local Playwright used an available Chromium executable via a disposable runner; production files were not transformed.",
+    "WebKit has no usable installed executable; no Safari or physical-device result claimed.",
+    "No screen-reader, forced-colors, browser-native zoom or translated-locale session.",
+    "Taste excludes 23 text boxes over canvas/image/alpha backgrounds from contrast measurement.",
+    "An old historical major.mjs verification case initially targeted schema 7 against current schema-9 verification SQL; it now explicitly upgrades 008/009 before checking."
+  ],
+  "submissionBudget": {
+    "method": "Conservative full contents of every Git-visible added/modified file, plus required .imd-responses.json metadata; assignment-managed scratch/inputs excluded",
+    "limitBytes": 8388608,
+    "files": [
+      ".imd-responses.json",
+      "DESIGN.md",
+      "README.md",
+      "VALIDATION.md",
+      "WORKPLAN.md",
+      "dist/save.js",
+      "dist/ui.js",
+      "docs/SUPABASE_REPORT.md",
+      "docs/validation/deferred-production.json",
+      "docs/validation/deferred-rewards.json",
+      "docs/validation/screenshots/deferred-entry-390.png",
+      "docs/validation/screenshots/deferred-fresh-device-390.png",
+      "docs/validation/screenshots/deferred-leaderboard-390.png",
+      "docs/validation/screenshots/deferred-paid-390.png",
+      "docs/validation/screenshots/deferred-pending-390.png",
+      "scripts/prepare-supabase.mjs",
+      "scripts/validate-deferred-rewards.mjs",
+      "scripts/verify-production.mjs",
+      "src/save.js",
+      "src/types.d.ts",
+      "src/ui.js",
+      "supabase/README.md",
+      "supabase/SQL_EDITOR.md",
+      "supabase/migrations/009_deferred_rewards.sql",
+      "supabase/tests/connection-state.mjs",
+      "supabase/tests/deferred-rewards-clock.mjs",
+      "supabase/tests/deferred-rewards.mjs",
+      "supabase/tests/major-harness.mjs",
+      "supabase/tests/major.mjs",
+      "supabase/tests/production-handoff.mjs",
+      "supabase/tests/reward-fixture.mjs",
+      "supabase/verify_major.sql",
+      "supabase/verify_production.sql"
+    ],
+    "protectedPathsChanged": false,
+    "ignoreFilesChanged": false,
+    "dependencyCacheFilesIncluded": false,
+    "bytes": 688677
+  }
+}
