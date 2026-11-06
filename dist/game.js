@@ -665,7 +665,8 @@
     });
   });
   byId('pickup-weapon').addEventListener('click', function () { if (game.state === 'playing') pressed.interact = true; });
-  byId('context-interact').addEventListener('click', function () { if (game.state === 'playing') { var o = nearestThing(); if (o) interact(o); } });
+  // Context actions must run inside the recorded physics tick for cloud replay.
+  byId('context-interact').addEventListener('click', function () { if (game.state === 'playing') pressed.interact = true; });
   window.addEventListener('hamster:identity', function () { if (game.state !== 'title') { gameOver(); toast('Profile changed. Restart this map to continue.'); } });
   window.addEventListener('hamster:run-conflict', function () {
     if (game.state !== 'title') gameOver();

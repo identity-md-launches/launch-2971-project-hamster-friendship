@@ -1,4 +1,69 @@
-# Revision validation · 2026-11-06
+# Context-button revision validation · 2026-11-06
+
+**The reported mobile Open/replay defect is reproduced, fixed and locally verified.** The production export is rebuilt. The existing gameplay, art, invisible movement controls, desktop controls, wallet connector, data schema and economy are retained. Full production integration remains incomplete for the reasons below; no live save or migration is claimed.
+
+## Finding and implemented change
+
+**9253e28c2e56313dc4a4cd3d3d44b7001acfaf97232b1112aa60440a6538f526 — fixed.** Before editing, the real `#context-interact` handler at `src/game.js:668` was exercised through the existing VM/save fixture and disposable PostgreSQL migrations 001–010. After 15 rightward ticks, Chang was x=117/frame=15. Open produced 2 local points and a basket event whose inputs contained only `held:2, pressed:0`; replay rejected it with “Gameplay claim does not match server movement, collision or pickup state.” Server score/ack were 0/0, two events stayed pending and `runConflict` was false. The new regression failed on `0 !== 2` against that original code.
+
+`src/game.js:668–669` now queues `pressed.interact` while playing, matching PICK UP. The existing `tick()` records the input before `updateWorld()` performs the interaction. No parallel interaction implementation, reward exception or client-supplied score was added. `dist/game.js` and the required generated server engine were rebuilt from source. No SQL migration or data rewrite was needed for this fix.
+
+After the fix, the same flow records the interaction bit (`pressed:16`) at frame 15, credits 2 Lifetime/produce points, acknowledges both events and clears the durable queue. Duplicate retries do not double-credit. The tests also cover clicks waiting for a physics tick, repeated clicks, ignored paused/dialogue clicks, offline reload/reconnect, fresh-device recovery and ranked restart. All use the real `validateReplay` and server-only `hf_replay_commit` path.
+
+## Actual checks in this revision
+
+| Command/check | Actual result |
+| --- | --- |
+| `npm run build` | Pass; 18 runtime files, **273,624 bytes** in `dist/`. |
+| `npm run check` | Pass; script parsing, metadata, relative asset URLs, DOM ids, byte-for-byte source/export equality. Existing manifest/lockfile unchanged. |
+| `node scripts/typecheck-major.mjs` | Pass; all **8** runtime JavaScript files and declarations checked by TypeScript. |
+| `node scripts/prepare-replay.mjs --check` | Pass; generated server engine matches current game/rules. |
+| `node supabase/tests/context-replay.mjs` | **4 groups pass**, after reproducing the original failure. Real installed context-button handler and durable queue; no position, reward or encounter edits. |
+| `node scripts/validate-context-replay.mjs` | **20 groups pass** against unmodified `dist/` served under `/squeek/`. Native button taps, recorded inputs, offline queue, 2-point SQL credit, cleared pending state, repeated retry and actual Menu → close → Restart chapter; fresh-device Profile and desktop E. |
+| `node scripts/validate-touch.mjs` | **53 groups pass**; full left-half invisible movement, horizontal/vertical movement, independent action fingers, release/cancel, rotation, prompt geometry, menu/focus, desktop move/jump/attack, six Axe A/AA scans, enlarged GUILD text and no local resource/script failures. |
+| Pinned `taste.mjs --out test/scratch/taste` | **16/16 pass** at 320/390/1440 wide, including reduced-motion probe. 390 first screen personally inspected: product, Start and touch directions visible. |
+| `node supabase/tests/authoritative-replay.mjs` | **15 groups pass**; anti-forgery, real combat/produce/SQK/weapon replay, partial checkpoints, lost replies/duplicates, offline recovery, pending settlement, cross-device inventory/growth, Top 100, concurrency, four-map physics and trusted mid-boss completion fixtures. |
+| `node supabase/tests/replay-http.mjs` | **4 groups pass**; real Edge handler through local runtime/Auth/network adapters. |
+| `node supabase/tests/production-handoff.mjs` | **11 groups pass**; inspect/upgrade each local schema 0–9 through 010, preserve records, verify RLS/grants/indexes/RPCs, reject wrong-version/repeated upgrades. |
+| `node scripts/test-touch.mjs` / `test-major.mjs` / `test-major-audio.mjs` / `test-weapon-labels.mjs` | **11 / 16 / 4 / 4 groups pass**, respectively. |
+| `node scripts/verify-production.mjs --out test/scratch/context/production.json` | **Exit 1**: Auth settings 200; Web3 provider preflight 422 `web3_provider_disabled`; application status/profile/progress/Top 100 and replay health 404; private schema 406; catalog 401. No player data written. |
+
+The six touch sizes are **320×568, 390×844, 768×1024, 568×320, 844×390 and 1024×768**. Desktop is 1440×900. The context browser regression's first run timed out waiting for `playing` after Restart chapter because the existing restart correctly reopens the intro dialogue; the test now advances that dialogue before checking the new run. No production code was changed for that test expectation.
+
+The supplied browser tool failed before navigation because its Chromium socket path was too long. The installed Chromium headless shell launched successfully. Actual browser commands used `node --import ./test/scratch/context/browser-adapter.mjs …`; that disposable adapter selects the installed headless shell without changing the page or the tests. The taste command also set `IMD_PLAYWRIGHT` to the scratch Playwright module. README documents normal browser installation and reproduction commands. WebKit was separately attempted and its executable was absent; the older touch script's generic “missing system libraries” text is not the diagnosis for this run. No Safari result is claimed.
+
+Evidence: [test results and original reproduction](docs/validation/context-replay/results.json), [taste checks](docs/validation/context-replay/taste.json), [public production probe](docs/validation/context-replay/production.json). Inspected screenshots: [390-wide entry with actual unavailable-cloud status](docs/validation/context-replay/screenshots/entry-390.png), [reachable Open control](docs/validation/context-replay/screenshots/open-390.png), [2-point recovered Profile](docs/validation/context-replay/screenshots/recovered-profile-390.png), [desktop focus return](docs/validation/context-replay/screenshots/desktop-focus.png). The Open/Profile screenshots use explicitly fixture-authenticated local SQL; they are not production-save evidence.
+
+## Better Interface review — current revision
+
+All six pinned domains were applied to the affected control and its surrounding game, dialogue and save flow. The visual system is preserved; the one reproduced cause was an interaction/replay defect.
+
+| Domain | Coverage, findings and limits |
+| --- | --- |
+| Accessibility | Checked native button and label at `src/index.html:137`, guarded handler at `src/game.js:669`, 44px minimum context target at six touch sizes, keyboard E, modal focus return and six Axe scans. Desktop focus screenshot inspected. No new applicable finding after the fix. Screen reader/forced-colors/manual accessibility certification unperformed. |
+| Layout | Checked current `src/styles.css:280` and portrait/short-landscape overrides at 500/511/515. Open is reachable with actual hit-tested taps at every tested size; right-side controls and invisible left half pass existing overlap/geometry checks. 390 entry inspected, no overflow at 320/390/1440; GUILD reflow checked at 200% root text. Native zoom and new RTL checks unperformed. |
+| Writing | Open/Read/Talk labels keep the existing object vocabulary and now invoke a recorded action. Save pending, saved and unavailable-cloud messages were exercised; no fabricated production leaderboard or save status. No copy changes required. |
+| Typography | Existing scale/families at `src/styles.css:32` retained. Taste measures 14/16/20px on the 390 entry and adds 28px on desktop, two families and two weights. Inspected entry, Open and recovered Profile wrapping. No new token/font/weight. |
+| Colors | Existing bark/cream/amber semantic tokens at `src/styles.css:3` retained. Taste passes measured solid-background pairs at the applicable 4.5:1/3:1 thresholds. Its 24 text boxes over canvas/images/alpha backgrounds remain unmeasured; no contrast ratio for those pixels is claimed. |
+| UI | **Fixed high finding at `src/game.js:669`**: Open bypassed recorded physics, causing a legitimate save to fail. Checked actionable/hidden/paused/dialogue/offline/pending/retry/saved/restart states. Same secondary button, touch surface, feedback and reduced-motion CSS retained. Slow-motion animation inspection unperformed; no animation was changed. |
+
+`DESIGN.md` documents the final control scheduling alongside the retained implemented tokens, components and responsive behavior. Attribution is retained. The title, description, favicon, og:title and local og:image pass the export check. No visual redesign or dependency change was introduced.
+
+## Remaining production work and scope limits
+
+The supplied publishable key cannot inspect/administer the production database. An authorized administrator for **nhtlwcukeyhvkrjveots** must inspect the installed schema, apply only missing migrations through 010, deploy the replay service, enable Ethereum Web3 Auth and perform real-wallet acceptance. Existing `supabase/SQL_EDITOR.md` and `supabase/REPLAY.md` contain that procedure. RPC 404s do not establish which tables exist. No production mutation, deletion, signature, authenticated save or cross-device production recovery occurred here.
+
+Regenerating the server package changes its source hash. Existing active replay checkpoints pin their previous hash; preserve that server version for those runs or provide version dispatch before an administrator deploys a replacement, as documented in `supabase/REPLAY.md`. This job deploys nothing. Previously recorded malformed Open claims are left intact; this fix prevents new malformed claims and does not invent missing historical controls or silently discard a queue.
+
+Disposable PostgreSQL has fixture identities/transports and accelerated elapsed run clocks. The focused regression changes no positions, encounters, loot or rewards; the broader suite's controlled combat and mid-boss fixtures remain explicitly marked. Physical phones, Safari, real signatures, screen readers, native zoom, multiprocess database contention and production acceptance are unperformed. All source and required runtime assets are retained; caches/dependencies stay in excluded scratch. No ignore file or protected dependency/build path was changed. The final audit totals less than 1 MiB across changed/submitted files plus the separate reviewer response, below the 8 MiB budget; no dependency archive, cache or submodule is included.
+
+**Completion:** the reopened code finding is fixed and verified locally. Full production integration remains unresolved and is not claimed complete.
+
+---
+
+# Previous accepted revision validation · 2026-11-06
+
+The remainder is historical evidence from the previous accepted round; current results above supersede its browser-launch limitations.
 
 The two reported defects are implemented and locally checked. **Production integration is incomplete.** No production migration, function deployment, authenticated player write or real wallet signature was performed. Fresh browser-rendered checks could not run on this machine. The prior accepted game, art, responsive CSS, invisible left-half controls, keyboard controls, wallet connector and economy remain.
 

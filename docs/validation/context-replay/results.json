@@ -1,0 +1,727 @@
+{
+  "checkedAt": "2026-11-06T02:36:30.082Z",
+  "finding": "9253e28c2e56313dc4a4cd3d3d44b7001acfaf97232b1112aa60440a6538f526",
+  "before": {
+    "before": {
+      "x": 117.00000000000003,
+      "frame": 15
+    },
+    "events": [
+      {
+        "source": "basket",
+        "kind": "forage",
+        "frame": 15,
+        "seq": 1,
+        "inputs": [
+          {
+            "frame": 0,
+            "ticks": 15,
+            "held": 2,
+            "pressed": 0,
+            "touch": false,
+            "x": 0,
+            "y": 0,
+            "weapon": "shell"
+          }
+        ]
+      },
+      {
+        "kind": "checkpoint",
+        "frame": 15,
+        "seq": 2,
+        "inputs": []
+      }
+    ],
+    "localScore": 2,
+    "serverScore": 0,
+    "ack": 0,
+    "pendingEvents": 2,
+    "runConflict": false,
+    "errors": [
+      "Gameplay claim does not match server movement, collision or pickup state."
+    ]
+  },
+  "focused": {
+    "results": [
+      {
+        "name": "mobile Open replays and credits its offline basket exactly once, then permits a ranked restart",
+        "passed": true
+      },
+      {
+        "name": "Open waits for the recorded tick and multiple clicks cannot open a basket twice",
+        "passed": true
+      },
+      {
+        "name": "an offline reload retains Open inputs; reconnect saves them and another device recovers the score",
+        "passed": true
+      },
+      {
+        "name": "context clicks while paused or reading do not enqueue another gameplay action",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Disposable PostgreSQL migrations 001–010, fixture Auth/HTTP/DOM and accelerated elapsed run time; no production write.",
+      "Real client/game input handlers and validateReplay/hf_replay_commit; no player position, reward or encounter edits.",
+      "Browser hit testing and physical touch hardware are separate checks."
+    ]
+  },
+  "browser": {
+    "results": [
+      {
+        "name": "390×844: product and Start fit the first screen",
+        "passed": true
+      },
+      {
+        "name": "390×844: tapping Open records its input and preserves the offline reward",
+        "passed": true
+      },
+      {
+        "name": "390×844: retry credits 2 points, clears the queue and allows Restart chapter",
+        "passed": true
+      },
+      {
+        "name": "320×568: product and Start fit the first screen",
+        "passed": true
+      },
+      {
+        "name": "320×568: tapping Open records its input and preserves the offline reward",
+        "passed": true
+      },
+      {
+        "name": "320×568: retry credits 2 points, clears the queue and allows Restart chapter",
+        "passed": true
+      },
+      {
+        "name": "768×1024: product and Start fit the first screen",
+        "passed": true
+      },
+      {
+        "name": "768×1024: tapping Open records its input and preserves the offline reward",
+        "passed": true
+      },
+      {
+        "name": "768×1024: retry credits 2 points, clears the queue and allows Restart chapter",
+        "passed": true
+      },
+      {
+        "name": "568×320: product and Start fit the first screen",
+        "passed": true
+      },
+      {
+        "name": "568×320: tapping Open records its input and preserves the offline reward",
+        "passed": true
+      },
+      {
+        "name": "568×320: retry credits 2 points, clears the queue and allows Restart chapter",
+        "passed": true
+      },
+      {
+        "name": "844×390: product and Start fit the first screen",
+        "passed": true
+      },
+      {
+        "name": "844×390: tapping Open records its input and preserves the offline reward",
+        "passed": true
+      },
+      {
+        "name": "844×390: retry credits 2 points, clears the queue and allows Restart chapter",
+        "passed": true
+      },
+      {
+        "name": "1024×768: product and Start fit the first screen",
+        "passed": true
+      },
+      {
+        "name": "1024×768: tapping Open records its input and preserves the offline reward",
+        "passed": true
+      },
+      {
+        "name": "1024×768: retry credits 2 points, clears the queue and allows Restart chapter",
+        "passed": true
+      },
+      {
+        "name": "desktop E opens the basket through the same replay path",
+        "passed": true
+      },
+      {
+        "name": "no JavaScript, local asset or replay/SQL failures",
+        "passed": true
+      }
+    ],
+    "errors": [],
+    "failures": [],
+    "limitations": [
+      "Chromium touch emulation, fixture Auth/session/transport and accelerated elapsed SQL clock. Not physical phones, real signatures or production writes.",
+      "Unchanged export and real validateReplay/hf_replay_commit; no position, reward, loot or encounter edits.",
+      "Browser time is controlled for deterministic input; SQL time allowance is advanced to avoid waiting in real time."
+    ]
+  },
+  "touchBrowser": [
+    {
+      "persona": "320×568",
+      "name": "first screen includes product, main action and nearby touch directions without overflow",
+      "passed": true
+    },
+    {
+      "persona": "320×568",
+      "name": "start, story and portrait opt-out reach the existing game",
+      "passed": true
+    },
+    {
+      "persona": "320×568",
+      "name": "invisible movement fills the full left half; combat slots stay in the right half",
+      "passed": true
+    },
+    {
+      "persona": "320×568",
+      "name": "arbitrary left-half touch origins move horizontally and vertically",
+      "passed": true
+    },
+    {
+      "persona": "320×568",
+      "name": "simultaneous story and weapon prompts are reachable below chrome and do not overlap combat controls",
+      "passed": true
+    },
+    {
+      "persona": "320×568",
+      "name": "right-side start does not become movement; movement and attack have independent ownership",
+      "passed": true
+    },
+    {
+      "persona": "320×568",
+      "name": "menu interaction clears movement, traps focus and restores the trigger",
+      "passed": true
+    },
+    {
+      "persona": "320×568",
+      "name": "playing controls pass automated WCAG A/AA audit",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "first screen includes product, main action and nearby touch directions without overflow",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "start, story and portrait opt-out reach the existing game",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "invisible movement fills the full left half; combat slots stay in the right half",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "arbitrary left-half touch origins move horizontally and vertically",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "simultaneous story and weapon prompts are reachable below chrome and do not overlap combat controls",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "right-side start does not become movement; movement and attack have independent ownership",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "menu interaction clears movement, traps focus and restores the trigger",
+      "passed": true
+    },
+    {
+      "persona": "390×844",
+      "name": "playing controls pass automated WCAG A/AA audit",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "first screen includes product, main action and nearby touch directions without overflow",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "start, story and portrait opt-out reach the existing game",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "invisible movement fills the full left half; combat slots stay in the right half",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "arbitrary left-half touch origins move horizontally and vertically",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "simultaneous story and weapon prompts are reachable below chrome and do not overlap combat controls",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "right-side start does not become movement; movement and attack have independent ownership",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "menu interaction clears movement, traps focus and restores the trigger",
+      "passed": true
+    },
+    {
+      "persona": "768×1024",
+      "name": "playing controls pass automated WCAG A/AA audit",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "first screen includes product, main action and nearby touch directions without overflow",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "start, story and portrait opt-out reach the existing game",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "invisible movement fills the full left half; combat slots stay in the right half",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "arbitrary left-half touch origins move horizontally and vertically",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "simultaneous story and weapon prompts are reachable below chrome and do not overlap combat controls",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "right-side start does not become movement; movement and attack have independent ownership",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "menu interaction clears movement, traps focus and restores the trigger",
+      "passed": true
+    },
+    {
+      "persona": "568×320",
+      "name": "playing controls pass automated WCAG A/AA audit",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "first screen includes product, main action and nearby touch directions without overflow",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "start, story and portrait opt-out reach the existing game",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "invisible movement fills the full left half; combat slots stay in the right half",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "arbitrary left-half touch origins move horizontally and vertically",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "simultaneous story and weapon prompts are reachable below chrome and do not overlap combat controls",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "right-side start does not become movement; movement and attack have independent ownership",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "menu interaction clears movement, traps focus and restores the trigger",
+      "passed": true
+    },
+    {
+      "persona": "844×390",
+      "name": "playing controls pass automated WCAG A/AA audit",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "first screen includes product, main action and nearby touch directions without overflow",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "start, story and portrait opt-out reach the existing game",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "invisible movement fills the full left half; combat slots stay in the right half",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "arbitrary left-half touch origins move horizontally and vertically",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "simultaneous story and weapon prompts are reachable below chrome and do not overlap combat controls",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "right-side start does not become movement; movement and attack have independent ownership",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "menu interaction clears movement, traps focus and restores the trigger",
+      "passed": true
+    },
+    {
+      "persona": "1024×768",
+      "name": "playing controls pass automated WCAG A/AA audit",
+      "passed": true
+    },
+    {
+      "persona": "native Chromium touch, 844×390",
+      "name": "native captured touch can cross the center while a second finger attacks, then both release cleanly",
+      "passed": true
+    },
+    {
+      "persona": "native Chromium touch, 844×390",
+      "name": "rotation clears an active native gesture and resumes the same run with a new touch",
+      "passed": true
+    },
+    {
+      "persona": "desktop 1440×900",
+      "name": "desktop keys move, jump and attack; touch surface is hidden",
+      "passed": true
+    },
+    {
+      "persona": "desktop 1440×900",
+      "name": "keyboard wallet prompt and GUILD stay reachable, with visible focus and natural wrapping at large text",
+      "passed": true
+    },
+    {
+      "persona": "desktop 1440×900",
+      "name": "no page errors or missing local assets in export interactions",
+      "passed": true
+    }
+  ],
+  "touchEngine": {
+    "results": [
+      {
+        "name": "fixed ring, thumb and joystick are completely absent from source",
+        "passed": true
+      },
+      {
+        "name": "eight directions use both axes, normalize diagonal speed and preserve facing",
+        "passed": true
+      },
+      {
+        "name": "touch origin floats at arbitrary start points; dead zone avoids jitter and drag length controls speed",
+        "passed": true
+      },
+      {
+        "name": "long drags follow the finger and can reverse without returning to the original start",
+        "passed": true
+      },
+      {
+        "name": "second fingers and unrelated terminal events cannot steal or release movement",
+        "passed": true
+      },
+      {
+        "name": "release, cancellation and lost capture stop steering and restore gravity",
+        "passed": true
+      },
+      {
+        "name": "viewport changes and blur discard gesture ownership; resuming requires a fresh touch",
+        "passed": true
+      },
+      {
+        "name": "touch release never releases keyboard movement, and desktop jump/attack remain usable",
+        "passed": true
+      },
+      {
+        "name": "Jump overrides touch steering; hurt and stomp impulses retain control",
+        "passed": true
+      },
+      {
+        "name": "walking with a horizontal drag retains ground contact and can jump after coyote time",
+        "passed": true
+      },
+      {
+        "name": "solid ground and world ceiling stop steering without bypassing collision",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "VM uses actual engine handlers and physics with DOM/canvas fixtures; no physical touch hardware."
+    ]
+  },
+  "authoritativeReplay": {
+    "results": [
+      {
+        "name": "migration 009 reproduces distant reward and forty zero-frame basket runs without engine or clock edits",
+        "passed": true
+      },
+      {
+        "name": "009 → 010 preserves every credited balance, inventory, ledger and unpaid reward; old acknowledgements still settle",
+        "passed": true
+      },
+      {
+        "name": "legacy unsent events stay in the durable recovery record and no longer block a new verified run",
+        "passed": true
+      },
+      {
+        "name": "raw SQL distant hits, coin claims and forty zero-frame restart attempts earn zero score, SQK, growth or pending credit",
+        "passed": true
+      },
+      {
+        "name": "replay rejects invented first-frame collisions and baskets even with syntactically valid controls",
+        "passed": true
+      },
+      {
+        "name": "teleports, excessive vectors, skipped frames, unowned weapons, omitted events and excessive work fail closed",
+        "passed": true
+      },
+      {
+        "name": "authenticated/anonymous callers cannot commit replay state or reach private reward functions; cross-wallet context is denied",
+        "passed": true
+      },
+      {
+        "name": "actual controls, collisions, produce/SQK/weapon pickups and dialogue replay exactly; offline queue is durable",
+        "passed": true
+      },
+      {
+        "name": "partial replay checkpoints, lost replies and duplicate queues cannot double-credit",
+        "passed": true
+      },
+      {
+        "name": "same wallet on a fresh device recovers SQL scores, inventory and growth without the old local queue",
+        "passed": true
+      },
+      {
+        "name": "validated rewards defer without loss, settle on another device, and retain offline batches until payment",
+        "passed": true
+      },
+      {
+        "name": "an offline reload retains its signed session and inputs, then online recovery uploads them",
+        "passed": true
+      },
+      {
+        "name": "stale concurrent replay commits fail atomically; independent wallet runs retain valid queues",
+        "passed": true
+      },
+      {
+        "name": "trusted mid-boss checkpoints replay real hits, then save automatic completion on all four maps",
+        "passed": true
+      },
+      {
+        "name": "all four authored maps preserve keyboard/jump/analog physics during server replay",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Disposable PostgreSQL/Auth/HTTP fixtures, not production.",
+      "Run clocks accelerated and encounter loot/specs controlled only in explicitly marked legitimate-play fixtures. Exploit regression uses no engine/time/loot edits.",
+      "Automated replay validates game inputs; it does not prove a human supplied them or prevent bots playing legal moves."
+    ]
+  },
+  "migrations": {
+    "results": [
+      {
+        "name": "Inspect and upgrade schema 0 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 1 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 2 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 3 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 4 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 5 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 6 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 7 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 8 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Inspect and upgrade schema 9 → 10; preserve existing records; reject replay",
+        "passed": true
+      },
+      {
+        "name": "Wrong version selection aborts without applying later columns",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Disposable PostgreSQL with explicit Auth fixtures; no production SQL executed."
+    ]
+  },
+  "gameplay": {
+    "results": [
+      {
+        "name": "all four map durations, bosses and increasing HP are shared deterministic rules",
+        "passed": true
+      },
+      {
+        "name": "all maps instantiate 30 matching enemies, correct bosses and exact appearance thresholds",
+        "passed": true
+      },
+      {
+        "name": "forest enemies remain airborne, with visible windup and swoop states instead of burrowing",
+        "passed": true
+      },
+      {
+        "name": "glacier, caldera and reef enemies fire only matching ice, fire and water attacks",
+        "passed": true
+      },
+      {
+        "name": "elemental bosses have different timed volley, breath, slide and rush patterns",
+        "passed": true
+      },
+      {
+        "name": "boss defeat advances maps automatically while ordinary enemies remain alive",
+        "passed": true
+      },
+      {
+        "name": "victory cannot be cancelled by a lingering attack or a fall during the defeat animation",
+        "passed": true
+      },
+      {
+        "name": "page exit during a boss celebration records completion once before the next visit",
+        "passed": true
+      },
+      {
+        "name": "fruit and vegetables auto-collect on desktop, once, without any key",
+        "passed": true
+      },
+      {
+        "name": "weapons stay on the ground until E, on desktop and touch; only nearest weapon is claimed",
+        "passed": true
+      },
+      {
+        "name": "every offered weapon in the outer pickup range can be collected by one explicit action",
+        "passed": true
+      },
+      {
+        "name": "one action takes the nearest eligible weapon even if a farther drop is processed first",
+        "passed": true
+      },
+      {
+        "name": "growth triggers at every 20-point boundary and leaves collision dimensions/footing stable",
+        "passed": true
+      },
+      {
+        "name": "SQK world size is exactly 70% of the prior dimensions, and defeat remains idempotent",
+        "passed": true
+      },
+      {
+        "name": "each weapon dispatches its own sound and retains original damage and ammo rules",
+        "passed": true
+      },
+      {
+        "name": "guest scores never become a global board and existing local data stays untouched",
+        "passed": true
+      }
+    ]
+  },
+  "audio": {
+    "results": [
+      {
+        "name": "existing device volume and mute settings survive the upgrade",
+        "passed": true
+      },
+      {
+        "name": "each weapon builds a distinct oscillator/sweep/envelope signature",
+        "passed": true
+      },
+      {
+        "name": "the master compressor, conservative gain, per-effect rate limit and 24-voice ceiling bound overlap",
+        "passed": true
+      },
+      {
+        "name": "SFX mute suppresses every weapon, and changing settings writes the original storage key",
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "Graph/envelope checks use a Web Audio fixture. Speaker loudness and subjective listening have not been measured."
+    ]
+  },
+  "additionalCommands": [
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "files": 18,
+      "bytes": 273624
+    },
+    {
+      "command": "npm run check",
+      "exitCode": 0
+    },
+    {
+      "command": "node scripts/typecheck-major.mjs",
+      "exitCode": 0,
+      "runtimeScripts": 8
+    },
+    {
+      "command": "node scripts/prepare-replay.mjs --check",
+      "exitCode": 0
+    },
+    {
+      "command": "node supabase/tests/replay-http.mjs",
+      "exitCode": 0,
+      "groups": 4
+    },
+    {
+      "command": "node scripts/test-weapon-labels.mjs",
+      "exitCode": 0,
+      "groups": 4
+    }
+  ],
+  "limitations": [
+    "Production RPCs/replay health remain unavailable and Ethereum Web3 Auth disabled; see production.json. No production migration or authenticated write.",
+    "Supplied browser launcher failed before navigation. Existing installed Chromium headless shell ran the browser suites using a scratch-only Playwright launch adapter.",
+    "A separate direct WebKit launch attempt found no WebKit executable. The unchanged touch script uses a generic missing-libraries message; that is not the diagnosis here. No Safari test.",
+    "No physical phone, screen reader, native browser zoom, or real wallet-signature test. 200% root-text reflow was checked separately.",
+    "Automated contrast excludes canvas/alpha/image backgrounds. Replay validates legal input outcomes, not human origin."
+  ]
+}

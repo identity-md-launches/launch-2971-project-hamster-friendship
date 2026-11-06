@@ -2,13 +2,13 @@
 
 An in-place update of the existing Hamster Friendship pixel-art adventure. The original canvas engine, Chang/Alice artwork, story clues, marketplace, costumes, SQK economy, MetaMask connector, audio settings, static build and hosting name remain.
 
-**Revision: reward forgery is fixed locally, and weapon-slot names now include their visible labels.** The game and invisible touch controls are retained. New migration 010 and a Supabase Edge Function replay the existing game engine before any new reward is credited. Production integration remains incomplete: the supplied project/key reach Auth, but application RPCs and replay health return 404 and Ethereum Web3 Auth is disabled. No production migration, deployment or authenticated write was performed.
+**Revision: mobile Open actions now synchronize through gameplay replay.** The context button queues its interaction for the next recorded physics tick, matching PICK UP and desktop E. The focused regression reproduces the old rejected basket claim and now verifies its 2 points, cleared queue, offline reload, cross-device recovery and ranked restart. The existing game, invisible touch controls, migration 010 reward protection and weapon labels remain. Production integration remains incomplete: the supplied project/key reach Auth, but application RPCs and replay health return 404 and Ethereum Web3 Auth is disabled. No production migration, deployment or authenticated write was performed.
 
-See [current results and limitations](VALIDATION.md), [production probe](docs/validation/production-revision.json), and [administrator rollout procedure](supabase/REPLAY.md). Existing credited data and acknowledged pending rewards are preserved. Old unsent claims without controls remain available for owner review in the recovery download; they cannot safely be credited automatically.
+See [current results and limitations](VALIDATION.md), [current production probe](docs/validation/context-replay/production.json), and [administrator rollout procedure](supabase/REPLAY.md). Existing credited data and acknowledged pending rewards are preserved. This revision does not rewrite old malformed input queues or manufacture missing controls/rewards.
 
 ## Revision checks
 
-The production build, source/export checks and all eight runtime-script typechecks pass. Local checks pass: 15 authoritative replay/SQL/client groups, 4 Edge HTTP groups, 11 guarded migration/preservation groups, 11 touch-engine groups, 16 gameplay groups, 4 audio groups and 4 weapon-label groups. Tests use explicit local Auth/HTTP fixtures. Chromium, the supplied browser launcher and Firefox could not launch; the taste probe exited 2 before measurement. No new viewport screenshots, Axe result, physical-phone test or successful production save is claimed. Earlier browser results below belong to the previous accepted round.
+The production build, source/export checks and all eight runtime-script typechecks pass. Local checks pass: **4 focused context-replay groups, 20 SQL-backed export/browser groups**, 15 authoritative replay groups, 4 Edge HTTP groups, 11 migration/preservation groups, 11 touch-engine groups, 16 gameplay groups, 4 audio groups and 4 weapon-label groups. The existing **53 export touch checks** pass, including six viewport sizes, multi-touch, cancellation, rotation, desktop keys and automated Axe checks. The pinned **taste probe passes 16/16**. Browser suites used installed headless Chromium through a scratch-only launch adapter after the supplied launcher failed. No WebKit, physical-phone, screen-reader or successful production-save result is claimed. Auth/HTTP fixtures are explicit and never shipped. See [recorded evidence](docs/validation/context-replay/results.json).
 
 Use Node 24 for the revision test tools (the static site/build still needs only Node 18+):
 
@@ -18,6 +18,7 @@ npm run build
 npm run check
 node scripts/typecheck-major.mjs
 node scripts/prepare-replay.mjs --check
+node supabase/tests/context-replay.mjs
 node supabase/tests/authoritative-replay.mjs
 node supabase/tests/replay-http.mjs
 node supabase/tests/production-handoff.mjs
@@ -25,10 +26,19 @@ node scripts/test-touch.mjs
 node scripts/test-major.mjs
 node scripts/test-major-audio.mjs
 node scripts/test-weapon-labels.mjs
-node scripts/verify-production.mjs --out artifacts/validation/production-revision.json
+node scripts/verify-production.mjs --out test/scratch/context/production.json
 ```
 
-The final probe intentionally exits 1 while production is unavailable. Runtime tools, downloads and caches stay in disposable `test/scratch/`, never the submitted export. `dist/` contains all 18 runtime files, with relative asset URLs. The generated backend engine under `supabase/functions/_shared/` is required source for the reward fix; rebuild it with `node scripts/prepare-replay.mjs` after any game-engine change, following the active-run version notes in [REPLAY.md](supabase/REPLAY.md).
+To repeat the browser checks on a machine with the normal Playwright browser installation:
+
+```sh
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node test/scratch/node_modules/playwright/cli.js install chromium --only-shell
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-context-replay.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-touch.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" IMD_PLAYWRIGHT="$PWD/test/scratch/node_modules/playwright/index.mjs" node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste
+```
+
+The last command needs the contributor's pinned guide, which is not shipped. The live production probe intentionally exits 1 while production is unavailable. Runtime tools, downloads and caches stay in disposable `test/scratch/`, never the submitted export. `dist/` contains all 18 runtime files (273,624 bytes), with relative asset URLs. The generated backend engine under `supabase/functions/_shared/` is required source; rebuild it with `node scripts/prepare-replay.mjs` after any engine change. Regeneration changes its source hash: preserve the previous server package for already-pinned active runs, following the active-run version notes in [REPLAY.md](supabase/REPLAY.md). This revision adds no SQL migration and performs no deployment.
 
 ## Previous accepted round — mobile movement and reconnect
 
