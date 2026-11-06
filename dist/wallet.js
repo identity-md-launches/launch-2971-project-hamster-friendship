@@ -118,7 +118,15 @@
           catch (error) { status.textContent = error.code === 4001 ? 'Login declined. Continue as a guest or retry.' : error.message; }
           finally { busy = false; renderOptions(); }
         });
-      } else if (saveState.cloud) { var saved = document.createElement('p'); saved.className = 'panel-note'; saved.textContent = 'Verified wallet profile · cloud saves enabled.'; options.append(saved); }
+      } else if (saveState.cloud) {
+        var saved = document.createElement('p'); saved.className = 'panel-note'; saved.textContent = 'Verified wallet profile · cloud saves enabled.'; options.append(saved);
+        row('Sync progress', async function () {
+          if (busy) return; busy = true; status.textContent = 'Syncing progress…'; renderOptions();
+          try { await window.HamsterSave.retry(); status.textContent = window.HamsterSave.snapshot().status; }
+          catch (error) { status.textContent = error.message; }
+          finally { busy = false; renderOptions(); }
+        });
+      }
       row('Disconnect', disconnected);
       return;
     }

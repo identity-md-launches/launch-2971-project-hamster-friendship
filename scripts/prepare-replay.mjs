@@ -22,7 +22,7 @@ const bridge=`
         if (player.weapons.indexOf(input.weapon) === -1) throw Error('Collect this weapon before selecting it.');
         player.weapon=input.weapon;
       }
-      tick();
+      tick(true);
       // Dialogue pauses active physics. Complete its existing callbacks before
       // the next active input; reading speed cannot earn rewards or move Chang.
       while(game.state==='dialogue') advanceDialogue();

@@ -1,0 +1,61 @@
+{
+  "results": [
+    {
+      "name": "011 backfills 5000/8000/6000 to 8000 and archives the original 19000 without changing identity, SQK, inventory, runs or ledger",
+      "passed": true
+    },
+    {
+      "name": "a lower, tied, then higher run only changes the best on the higher score; growth still accumulates",
+      "passed": true
+    },
+    {
+      "name": "pending rewards compare each paid run independently and settlement retries cannot sum runs into the best",
+      "passed": true
+    },
+    {
+      "name": "terminal state transitions and duplicate run updates cannot credit score or growth twice",
+      "passed": true
+    },
+    {
+      "name": "existing 010 replay hashes/checkpoints continue with engine 1; new runs select engine 2",
+      "passed": true
+    },
+    {
+      "name": "both leaderboard RPCs rank single-run bests and expose no wallet identifiers",
+      "passed": true
+    },
+    {
+      "name": "same wallet with a different verified Auth UUID recovers the original profile and personal best",
+      "passed": true
+    },
+    {
+      "name": "retention, private RLS/grants, server-only commit and all owner verification queries remain enforced",
+      "passed": true
+    },
+    {
+      "name": "forged score events and another wallet run are rejected by authoritative validation",
+      "passed": true
+    },
+    {
+      "name": "real game controls save a run once, survive offline reload and disconnect/reconnect, and a tied run leaves the best unchanged",
+      "passed": true
+    },
+    {
+      "name": "prepared upgrade from inspected 010 applies only 011 and rejects reapplying to 011",
+      "passed": true
+    },
+    {
+      "name": "unreconstructable positive totals roll back the entire migration without changing player data",
+      "passed": true
+    },
+    {
+      "name": "historical rules 2/3 HP/completion records reconstruct their actual per-run points",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Disposable PGlite PostgreSQL with explicit Auth/HTTP fixtures; no hosted SQL or real wallet signatures.",
+    "Large score examples are administrative test fixtures. Gameplay/reconnect tests separately use the real engine and replay.",
+    "Concurrent statements are serialized by the local harness; independent PostgreSQL connections were not tested."
+  ]
+}

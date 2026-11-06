@@ -5,7 +5,7 @@ export async function replayRpc(h,user,run,events) {
  const previous=context.seq,result=await validateReplay(context,events);
  return h.exclusive(async()=>{
   await h.db.exec('reset role;set role service_role');
-  try{return (await h.db.query('select public.hf_replay_commit($1::uuid,$2::uuid,$3::integer,$4::jsonb,$5::jsonb,$6::text) as value',[user.id,run,previous,JSON.stringify(result.events),JSON.stringify(result.state),engineHash])).rows[0].value;}finally{await h.db.exec('reset role');}
+  try{return (await h.db.query('select public.hf_replay_commit($1::uuid,$2::uuid,$3::integer,$4::jsonb,$5::jsonb,$6::text) as value',[user.id,run,previous,JSON.stringify(result.events),JSON.stringify(result.state),result.engineHash])).rows[0].value;}finally{await h.db.exec('reset role');}
  });
 }
 export async function replayDevice(h,user,storage=new Map(),testOptions={}) {
@@ -17,7 +17,7 @@ export async function replayDevice(h,user,storage=new Map(),testOptions={}) {
   const name=new URL(url).pathname.split('/').pop(),body=JSON.parse(options.body||'{}');requests.push({name,body});
   try{
    let data;
-   if(name==='hf-replay'&&options.method==='GET')data={validation:'replay-1',engineHash};
+   if(name==='hf-replay'&&options.method==='GET')data={validation:'replay-1',engineHash,engineVersion:2,supportedEngineVersions:[1,2]};
    else if(name==='hf-replay')data=await replayRpc(h,user,body.p_run,body.p_events);
    else data=await h.rpc(options.headers.Authorization?user:null,name,body);
    if(name==='hf_start_run_v6'){

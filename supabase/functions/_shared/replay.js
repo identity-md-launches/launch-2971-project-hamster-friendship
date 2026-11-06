@@ -1,11 +1,17 @@
 import {loadEngine,engineHash} from './engine.js';
+import {loadEngine as loadLegacyEngine,engineHash as legacyEngineHash} from './engine-v1.js';
 export {engineHash};
 export const protocol='replay-1';
+export function replayEngine(version=2) {
+ if(version===1)return {load:loadLegacyEngine,hash:legacyEngineHash};
+ if(version===2)return {load:loadEngine,hash:engineHash};
+ throw Error('Unsupported replay engine. Keep the pending save and update the game.');
+}
 const clone=value=>JSON.parse(JSON.stringify(value));
 
 // This adapter has no browser storage, transport, wallet, DOM input or render
 // loop. Only persisted server state and validated control values reach physics.
-export async function createReplay(config,saved=null) {
+export async function createReplay(config,saved=null,version=2) {
  const nodes=new Map(),emitted=[];
  const drawing=new Proxy({}, {get:(_,k)=>k==='createRadialGradient'?()=>({addColorStop(){}}):k==='measureText'?text=>({width:text.length*5}):()=>{}});
  function node(){return {textContent:'',hidden:false,disabled:false,style:{setProperty(){}},dataset:{},classList:{add(){},remove(){},toggle(){}},focus(){},setAttribute(){},getAttribute(){return null;},addEventListener(){},getContext:()=>drawing,getBoundingClientRect:()=>({left:0,top:0,width:320,height:192})};}
@@ -14,7 +20,7 @@ export async function createReplay(config,saved=null) {
   HamsterSave:{beginMap:async()=>({loot:config.loot,monsters:config.monsters,purchases:config.skills}),snapshot:()=>({profile:config.profile||{highest_map:config.map,purchases:config.skills,produce_points:0,cosmetics:{}}}),subscribe(){},record(kind,data,frame){emitted.push({...data,kind,frame});return emitted.length;},input(){},checkpoint(){},flush(){}},
   HamsterAudio:{sfx(){},unlock(){},play(){}}};
  let time=0;
- loadEngine(window,document,{now:()=>time+=200},class {constructor(type){this.type=type;}});
+ replayEngine(version).load(window,document,{now:()=>time+=200},class {constructor(type){this.type=type;}});
  await window.replayEngine.init(config,saved?.world);
  emitted.length=0;
  const expected=clone(saved?.expected||[]);
@@ -38,7 +44,9 @@ function controls(input) {
 // checkpoint, map, loot, player position, target position or reward amount.
 export async function validateReplay(context,events) {
  if(!Array.isArray(events)||events.length<1||events.length>128||JSON.stringify(events).length>65536)throw Error('Submit 1–128 bounded game events.');
- const replay=await createReplay(context.config,context.state);
+ const version=context.engineVersion??1,engine=replayEngine(version);
+ if(context.engineHash && context.engineHash!==engine.hash)throw Error('Replay engine version changed. Keep the pending save for recovery.');
+ const replay=await createReplay(context.config,context.state,version);
  let seq=context.seq,steps=0;
  const accepted=[];
  for(const event of events) {
@@ -76,5 +84,5 @@ export async function validateReplay(context,events) {
   for(const field of fields[event.kind])clean[field]=event[field];
   accepted.push(clean);seq=event.seq;
  }
- return {seq,state:replay.snapshot(),events:accepted};
+ return {seq,state:replay.snapshot(),events:accepted,engineHash:engine.hash};
 }

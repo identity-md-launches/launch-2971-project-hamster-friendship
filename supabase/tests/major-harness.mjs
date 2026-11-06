@@ -10,7 +10,7 @@ export async function createHarness(last=7) {
  await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;grant usage on schema auth to authenticated;
  create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create table auth.identities(user_id uuid,provider text,identity_data jsonb);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
- const files=['001_friendship','002_seasons_dice_badges','003_squeek','004_lifetime_persistence','005_verified_wallet_recovery','006_four_worlds','007_concurrent_runs','008_reward_guard','009_deferred_rewards','010_authoritative_replay'];
+ const files=['001_friendship','002_seasons_dice_badges','003_squeek','004_lifetime_persistence','005_verified_wallet_recovery','006_four_worlds','007_concurrent_runs','008_reward_guard','009_deferred_rewards','010_authoritative_replay','011_personal_best'];
  for(const file of files.slice(0,last)) await db.exec(await readFile('supabase/migrations/'+file+'.sql','utf8'));
  let flight=Promise.resolve();
  const exclusive=fn=>{const next=flight.then(fn);flight=next.catch(()=>{});return next;};
@@ -21,7 +21,7 @@ export async function createHarness(last=7) {
   return {id,wallet};
  }
  async function rpc(user,name,body={}) {
-  const casts={p_map:'integer',p_run:'uuid',p_events:'jsonb',p_name:'text',p_item:'text',p_slot:'text',p_legacy:'uuid'};
+  const casts={p_map:'integer',p_engine:'integer',p_run:'uuid',p_events:'jsonb',p_name:'text',p_item:'text',p_slot:'text',p_legacy:'uuid'};
   return exclusive(async()=>{
    await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user?.id||'']);await db.exec('set role '+(user?'authenticated':'anon'));
    const keys=Object.keys(body),values=keys.map(k=>casts[k]==='jsonb'?JSON.stringify(body[k]):body[k]);

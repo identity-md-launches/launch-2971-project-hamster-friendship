@@ -1,1 +1,27 @@
 /.cache/
+
+# Submission path budget: 786432 bytes (768 KiB) total for the exact review
+# report/JSON/screenshot paths below. All other artifact paths stay ignored.
+!/artifacts/
+/artifacts/*
+!/artifacts/validation.md
+!/artifacts/validation/
+/artifacts/validation/*
+!/artifacts/validation/summary.json
+!/artifacts/validation/production.json
+!/artifacts/validation/personal-best.json
+!/artifacts/validation/direct-touch.json
+!/artifacts/validation/context-replay.json
+!/artifacts/validation/cloud-browser.json
+!/artifacts/validation/touch-browser.json
+!/artifacts/validation/gameplay.json
+!/artifacts/validation/taste.json
+!/artifacts/validation/bundle-audit.json
+!/artifacts/validation/screenshots/
+/artifacts/validation/screenshots/*
+!/artifacts/validation/screenshots/entry-390.png
+!/artifacts/validation/screenshots/entry-1440.png
+!/artifacts/validation/screenshots/profile-390.png
+!/artifacts/validation/screenshots/profile-large-text-390.png
+!/artifacts/validation/screenshots/cloud-touch-844.png
+!/artifacts/validation/screenshots/leaderboard-390.png

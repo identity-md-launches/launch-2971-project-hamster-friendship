@@ -1,0 +1,72 @@
+{
+  "results": [
+    {
+      "name": "all four map durations, bosses and increasing HP are shared deterministic rules",
+      "passed": true
+    },
+    {
+      "name": "all maps instantiate 30 matching enemies, correct bosses and exact appearance thresholds",
+      "passed": true
+    },
+    {
+      "name": "forest enemies remain airborne, with visible windup and swoop states instead of burrowing",
+      "passed": true
+    },
+    {
+      "name": "glacier, caldera and reef enemies fire only matching ice, fire and water attacks",
+      "passed": true
+    },
+    {
+      "name": "elemental bosses have different timed volley, breath, slide and rush patterns",
+      "passed": true
+    },
+    {
+      "name": "boss defeat advances maps automatically while ordinary enemies remain alive",
+      "passed": true
+    },
+    {
+      "name": "victory cannot be cancelled by a lingering attack or a fall during the defeat animation",
+      "passed": true
+    },
+    {
+      "name": "page exit during a boss celebration records completion once before the next visit",
+      "passed": true
+    },
+    {
+      "name": "fruit and vegetables auto-collect on desktop, once, without any key",
+      "passed": true
+    },
+    {
+      "name": "weapons stay on the ground until E, on desktop and touch; only nearest weapon is claimed",
+      "passed": true
+    },
+    {
+      "name": "every offered weapon in the outer pickup range can be collected by one explicit action",
+      "passed": true
+    },
+    {
+      "name": "one action takes the nearest eligible weapon even if a farther drop is processed first",
+      "passed": true
+    },
+    {
+      "name": "growth triggers at every 20-point boundary and leaves collision dimensions/footing stable",
+      "passed": true
+    },
+    {
+      "name": "SQK world size is exactly 70% of the prior dimensions, and defeat remains idempotent",
+      "passed": true
+    },
+    {
+      "name": "each weapon dispatches its own sound and retains original damage and ammo rules",
+      "passed": true
+    },
+    {
+      "name": "guest scores never become a global board and existing local data stays untouched",
+      "passed": true
+    },
+    {
+      "name": "guest Lifetime Score is a visit-only personal best while produce growth still adds across runs",
+      "passed": true
+    }
+  ]
+}

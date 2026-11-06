@@ -1,3 +1,13 @@
+# Current personal-best revision — 2026-11-06
+
+Current public-key probes reach the existing project’s Auth, status, leaderboard and replay endpoints. Status reports migration **010** and replay health reports its original engine hash. This release requires migration **011**, personal-best mode and the compatible engine-2 function. No production SQL, function deployment, private catalog inspection or authenticated player write was performed. A credential-free Web3 preflight returns HTTP 400 / validation_failed; it is not a real signed-login test.
+
+See [actual public responses](../artifacts/validation/production.json), [current local verification](../artifacts/validation.md) and [the coordinated rollout](../supabase/PERSONAL_BEST.md). The publishable key cannot administer the database. Existing player records were neither imported, overwritten nor deleted by this worker.
+
+Everything below is **historical**. Its earlier 404 responses and disabled-provider result are superseded by the current probe; its older test counts are not this revision’s results.
+
+---
+
 # Current task update — 2026-11-06
 
 The provided public URL/key remain unchanged and Auth settings return HTTP 200. A credential-free Ethereum Web3 grant preflight now returns HTTP 422 with **`web3_provider_disabled`**. Status, profile, progress and lifetime Top 100 RPCs still return HTTP 404/PGRST202. These are live responses: [current JSON](../artifacts/validation/production-current.json). No production SQL/migrations, authenticated player write or real signature was possible; no production data was overwritten or deleted.

@@ -1,0 +1,326 @@
+{
+  "recordedAt": "2026-11-06T08:14:32.512808+00:00",
+  "limitBytes": 8388608,
+  "basis": "Whole current files added/modified in the Git submission; task-removed scratch and pinned inputs excluded.",
+  "excludedByTask": [
+    "test/scratch/",
+    ".imd/"
+  ],
+  "protectedChanges": [],
+  "dependencyCacheOrArchivePaths": [],
+  "ignoreFileChanged": true,
+  "ignorePathBudget": {
+    "paths": [
+      "artifacts/validation.md",
+      "artifacts/validation/bundle-audit.json",
+      "artifacts/validation/cloud-browser.json",
+      "artifacts/validation/context-replay.json",
+      "artifacts/validation/direct-touch.json",
+      "artifacts/validation/gameplay.json",
+      "artifacts/validation/personal-best.json",
+      "artifacts/validation/production.json",
+      "artifacts/validation/screenshots/cloud-touch-844.png",
+      "artifacts/validation/screenshots/entry-1440.png",
+      "artifacts/validation/screenshots/entry-390.png",
+      "artifacts/validation/screenshots/leaderboard-390.png",
+      "artifacts/validation/screenshots/profile-390.png",
+      "artifacts/validation/screenshots/profile-large-text-390.png",
+      "artifacts/validation/summary.json",
+      "artifacts/validation/taste.json",
+      "artifacts/validation/touch-browser.json"
+    ],
+    "limitBytes": 786432,
+    "actualBytes": 605881,
+    "withinBudget": true,
+    "policy": "Exact report, ten JSON files and six screenshots whitelisted; all other artifact paths remain ignored."
+  },
+  "trackedSubmodules": 0,
+  "unchangedConfirmed": [
+    "package.json",
+    "package-lock.json",
+    "scripts/build.mjs",
+    "scripts/check.mjs",
+    "jsconfig.json",
+    "src/rules.js",
+    "src/audio.js",
+    "src/viewport.js",
+    "src/app-icon-192.png",
+    "src/app-icon-512.png",
+    "src/favicon.svg",
+    "src/og-image.png",
+    "src/og-image.svg",
+    "src/sqk.svg",
+    "src/victory.svg",
+    "docs/DOMAIN.md",
+    "supabase/migrations/001_friendship.sql",
+    "supabase/migrations/002_seasons_dice_badges.sql",
+    "supabase/migrations/003_squeek.sql",
+    "supabase/migrations/004_lifetime_persistence.sql",
+    "supabase/migrations/005_verified_wallet_recovery.sql",
+    "supabase/migrations/006_four_worlds.sql",
+    "supabase/migrations/007_concurrent_runs.sql",
+    "supabase/migrations/008_reward_guard.sql",
+    "supabase/migrations/009_deferred_rewards.sql",
+    "supabase/migrations/010_authoritative_replay.sql"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 1054
+    },
+    {
+      "path": "DESIGN.md",
+      "bytes": 9252
+    },
+    {
+      "path": "README.md",
+      "bytes": 8675
+    },
+    {
+      "path": "VALIDATION.md",
+      "bytes": 79688
+    },
+    {
+      "path": "artifacts/validation.md",
+      "bytes": 18068
+    },
+    {
+      "path": "artifacts/validation/bundle-audit.json",
+      "bytes": 7506
+    },
+    {
+      "path": "artifacts/validation/cloud-browser.json",
+      "bytes": 4323
+    },
+    {
+      "path": "artifacts/validation/context-replay.json",
+      "bytes": 927
+    },
+    {
+      "path": "artifacts/validation/direct-touch.json",
+      "bytes": 1697
+    },
+    {
+      "path": "artifacts/validation/gameplay.json",
+      "bytes": 2314
+    },
+    {
+      "path": "artifacts/validation/personal-best.json",
+      "bytes": 2319
+    },
+    {
+      "path": "artifacts/validation/production.json",
+      "bytes": 7508
+    },
+    {
+      "path": "artifacts/validation/screenshots/cloud-touch-844.png",
+      "bytes": 89685
+    },
+    {
+      "path": "artifacts/validation/screenshots/entry-1440.png",
+      "bytes": 98539
+    },
+    {
+      "path": "artifacts/validation/screenshots/entry-390.png",
+      "bytes": 142347
+    },
+    {
+      "path": "artifacts/validation/screenshots/leaderboard-390.png",
+      "bytes": 56580
+    },
+    {
+      "path": "artifacts/validation/screenshots/profile-390.png",
+      "bytes": 52647
+    },
+    {
+      "path": "artifacts/validation/screenshots/profile-large-text-390.png",
+      "bytes": 82899
+    },
+    {
+      "path": "artifacts/validation/summary.json",
+      "bytes": 3648
+    },
+    {
+      "path": "artifacts/validation/taste.json",
+      "bytes": 25825
+    },
+    {
+      "path": "artifacts/validation/touch-browser.json",
+      "bytes": 9049
+    },
+    {
+      "path": "dist/config.js",
+      "bytes": 625
+    },
+    {
+      "path": "dist/game.js",
+      "bytes": 110720
+    },
+    {
+      "path": "dist/index.html",
+      "bytes": 16771
+    },
+    {
+      "path": "dist/save.js",
+      "bytes": 28640
+    },
+    {
+      "path": "dist/styles.css",
+      "bytes": 29201
+    },
+    {
+      "path": "dist/ui.js",
+      "bytes": 22429
+    },
+    {
+      "path": "dist/wallet.js",
+      "bytes": 12349
+    },
+    {
+      "path": "docs/SUPABASE_REPORT.md",
+      "bytes": 12491
+    },
+    {
+      "path": "scripts/major-fixture.mjs",
+      "bytes": 3518
+    },
+    {
+      "path": "scripts/prepare-replay.mjs",
+      "bytes": 3108
+    },
+    {
+      "path": "scripts/prepare-supabase.mjs",
+      "bytes": 4668
+    },
+    {
+      "path": "scripts/test-direct-touch.mjs",
+      "bytes": 6806
+    },
+    {
+      "path": "scripts/test-major.mjs",
+      "bytes": 9965
+    },
+    {
+      "path": "scripts/test-touch.mjs",
+      "bytes": 323
+    },
+    {
+      "path": "scripts/validate-context-replay.mjs",
+      "bytes": 17873
+    },
+    {
+      "path": "scripts/validate-touch.mjs",
+      "bytes": 15203
+    },
+    {
+      "path": "scripts/verify-production.mjs",
+      "bytes": 5403
+    },
+    {
+      "path": "src/config.js",
+      "bytes": 625
+    },
+    {
+      "path": "src/game.js",
+      "bytes": 110720
+    },
+    {
+      "path": "src/index.html",
+      "bytes": 16771
+    },
+    {
+      "path": "src/save.js",
+      "bytes": 28640
+    },
+    {
+      "path": "src/styles.css",
+      "bytes": 29201
+    },
+    {
+      "path": "src/types.d.ts",
+      "bytes": 4269
+    },
+    {
+      "path": "src/ui.js",
+      "bytes": 22429
+    },
+    {
+      "path": "src/wallet.js",
+      "bytes": 12349
+    },
+    {
+      "path": "supabase/PERSONAL_BEST.md",
+      "bytes": 8675
+    },
+    {
+      "path": "supabase/README.md",
+      "bytes": 4557
+    },
+    {
+      "path": "supabase/REPLAY.md",
+      "bytes": 7619
+    },
+    {
+      "path": "supabase/SQL_EDITOR.md",
+      "bytes": 12715
+    },
+    {
+      "path": "supabase/functions/_shared/engine-v1.js",
+      "bytes": 117114
+    },
+    {
+      "path": "supabase/functions/_shared/engine.js",
+      "bytes": 120003
+    },
+    {
+      "path": "supabase/functions/_shared/replay.js",
+      "bytes": 6457
+    },
+    {
+      "path": "supabase/functions/hf-replay/index.ts",
+      "bytes": 3168
+    },
+    {
+      "path": "supabase/inspect_production.sql",
+      "bytes": 4645
+    },
+    {
+      "path": "supabase/migrations/011_personal_best.sql",
+      "bytes": 8239
+    },
+    {
+      "path": "supabase/tests/context-replay.mjs",
+      "bytes": 5985
+    },
+    {
+      "path": "supabase/tests/major-harness.mjs",
+      "bytes": 2647
+    },
+    {
+      "path": "supabase/tests/personal-best.mjs",
+      "bytes": 12470
+    },
+    {
+      "path": "supabase/tests/replay-fixture.mjs",
+      "bytes": 2802
+    },
+    {
+      "path": "supabase/tests/replay-http.mjs",
+      "bytes": 5072
+    },
+    {
+      "path": "supabase/verify_major.sql",
+      "bytes": 1908
+    },
+    {
+      "path": "supabase/verify_personal_best.sql",
+      "bytes": 2052
+    },
+    {
+      "path": "supabase/verify_production.sql",
+      "bytes": 4602
+    }
+  ],
+  "totalBytes": 1560377,
+  "withinLimit": true
+}

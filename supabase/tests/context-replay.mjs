@@ -5,7 +5,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {createHarness} from './major-harness.mjs';
 import {replayDevice,replayRpc,tick,queued} from './replay-fixture.mjs';
 
-const h=await createHarness(10),results=[];
+const h=await createHarness(11),results=[];
 async function check(name,fn){await fn();results.push({name,passed:true});console.log('ok',name);}
 async function atBasket(){
  const user=await h.identity();await h.rpc(user,'hf_wallet_profile');
@@ -86,7 +86,7 @@ try{
 }finally{await h.close();}
 await mkdir('test/scratch/context',{recursive:true});
 await writeFile('test/scratch/context/results.json',JSON.stringify({results,limitations:[
- 'Disposable PostgreSQL migrations 001–010, fixture Auth/HTTP/DOM and accelerated elapsed run time; no production write.',
+ 'Disposable PostgreSQL migrations 001–011, fixture Auth/HTTP/DOM and accelerated elapsed run time; no production write.',
  'Real client/game input handlers and validateReplay/hf_replay_commit; no player position, reward or encounter edits.',
  'Browser hit testing and physical touch hardware are separate checks.'
 ]},null,2)+'\n');

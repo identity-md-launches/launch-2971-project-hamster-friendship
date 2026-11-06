@@ -3,10 +3,10 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {createHarness} from './major-harness.mjs';
-const h=await createHarness(10),realFetch=globalThis.fetch,service=randomUUID(),base='https://local-replay-fixture.invalid';
+const h=await createHarness(11),realFetch=globalThis.fetch,service=randomUUID(),base='https://local-replay-fixture.invalid';
 let handler,configured=true,calls=0;
 globalThis.Deno={serve(fn){handler=fn;},env:{get(name){return configured?name==='SUPABASE_URL'?base:name==='SUPABASE_SERVICE_ROLE_KEY'?service:undefined:undefined;}}};
-const user=await h.identity();await h.rpc(user,'hf_wallet_profile');const run=await h.rpc(user,'hf_start_run_v6',{p_map:1});
+const user=await h.identity();await h.rpc(user,'hf_wallet_profile');const run=await h.rpc(user,'hf_start_run_v6',{p_map:1,p_engine:2});
 globalThis.fetch=async(url,options)=>{
  assert(String(url).startsWith(base+'/rest/v1/rpc/'));assert.equal(options.headers.apikey,service);calls++;
  const name=String(url).split('/').pop(),body=JSON.parse(options.body);let result;
@@ -39,6 +39,13 @@ try{
  });
  await check('actual HTTP handler rejects fabricated rewards and keeps the accepted checkpoint',async()=>{
   const result=await request({p_run:run.id,p_events:[{kind:'forage',source:'basket',seq:2,frame:1,inputs:[]}]});assert.equal(result.status,400);assert.match((await result.json()).message,/does not match/);assert.equal((await h.rpc(user,'hf_run_state',{p_run:run.id})).ack,1);assert.equal((await h.rpc(user,'hf_wallet_profile')).total_score,0);
+ });
+ await check('actual HTTP handler also retains engine-1 hashes for cached-browser runs',async()=>{
+  const legacy=await h.rpc(user,'hf_start_run_v6',{p_map:1});
+  const result=await request({p_run:legacy.id,p_events:[{kind:'checkpoint',seq:1,frame:1,inputs:[{frame:0,ticks:1,held:0,pressed:0,touch:false,x:0,y:0,weapon:'shell'}]}]});
+  assert.equal(result.status,200);assert.equal((await result.json()).ack,1);
+  const currentContext=await h.rpc(user,'hf_replay_context',{p_run:run.id}),legacyContext=await h.rpc(user,'hf_replay_context',{p_run:legacy.id});
+  assert.equal(currentContext.engineVersion,2);assert.equal(legacyContext.engineVersion,1);assert.notEqual(currentContext.engineHash,legacyContext.engineHash);
  });
  console.log(checks+' Edge HTTP checks passed. Deno serving/network/Auth are local adapters, not production.');
 }finally{globalThis.fetch=realFetch;delete globalThis.Deno;await h.close();}

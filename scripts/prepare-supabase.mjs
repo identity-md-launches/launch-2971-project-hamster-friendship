@@ -6,11 +6,11 @@ import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 
-const names=['001_friendship','002_seasons_dice_badges','003_squeek','004_lifetime_persistence','005_verified_wallet_recovery','006_four_worlds','007_concurrent_runs','008_reward_guard','009_deferred_rewards','010_authoritative_replay'];
+const names=['001_friendship','002_seasons_dice_badges','003_squeek','004_lifetime_persistence','005_verified_wallet_recovery','006_four_worlds','007_concurrent_runs','008_reward_guard','009_deferred_rewards','010_authoritative_replay','011_personal_best'];
 // 010 keeps the browser's schemaVersion 7 contract and reports itself as "migration".
-const FINAL='{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime","migration":10,"validation":"replay-1"}';
+const FINAL='{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime","migration":11,"validation":"replay-1","scoreMode":"personal-best","engineVersion":2}';
 export async function prepare(after) {
- if(!Number.isInteger(after)||after<0||after>9)throw Error('Specify --after 0–9, using the inspected installed version (10 is current: nothing to apply).');
+ if(!Number.isInteger(after)||after<0||after>10)throw Error('Specify --after 0–10, using the inspected installed version (11 is current: nothing to apply).');
  const marker=after===0 ? `if exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='hf_private' or (n.nspname='public' and c.relname in ('profiles','players','player_profiles','leaderboard','inventory','purchases','runs'))) or exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','hf_private') and left(p.proname,3)='hf_') then raise exception 'Expected an empty application schema. Inspect existing objects; do not replay migration 001.'; end if;`
  : after<4 ? `if to_regclass('hf_private.profiles') is null or to_regclass('hf_private.runs') is null then raise exception 'Expected the installed base schema.'; end if;
  if (to_regclass('hf_private.badges') is not null) <> ${after>=2} or (to_regclass('hf_private.wallet_profiles') is not null) <> ${after>=3} or exists(select 1 from information_schema.columns where table_schema='hf_private' and table_name='runs' and column_name='lifetime_credited') or to_regprocedure('public.hf_service_status()') is not null then raise exception 'Installed schema differs from the selected version. Inspect before applying.'; end if;`
@@ -29,7 +29,7 @@ export async function prepare(after) {
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const args=process.argv.slice(2),v=args.indexOf('--after'),o=args.indexOf('--out');
- if(v<0||!/^[0-9]$/.test(args[v+1]||''))throw Error('Usage: node scripts/prepare-supabase.mjs --after <inspected version 0–9> [--out artifacts/supabase-apply-missing.sql]');
+ if(v<0||!/^(?:[0-9]|10)$/.test(args[v+1]||''))throw Error('Usage: node scripts/prepare-supabase.mjs --after <inspected version 0–10> [--out artifacts/supabase-apply-missing.sql]');
  const path=resolve(o<0?'artifacts/supabase-apply-missing.sql':args[o+1]);
  const sql=await prepare(Number(args[v+1]));await mkdir(dirname(path),{recursive:true});await writeFile(path,sql);
  console.log('Prepared '+path+'; production SQL was NOT executed.');

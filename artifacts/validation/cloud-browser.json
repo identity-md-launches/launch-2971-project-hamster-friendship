@@ -1,0 +1,123 @@
+{
+  "results": [
+    {
+      "name": "390×844: product and Start fit the first screen",
+      "passed": true
+    },
+    {
+      "name": "390×844: tapping Open records its input and preserves the offline reward",
+      "passed": true
+    },
+    {
+      "name": "390×844: retry credits 2 points, clears the queue and allows Restart chapter",
+      "passed": true
+    },
+    {
+      "name": "390×844: clean Profile retains verified wallet, personal best and working cloud name saves without importing or deleting browser data",
+      "passed": true
+    },
+    {
+      "name": "320×568: product and Start fit the first screen",
+      "passed": true
+    },
+    {
+      "name": "320×568: tapping Open records its input and preserves the offline reward",
+      "passed": true
+    },
+    {
+      "name": "320×568: retry credits 2 points, clears the queue and allows Restart chapter",
+      "passed": true
+    },
+    {
+      "name": "320×568: clean Profile retains verified wallet, personal best and working cloud name saves without importing or deleting browser data",
+      "passed": true
+    },
+    {
+      "name": "768×1024: product and Start fit the first screen",
+      "passed": true
+    },
+    {
+      "name": "768×1024: tapping Open records its input and preserves the offline reward",
+      "passed": true
+    },
+    {
+      "name": "768×1024: retry credits 2 points, clears the queue and allows Restart chapter",
+      "passed": true
+    },
+    {
+      "name": "768×1024: clean Profile retains verified wallet, personal best and working cloud name saves without importing or deleting browser data",
+      "passed": true
+    },
+    {
+      "name": "568×320: product and Start fit the first screen",
+      "passed": true
+    },
+    {
+      "name": "568×320: tapping Open records its input and preserves the offline reward",
+      "passed": true
+    },
+    {
+      "name": "568×320: retry credits 2 points, clears the queue and allows Restart chapter",
+      "passed": true
+    },
+    {
+      "name": "568×320: clean Profile retains verified wallet, personal best and working cloud name saves without importing or deleting browser data",
+      "passed": true
+    },
+    {
+      "name": "844×390: product and Start fit the first screen",
+      "passed": true
+    },
+    {
+      "name": "844×390: tapping Open records its input and preserves the offline reward",
+      "passed": true
+    },
+    {
+      "name": "844×390: retry credits 2 points, clears the queue and allows Restart chapter",
+      "passed": true
+    },
+    {
+      "name": "844×390: clean Profile retains verified wallet, personal best and working cloud name saves without importing or deleting browser data",
+      "passed": true
+    },
+    {
+      "name": "1024×768: product and Start fit the first screen",
+      "passed": true
+    },
+    {
+      "name": "1024×768: tapping Open records its input and preserves the offline reward",
+      "passed": true
+    },
+    {
+      "name": "1024×768: retry credits 2 points, clears the queue and allows Restart chapter",
+      "passed": true
+    },
+    {
+      "name": "1024×768: clean Profile retains verified wallet, personal best and working cloud name saves without importing or deleting browser data",
+      "passed": true
+    },
+    {
+      "name": "native multi-touch movement and attack replay through engine 2, settle rewards and restore the best after refresh",
+      "passed": true
+    },
+    {
+      "name": "leaderboard refresh displays backend personal bests after lower and higher administrative run fixtures",
+      "passed": true
+    },
+    {
+      "name": "desktop E opens the basket through the same replay path; wallet Sync progress, disconnect, reconnect and page refresh retain the best",
+      "passed": true
+    },
+    {
+      "name": "no JavaScript, local asset or replay/SQL failures",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "failures": [],
+  "limitations": [
+    "Chromium touch emulation, fixture Auth/session/transport and accelerated elapsed SQL clock. Not physical phones, real signatures or production writes.",
+    "Unchanged export and real validateReplay/hf_replay_commit; no position, reward, loot or encounter edits.",
+    "Browser time is controlled for deterministic input; SQL time allowance is advanced to avoid waiting in real time."
+  ]
+}

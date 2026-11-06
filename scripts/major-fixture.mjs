@@ -18,7 +18,7 @@ export async function fixture({storage=new Map(),config,fetch,touch=false,game=t
  if(game){
   let source=await readFile('src/game.js','utf8');source=source.replace('  // Title state uses a fresh world',`
   window.testing={get movement(){return movement;},get player(){return player;},get game(){return game;},get enemies(){return enemies;},get boss(){return boss;},get pickups(){return pickups;},get shots(){return shots;},get things(){return things;},get burns(){return burns;},
-   startGame,updatePlayer,updateEnemy,updateBoss,updateShots,updateBurns,updatePickups,updateWorld,damageBoss,hitEnemy,completeMap,gameOver,render,tick,addChestnuts,dropLoot,newBoss,buildEntities,nearbyWeapon,advanceDialogue,moveBody,
+   startGame,updatePlayer,updateTouchVector,updateEnemy,updateBoss,updateShots,updateBurns,updatePickups,updateWorld,damageBoss,hitEnemy,completeMap,gameOver,render,tick,addChestnuts,dropLoot,newBoss,buildEntities,nearbyWeapon,advanceDialogue,moveBody,
    press(action){pressed[action]=true;},release(){pressed={};held={};},hold(action,on){held[action]=on;},loot(id,kind){mapLoot[id]=kind;},attack(kind){var id=++attackId;event('attack',{attack:id,weapon:kind});return id;}};
   // Title state uses a fresh world`);
   vm.runInContext(source,ctx);

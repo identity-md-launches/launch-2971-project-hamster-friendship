@@ -1,0 +1,52 @@
+{
+  "results": [
+    {
+      "name": "any left-half start anchors to Chang without teleporting or requiring a fixed center",
+      "passed": true
+    },
+    {
+      "name": "eight directions track both axes with a bounded vector and correct facing",
+      "passed": true
+    },
+    {
+      "name": "a stationary finger lets Chang reach its target and stop; tiny drags remain responsive",
+      "passed": true
+    },
+    {
+      "name": "unrestricted long drag can reverse and cross the center without returning to an origin",
+      "passed": true
+    },
+    {
+      "name": "finger displacement uses the rendered canvas scale and does not depend on touch location",
+      "passed": true
+    },
+    {
+      "name": "release, cancellation and lost capture brake horizontal drift within eight ticks and restore gravity",
+      "passed": true
+    },
+    {
+      "name": "unrelated fingers cannot steal movement or release its owner",
+      "passed": true
+    },
+    {
+      "name": "blur, viewport changes and pause discard ownership and require a new touch",
+      "passed": true
+    },
+    {
+      "name": "jump, hurt, stomp and keyboard retain priority independently of touch release",
+      "passed": true
+    },
+    {
+      "name": "ceiling, floor, world boundaries and solid tiles constrain direct movement",
+      "passed": true
+    },
+    {
+      "name": "Touch Events fallback owns one identifier and clears cancellation without blocking unrelated contacts",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Actual input handlers and physics in a VM with DOM/canvas fixtures.",
+    "Physical mobile hardware is unavailable; browser touch/capture checks are recorded separately."
+  ]
+}

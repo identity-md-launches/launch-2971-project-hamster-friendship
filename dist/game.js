@@ -463,7 +463,7 @@
   function newPlayer() {
     return {
       x: game.checkpoint.x, y: game.checkpoint.y, w: 12, h: 14, vx: 0, vy: 0, dir: 1,
-      onGround: false, coyote: 0, jumpBuf: 0, steeringJump: false, inv: 0, hurt: 0, throwCd: 0, throwAnim: 0,
+      onGround: false, coyote: 0, jumpBuf: 0, steeringJump: false, touchSteering: false, touchBrake: 0, inv: 0, hurt: 0, throwCd: 0, throwAnim: 0,
       dead: false, safeX: game.checkpoint.x, safeY: game.checkpoint.y,
       runT: 0, wasGround: true, weapon: 'shell', weapons: ['shell'], ammo: { gun: 0, bomb: 0 }, attackIds: {}
     };
@@ -543,6 +543,9 @@
     Enter: 'throw', KeyE: 'interact', Digit1: 'slot1', Digit2: 'slot2', Digit3: 'slot3', Numpad1: 'slot1', Numpad2: 'slot2', Numpad3: 'slot3'
   };
   function clearInput() {
+    // Expose/hide touch surfaces in the same task as a state transition. Waiting
+    // for the next animation frame can lose the first drag after dialogue.
+    document.body.dataset.gameState = game.state;
     held = {}; pressed = {}; actionPointers = {};
     releaseMovement();
     var b = document.querySelectorAll('.pad-btn.is-pressed');
@@ -583,7 +586,7 @@
     var action = btn.getAttribute('data-action');
     function down(ev) {
       ev.preventDefault();
-      if (actionPointers[action] !== undefined || Object.values(actionPointers).includes(ev.pointerId)) return;
+      if (actionPointers[action] !== undefined || Object.values(actionPointers).includes(ev.pointerId) || (movement && movement.pointer === ev.pointerId)) return;
       actionPointers[action] = ev.pointerId;
       if (btn.setPointerCapture && ev.pointerId !== undefined) { try { btn.setPointerCapture(ev.pointerId); } catch (err) { /* ignore */ } }
       if (game.state === 'dialogue' && (action === 'interact' || action === 'throw' || action === 'jump')) { advanceDialogue(); return; }
@@ -597,6 +600,13 @@
     btn.addEventListener('pointerup', up);
     btn.addEventListener('pointercancel', up);
     btn.addEventListener('lostpointercapture', up);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    if (!window.PointerEvent) {
+      btn.addEventListener('touchstart', function (e) { touchEvents(e, down); }, { passive: false });
+      window.addEventListener('touchend', function (e) { touchEvents(e, up); }, { passive: false });
+      window.addEventListener('touchcancel', function (e) { touchEvents(e, up); }, { passive: false });
+    }
     btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     btn.addEventListener('click', function (ev) {
       // Keyboard activation of a pad button (Enter or Space) gives one tap.
@@ -606,46 +616,70 @@
     });
   });
 
-  // The first touch anywhere on the left starts a floating, invisible origin.
-  // Capture only that finger: right-side actions keep independent ownership.
+  // Direct drag: finger displacement moves a world-space target by the same
+  // rendered distance. There is no stick radius or origin to return to. The
+  // target stays put when the finger rests, so Chang catches up and stops.
   var movementSurface = byId('touch-movement');
-  var movement = { pointer: null, originX: 0, originY: 0, x: 0, y: 0, amount: 0 };
+  var movement = { pointer: null, lastX: 0, lastY: 0, targetX: 0, targetY: 0, x: 0, y: 0, amount: 0 };
   function moveTouch(e) {
     if (e.pointerId !== movement.pointer || game.state !== 'playing') return;
     e.preventDefault();
-    var dx = e.clientX - movement.originX, dy = e.clientY - movement.originY;
-    var length = Math.hypot(dx, dy), radius = 56, dead = 6;
-    if (length > radius) {
-      // Follow long drags, so changing direction never needs a return to the
-      // original touch point. This radius limits travel, never the hit area.
-      movement.originX = e.clientX - dx / length * radius;
-      movement.originY = e.clientY - dy / length * radius;
-    }
-    movement.amount = clamp((length - dead) / (radius - dead), 0, 1);
-    movement.x = length ? dx / length * movement.amount : 0;
-    movement.y = length ? dy / length * movement.amount : 0;
+    var box = canvas.getBoundingClientRect();
+    var scale = Math.max(0.001, Math.min(box.width / W, box.height / H));
+    movement.targetX = clamp(movement.targetX + (e.clientX - movement.lastX) / scale, 0, WORLD_W - player.w);
+    movement.targetY = clamp(movement.targetY + (e.clientY - movement.lastY) / scale, 0, H - player.h);
+    movement.lastX = e.clientX; movement.lastY = e.clientY;
+  }
+  function updateTouchVector() {
+    if (movement.pointer === null) return;
+    // Drop blocked travel instead of building up motion behind a wall/floor.
+    if (player.hitWall) movement.targetX = player.x;
+    if (player.onGround && movement.targetY > player.y) movement.targetY = player.y;
+    var dx = movement.targetX - player.x, dy = movement.targetY - player.y;
+    var distance = Math.hypot(dx, dy);
+    movement.amount = distance < 0.15 ? 0 : Math.min(distance / 4, 1);
+    movement.x = distance ? dx / distance * movement.amount : 0;
+    movement.y = distance ? dy / distance * movement.amount : 0;
   }
   function releaseMovement(e) {
     if (!movement || (e && e.pointerId !== movement.pointer)) return;
     var pointer = movement.pointer;
     movement.pointer = null; movement.x = 0; movement.y = 0; movement.amount = 0;
-    if (pointer !== null && movementSurface.hasPointerCapture && movementSurface.hasPointerCapture(pointer)) movementSurface.releasePointerCapture(pointer);
+    if (pointer !== null && movementSurface.hasPointerCapture && movementSurface.hasPointerCapture(pointer)) {
+      try { movementSurface.releasePointerCapture(pointer); } catch (_) { /* The browser may already have released it. */ }
+    }
   }
-  movementSurface.addEventListener('pointerdown', function (e) {
+  function beginMovement(e) {
     if (game.state !== 'playing') return;
     // A mouse on a hybrid/narrow screen retains the canvas attack behavior.
     if (e.pointerType === 'mouse') { if (e.button === 0) { e.preventDefault(); focusStage(); pressed.throw = true; } return; }
     if (movement.pointer !== null || Object.values(actionPointers).includes(e.pointerId)) return;
     e.preventDefault(); movement.pointer = e.pointerId;
-    movement.originX = e.clientX; movement.originY = e.clientY;
+    movement.lastX = e.clientX; movement.lastY = e.clientY;
+    movement.targetX = player.x; movement.targetY = clamp(player.y, 0, H - player.h);
     movement.x = 0; movement.y = 0; movement.amount = 0;
     try { movementSurface.setPointerCapture(e.pointerId); } catch (_) { /* Synthetic pointers may not have native capture. */ }
-  });
-  movementSurface.addEventListener('pointermove', moveTouch);
+  }
+  movementSurface.addEventListener('pointerdown', beginMovement);
+  window.addEventListener('pointermove', moveTouch, { passive: false });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) { movementSurface.addEventListener(name, releaseMovement); });
   // A terminal event still releases the finger if native capture was denied.
   window.addEventListener('pointerup', releaseMovement);
   window.addEventListener('pointercancel', releaseMovement);
+  // Older touch browsers lack Pointer Events. Register only one input path so
+  // modern browsers never process a physical finger twice.
+  function touchEvents(e, handler) {
+    Array.prototype.forEach.call(e.changedTouches, function (touch) {
+      handler({ pointerId: touch.identifier, pointerType: 'touch', clientX: touch.clientX, clientY: touch.clientY,
+        preventDefault: function () { if (e.cancelable) e.preventDefault(); } });
+    });
+  }
+  if (!window.PointerEvent) {
+    movementSurface.addEventListener('touchstart', function (e) { touchEvents(e, beginMovement); }, { passive: false });
+    window.addEventListener('touchmove', function (e) { touchEvents(e, moveTouch); }, { passive: false });
+    window.addEventListener('touchend', function (e) { touchEvents(e, releaseMovement); }, { passive: false });
+    window.addEventListener('touchcancel', function (e) { touchEvents(e, releaseMovement); }, { passive: false });
+  }
   movementSurface.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   canvas.addEventListener('pointerdown', function (e) {
@@ -939,7 +973,12 @@
   function updatePlayer() {
     var p = player;
     var keysX = (held.left ? -1 : 0) + (held.right ? 1 : 0);
-    var steering = movement.pointer !== null && movement.amount > 0;
+    var steering = movement.pointer !== null;
+    // A short, replayable brake removes airborne drift after releasing a drag.
+    // Keyboard input, jump, stomp and damage keep their original priorities.
+    if (p.touchSteering && !steering) p.touchBrake = 8;
+    p.touchSteering = steering;
+    if (steering) p.touchBrake = 0;
     var ax = held.left || held.right ? keysX : movement.x;
     if (p.hurt > 0) {
       p.hurt--;
@@ -958,6 +997,10 @@
       }
       p.vx = clamp(p.vx, -max, max);
     }
+    if (p.touchBrake > 0) {
+      p.touchBrake--;
+      if (!held.left && !held.right && !p.hurt) { p.vx *= 0.55; if (Math.abs(p.vx) < 0.05) p.vx = 0; }
+    }
 
     if (pressed.jump) p.jumpBuf = 8;
     if (p.onGround) p.coyote = 6; else if (p.coyote > 0) p.coyote--;
@@ -973,7 +1016,7 @@
     p.vy = Math.min(p.vy + GRAVITY, MAX_FALL);
 
     // Touch has a real vertical axis. Jump, stomps and hurt keep their existing
-    // impulses; releasing the movement finger immediately restores gravity.
+    // impulses; releasing the movement finger restores gravity.
     if (p.vy >= 0) p.steeringJump = false;
     if (steering && !held.jump && !p.steeringJump && !p.noCut && p.hurt === 0) {
       p.vy += (movement.y * 1.7 - p.vy) * 0.45;
@@ -986,6 +1029,7 @@
     p.wasGround = p.onGround;
     moveBody(p);
     if (steering && p.y < 0) { p.y = 0; p.vy = Math.max(0, p.vy); }
+    if (steering && p.y > H - p.h) { p.y = H - p.h; p.vy = Math.min(0, p.vy); }
     // A horizontal touch has vy=0: retain actual floor contact so coyote time
     // does not expire while walking, and Jump remains available continuously.
     if (steering && p.vy === 0 && (standable(p.x + 1, p.y + p.h + 0.01) || standable(p.x + p.w - 1, p.y + p.h + 0.01))) p.onGround = true;
@@ -2111,10 +2155,11 @@
   // ---------------------------------------------------------------------------
   // Main loop
   // ---------------------------------------------------------------------------
-  function tick() {
+  function tick(replayed) {
     if (game.state === 'paused') return;
     game.t++;
     if (game.state === 'playing') {
+      if (!replayed) updateTouchVector();
       var actions = ['left','right','jump','throw','interact','slot1','slot2','slot3'];
       var heldMask = 0, pressedMask = 0;
       actions.forEach(function (name, i) { if (held[name]) heldMask |= 1 << i; if (pressed[name]) pressedMask |= 1 << i; });

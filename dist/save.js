@@ -49,9 +49,9 @@
     backendFlight = Promise.resolve().then(async function () {
       try {
         var data = await request('/rest/v1/rpc/hf_service_status', {});
-        if (!data || data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime' || data.migration < 10 || data.validation !== 'replay-1' || !Number.isSafeInteger(data.migration)) throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
+        if (!data || data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime' || data.scoreMode !== 'personal-best' || data.migration < 11 || data.engineVersion !== 2 || data.validation !== 'replay-1' || !Number.isSafeInteger(data.migration)) throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
         var validator = await request('/functions/v1/hf-replay', {}, undefined, 'GET');
-        if (validator.validation !== 'replay-1') throw new Error('Ask the site owner to finish cloud setup.');
+        if (validator.validation !== 'replay-1' || validator.engineVersion !== 2 || !validator.supportedEngineVersions || ![1,2].every(function (v) { return validator.supportedEngineVersions.includes(v); })) throw new Error('Ask the site owner to finish cloud setup.');
         backendReady = true; backendState = 'ready';
       } catch (error) {
         backendReady = false; backendState = 'unavailable';
@@ -178,7 +178,7 @@
           if (!run.events.length) { queue.splice(queue.indexOf(run), 1); retire(run, address); } persist(queue, address);
         }
         if (epoch === generation) status = savedStatus();
-      } catch (error) { if (epoch === generation) status = 'Save pending. ' + error.message + ' Open Profile and retry.'; }
+      } catch (error) { if (epoch === generation) status = 'Save pending. ' + error.message + ' Keep this page online or select Sync progress in wallet details.'; }
       finally { if (flushing && flushing.generation === epoch) flushing = null; notify(); }
     });
     flushing = { generation: epoch, promise: work }; return work;
@@ -242,10 +242,10 @@
     if (hasConflict()) throw new Error(conflictMessage());
     var epoch = generation, loot, monsters, id = uuid(), ranked = cloud;
     if (ranked) {
-      if (outbox.length) throw new Error('Retry your pending cloud save in Profile before starting another map.');
-      var result = await rpc('hf_start_run_v6', { p_map: map });
+      if (outbox.length) throw new Error('Sync pending progress from wallet details before starting another map.');
+      var result = await rpc('hf_start_run_v6', { p_map: map, p_engine: 2 });
       if (epoch !== generation) throw new Error('The wallet changed. Start this map again.');
-      if (result.validation !== 'replay-1') throw new Error('Cloud saves are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
+      if (result.validation !== 'replay-1' || result.engineVersion !== 2) throw new Error('Cloud saves are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
       id = result.id; loot = result.loot; monsters = result.monsters;
     } else {
       loot = Array.from({ length: 31 }, function () { return window.HamsterRules.drop(Math.random()); });
@@ -287,7 +287,7 @@
       }
       if (kind === 'forage') active.score += window.HamsterRules.forageValue(data.source);
       if (kind === 'finish') guestProfile.highest_map = Math.max(guestProfile.highest_map, data.map + 1);
-      guestProfile.total_score += active.score - beforeScore; guestProfile.produce_points += active.score - beforeScore;
+      guestProfile.total_score = Math.max(guestProfile.total_score, active.score); guestProfile.produce_points += active.score - beforeScore;
       notify();
     }
     if (kind === 'defeat') active.defeated[data.target] = true;
@@ -314,7 +314,9 @@
   async function leaderboard() {
     if (!CLOUD) throw new Error('Lifetime rankings need the existing Supabase project to be configured. Guests are unranked.');
     await requireBackend();
-    return request('/rest/v1/rpc/hf_lifetime_top100', {});
+    var board = await request('/rest/v1/rpc/hf_lifetime_top100', {});
+    if (board.scoreMode !== 'personal-best') throw new Error('Personal-best rankings are unavailable. Ask the site owner to finish cloud setup.');
+    return board;
   }
   async function retry() {
     if (!cloud) { await requireBackend(true); await restore(generation); return; }
@@ -355,11 +357,10 @@
     saveName: function (name) { return mutate(function () { return saveName(name); }); },
     purchase: function (id) { return mutate(function () { return purchase(id); }); },
     equip: function (slot, id) { return mutate(function () { return equip(slot, id); }); }, leaderboard: leaderboard,
-    legacyRecord: function () { return { warning: 'Unverified browser data. Not credited to the leaderboard.', profile: read('-guest', null) }; },
     subscribe: function (fn) { listeners.push(fn); },
     retry: retry, recover: function () { return mutate(recover); },
     recoveryRecord: function () { return JSON.parse(JSON.stringify({ wallet: wallet, runs: recovery.concat(outbox.filter(function (r) { return r.conflict; })) })); },
-    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, backendState: backendState, backendError: backendError, backendCheckedAt: backendCheckedAt, status: !cloud && backendState === 'unavailable' ? backendError : status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), pendingRewards: pendingRewards(), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), localLegacyAvailable: Boolean(read('-guest', null)), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
+    snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, backendState: backendState, backendError: backendError, backendCheckedAt: backendCheckedAt, status: !cloud && backendState === 'unavailable' ? backendError : status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), pendingRewards: pendingRewards(), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
   };
   window.addEventListener('online', function () {
     if (cloud) void flush();

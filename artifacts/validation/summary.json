@@ -1,0 +1,98 @@
+{
+  "recordedAt": "2026-11-06T08:01:00.921011+00:00",
+  "workerReported": true,
+  "independentCertification": false,
+  "productionDeploymentPerformed": false,
+  "physicalMobileTestPerformed": false,
+  "commands": [
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "result": "18 complete runtime files, 276238 bytes, relative assets"
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "result": "syntax, metadata, 69 DOM references and byte-identical src/dist checks passed"
+    },
+    {
+      "command": "node scripts/typecheck-major.mjs",
+      "exitCode": 0,
+      "result": "tsc --noEmit for all 8 runtime JavaScript scripts and declarations"
+    },
+    {
+      "command": "tsc --noEmit --target ES2022 --module ESNext --moduleResolution bundler --allowJs --checkJs false --lib ES2022,DOM test/scratch/deno-types.d.ts supabase/functions/hf-replay/index.ts",
+      "exitCode": 0,
+      "result": "Edge entry TypeScript check with minimal scratch Deno API declarations; not an installed Supabase/Deno runtime check"
+    },
+    {
+      "command": "node scripts/prepare-replay.mjs --check",
+      "exitCode": 0,
+      "result": "generated engine 2 exactly matches current game/rules source"
+    },
+    {
+      "command": "node supabase/tests/personal-best.mjs",
+      "exitCode": 0,
+      "groups": 13
+    },
+    {
+      "command": "node supabase/tests/context-replay.mjs",
+      "exitCode": 0,
+      "groups": 4
+    },
+    {
+      "command": "node supabase/tests/replay-http.mjs",
+      "exitCode": 0,
+      "groups": 5,
+      "result": "actual Edge entry with engine 2 and retained engine 1, local Deno/fetch/Auth adapter"
+    },
+    {
+      "command": "node scripts/test-direct-touch.mjs",
+      "exitCode": 0,
+      "groups": 11
+    },
+    {
+      "command": "node scripts/test-major.mjs",
+      "exitCode": 0,
+      "groups": 17
+    },
+    {
+      "command": "node scripts/test-major-audio.mjs",
+      "exitCode": 0,
+      "groups": 4
+    },
+    {
+      "command": "node scripts/test-weapon-labels.mjs",
+      "exitCode": 0,
+      "groups": 4
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=\"$PWD/test/scratch/browsers\" node scripts/validate-context-replay.mjs",
+      "exitCode": 0,
+      "groups": 28
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=\"$PWD/test/scratch/browsers\" node scripts/validate-touch.mjs",
+      "exitCode": 0,
+      "groups": 54
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=\"$PWD/test/scratch/browsers\" IMD_PLAYWRIGHT=\"$PWD/test/scratch/node_modules/playwright/index.mjs\" node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste",
+      "exitCode": 0,
+      "checks": 16
+    },
+    {
+      "command": "node scripts/verify-production.mjs --out test/scratch/personal-best/production-final.json",
+      "exitCode": 1,
+      "result": "actual original project reachable; reports migration 10 / engine 1, so the personal-best release is not ready"
+    }
+  ],
+  "limitations": [
+    "No physical touchscreen or Safari/WebKit session.",
+    "No real wallet signature, production write, SQL migration, function deployment or site publication.",
+    "PostgreSQL is disposable PGlite with explicit Auth/provider/HTTP fixtures; no independent-connection contention test.",
+    "No screen-reader session or browser-native 200% zoom. Root text enlargement and responsive reflow were tested separately.",
+    "Taste excludes 24 text boxes composited over canvas/images/gradients from numerical contrast.",
+    "Supplied browser tool could not launch its missing Chrome; local Playwright Chromium performed rendered checks."
+  ]
+}

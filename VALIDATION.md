@@ -1,3 +1,11 @@
+# Current revision — personal best, direct touch and Profile cleanup
+
+The current report is [artifacts/validation.md](artifacts/validation.md), with commands, local results, the six-domain design review, screenshots and remaining release gates. Source and static export are implemented and locally checked. Production still reports migration 010; migration 011/function deployment and physical-touchscreen acceptance were not performed. No production data was changed.
+
+Everything below this divider is a **historical record of earlier revisions**, including its dated counts and previously unavailable production endpoints. It does not describe the current production probe or establish this revision’s acceptance.
+
+---
+
 # Context-button revision validation · 2026-11-06
 
 **The reported mobile Open/replay defect is reproduced, fixed and locally verified.** The production export is rebuilt. The existing gameplay, art, invisible movement controls, desktop controls, wallet connector, data schema and economy are retained. Full production integration remains incomplete for the reasons below; no live save or migration is claimed.

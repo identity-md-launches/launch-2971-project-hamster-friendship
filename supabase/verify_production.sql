@@ -1,7 +1,7 @@
 -- Run AFTER only the missing migrations, in the same production SQL Editor.
 -- Read-only metadata/aggregate checks. Every boolean should be true.
 begin read only;
-select public.hf_service_status() = '{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime","migration":10,"validation":"replay-1"}'::jsonb as current_service;
+select public.hf_service_status() = '{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime","migration":11,"validation":"replay-1","scoreMode":"personal-best","engineVersion":2}'::jsonb as current_service;
 select not has_function_privilege('anon','public.hf_replay_commit(uuid,uuid,integer,jsonb,jsonb,text)','EXECUTE')
  and not has_function_privilege('authenticated','public.hf_replay_commit(uuid,uuid,integer,jsonb,jsonb,text)','EXECUTE')
  and has_function_privilege('service_role','public.hf_replay_commit(uuid,uuid,integer,jsonb,jsonb,text)','EXECUTE') as replay_commit_is_server_only;

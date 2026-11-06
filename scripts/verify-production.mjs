@@ -27,9 +27,10 @@ await probe('Unauthenticated progress RPC (no run or events)','/rest/v1/rpc/hf_p
 await probe('Private schema exposure','/rest/v1/profiles?select=user_id&limit=0',{headers:{'Accept-Profile':'hf_private'}});
 await probe('Catalog discovery permission','/rest/v1/',{headers:{Accept:'application/openapi+json'}});
 const replay=await probe('Authoritative replay health','/functions/v1/hf-replay');
-const rpcReady=service.status===200&&service.body?.schemaVersion===7&&service.body?.rulesVersion===6&&service.body?.leaderboard==='lifetime'&&service.body?.migration===10&&board.status===200&&replay.status===200&&replay.body?.validation==='replay-1';
+const applicationReachable=service.status===200&&board.status===200&&replay.status===200;
+const rpcReady=applicationReachable&&service.body?.schemaVersion===7&&service.body?.rulesVersion===6&&service.body?.leaderboard==='lifetime'&&service.body?.migration===11&&service.body?.scoreMode==='personal-best'&&board.body?.scoreMode==='personal-best'&&replay.body?.validation==='replay-1'&&replay.body?.engineVersion===2;
 const web3State=web3.body?.error_code==='web3_provider_disabled'?'disabled':'not verified';
-const report={checkedAt:new Date().toISOString(),project:base,keyType:'publishable',connectivityPassed:auth.status===200,web3State,rpcReady,integrationComplete:false,productionMigrationsExecuted:[],probes,
+const report={checkedAt:new Date().toISOString(),project:base,keyType:'publishable',connectivityPassed:auth.status===200,web3State,applicationReachable,rpcReady,personalBestReady:rpcReady,integrationComplete:false,productionMigrationsExecuted:[],probes,
  mandatoryTests:[
   {test:'Connect to actual production project',status:auth.status===200?'passed':'failed',evidence:'Auth settings request above'},
   {test:'Read and write an authenticated player record',status:'blocked',reason:'No verified wallet session; player RPC unavailable if status above is 404'},
@@ -39,7 +40,7 @@ const report={checkedAt:new Date().toISOString(),project:base,keyType:'publishab
   {test:'Leaderboard from actual records',status:board.status===200?'read endpoint reached; record comparison not performed':'failed',reason:'Requires saved production records for comparison'},
   {test:'RLS prevents unauthorized score modification',status:'not verified',reason:'Missing RPCs or schema-exposure denial cannot prove installed RLS policies'}
  ],
- tables:['profiles','catalogue','purchases','runs','attacks','badges','dice_receipts','wallet_profiles','legacy_tickets','settings','daily_scores','lifetime_entries'].map(name=>({schema:'hf_private',name,status:'not inspectable with supplied publishable key'})),
+ tables:['profiles','catalogue','purchases','runs','attacks','badges','dice_receipts','wallet_profiles','legacy_tickets','settings','daily_scores','lifetime_entries','personal_best_baselines'].map(name=>({schema:'hf_private',name,status:'not inspectable with supplied publishable key'})),
  limitations:['No Supabase MCP or direct database administrative access available.','No production migration, player creation, score write, refresh recovery or real signature is claimed.','Execute supabase/inspect_production.sql through the authorized SQL Editor, then only missing migrations.','Ethereum Web3 provider state: '+web3State+'. A preflight is not a real signed login.']};
 const args=process.argv.slice(2),i=args.indexOf('--out'),out=resolve(i<0?'artifacts/supabase-production.json':args[i+1]);await mkdir(dirname(out),{recursive:true});await writeFile(out,JSON.stringify(report,null,2)+'\n');
 console.log('Report: '+out+'; production integration remains unverified.');

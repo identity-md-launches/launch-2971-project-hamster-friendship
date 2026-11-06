@@ -52,7 +52,7 @@ try{
    });
    for(let i=0;i<geometry.controls.length;i++){
     const a=geometry.controls[i];assert(a.x>=0&&a.x+a.w<=width&&a.y>=0&&a.y+a.h<=height,a.id+' escapes viewport');
-    if(a.id==='pickup-weapon'||a.id==='context-interact')assert(a.y>=geometry.chrome.y+geometry.chrome.h,a.id+' is behind chrome');
+    if(a.id==='pickup-weapon'||a.id==='context-interact'){assert(a.y>=geometry.chrome.y+geometry.chrome.h,a.id+' is behind chrome');assert(a.x>=width/2,a.id+' enters movement half');}
     for(const b of geometry.controls.slice(i+1))assert(!(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y),'overlap: '+a.id+' '+b.id);
    }
   });
@@ -70,20 +70,27 @@ try{
   await context.close();
  }
  persona='native Chromium touch, 844×390';await init(844,390);await start();
+ await check('direct drag settles under a resting finger and release stops horizontal drift without scrolling',async()=>{
+  const before=await snapshot();await synthetic('pointerdown',120,220);await synthetic('pointermove',150,190);await advance(700);const settled=await snapshot();await advance(250);const resting=await snapshot();
+  assert(settled.x>before.x&&settled.y<before.y);assert(Math.abs(resting.x-settled.x)<=1);assert(Math.abs(resting.y-settled.y)<=1);
+  await synthetic('pointermove',180,190);await advance(100);await synthetic('pointerup',180,190);await advance(150);const stopped=await snapshot();await advance(100);assert(Math.abs((await snapshot()).x-stopped.x)<=1);
+  assert.equal(await page.evaluate(()=>scrollX||scrollY),0);
+ });
  await check('native captured touch can cross the center while a second finger attacks, then both release cleanly',async()=>{
-  const cdp=await context.newCDPSession(page),points=[];const send=type=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(p=>({...p,radiusX:2,radiusY:2,force:1}))});
+  const cdp=await context.newCDPSession(page),points=[];const send=(type,contacts=points)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:contacts.map(p=>({...p,radiusX:2,radiusY:2,force:1}))});
   const before=await snapshot();points.push({id:1,x:200,y:230});await send('touchStart');points[0].x=250;points[0].y=185;await send('touchMove');await advance(120);assert((await snapshot()).x>before.x);assert((await snapshot()).y<before.y);
   const attack=await page.locator('.attack-btn').boundingBox();points.push({id:2,x:attack.x+attack.width/2,y:attack.y+attack.height/2});await send('touchStart');await advance(40);assert((await snapshot()).attacks>before.attacks);
   points[0].x=500;await send('touchMove');const a=await snapshot();await advance(100);assert((await snapshot()).x>a.x);
-  points.splice(1,1);await send('touchEnd');points.splice(0,1);await send('touchEnd');await advance(70);assert.equal(await page.locator('.is-pressed').count(),0);await cdp.detach();
+  const releasedAction=points.splice(1,1);await send('touchEnd',releasedAction);const beforeRelease=await snapshot();await advance(100);assert((await snapshot()).x>beforeRelease.x,'releasing Attack must leave the movement finger active');points.splice(0,1);await send('touchEnd');await advance(150);assert.equal(await page.locator('.is-pressed').count(),0);await cdp.detach();
  });
  await check('rotation clears an active native gesture and resumes the same run with a new touch',async()=>{
   const before=await snapshot();await synthetic('pointerdown',200,210);await synthetic('pointermove',256,210);await page.setViewportSize({width:390,height:844});await advance();assert.equal((await snapshot()).state,'paused');await page.locator('#btn-portrait').click();await advance();assert.equal((await snapshot()).map,before.map);const a=await snapshot();await synthetic('pointermove',0,0);await advance(100);assert(Math.abs((await snapshot()).x-a.x)<8);
  });
  await context.close();
  persona='desktop 1440×900';await init(1440,900,false);await start();
- await check('desktop keys move, jump and attack; touch surface is hidden',async()=>{
+ await check('desktop keys move, jump and attack, mouse attacks, and touch surface is hidden',async()=>{
   assert(await page.locator('#touch-movement').isHidden());await page.locator('#game').focus();const before=await snapshot();await page.keyboard.down('ArrowRight');await advance(250);await page.keyboard.up('ArrowRight');assert((await snapshot()).x>before.x);const ground=(await snapshot()).y;await page.keyboard.down('Space');await advance(80);assert((await snapshot()).y<ground);await page.keyboard.up('Space');await page.keyboard.press('Enter');await advance(30);assert((await snapshot()).attacks>before.attacks);
+  await advance(300);const attacks=(await snapshot()).attacks;await page.mouse.click(400,400);await advance(40);assert((await snapshot()).attacks>attacks);
  });
  await check('keyboard wallet prompt and GUILD stay reachable, with visible focus and natural wrapping at large text',async()=>{
   await page.locator('#btn-wallet').focus();await page.keyboard.press('Enter');assert(await page.locator('#wallet-dialog').isVisible());assert(await page.getByRole('link',{name:'Open in MetaMask',exact:true}).isVisible());await page.keyboard.press('Escape');await advance(50);assert.equal(await page.locator(':focus').getAttribute('id'),'btn-wallet');

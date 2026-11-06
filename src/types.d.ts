@@ -36,7 +36,7 @@ interface FriendshipSaveSnapshot {
   backendState: string; backendError: string; backendCheckedAt: string;
   storageOK: boolean; pendingCoins: number; pendingEvents: number; pendingRewards: number;
   runConflict: boolean; recoveryEvents: number;
-  ranked: boolean; playingGuest: boolean; legacyAvailable: boolean; localLegacyAvailable: boolean; wallet: string;
+  ranked: boolean; playingGuest: boolean; legacyAvailable: boolean; wallet: string;
 }
 interface FriendshipSave {
   ready: Promise<void>;
@@ -55,7 +55,6 @@ interface FriendshipSave {
   subscribe(listener: () => void): void;
   retry(): Promise<void>;
   recover(): Promise<void>;
-  legacyRecord(): Record<string, unknown>;
   recoveryRecord(): {wallet: string; runs: Array<Record<string, unknown>>};
   snapshot(): FriendshipSaveSnapshot;
 }

@@ -9,7 +9,7 @@ select current_database() as database_name, current_user as inspection_role,
 -- Complete application table inventory, even before the schema exists.
 with expected(name) as (values ('profiles'),('catalogue'),('purchases'),('runs'),
  ('attacks'),('badges'),('dice_receipts'),('wallet_profiles'),('legacy_tickets'),
- ('settings'),('daily_scores'),('lifetime_entries'))
+ ('settings'),('daily_scores'),('lifetime_entries'),('personal_best_baselines'))
 select 'hf_private' as schema_name, e.name as table_name,
        c.oid is not null as present, c.relrowsecurity as rls_enabled,
        c.relforcerowsecurity as force_rls, c.reltuples::bigint as estimated_rows

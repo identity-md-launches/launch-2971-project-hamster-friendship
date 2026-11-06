@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "name": "mobile Open replays and credits its offline basket exactly once, then permits a ranked restart",
+      "passed": true
+    },
+    {
+      "name": "Open waits for the recorded tick and multiple clicks cannot open a basket twice",
+      "passed": true
+    },
+    {
+      "name": "an offline reload retains Open inputs; reconnect saves them and another device recovers the score",
+      "passed": true
+    },
+    {
+      "name": "context clicks while paused or reading do not enqueue another gameplay action",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Disposable PostgreSQL migrations 001–011, fixture Auth/HTTP/DOM and accelerated elapsed run time; no production write.",
+    "Real client/game input handlers and validateReplay/hf_replay_commit; no player position, reward or encounter edits.",
+    "Browser hit testing and physical touch hardware are separate checks."
+  ]
+}

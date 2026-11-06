@@ -6,7 +6,7 @@ const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{sta
 Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
  if(req.method==='GET')return Deno.env.get('SUPABASE_URL')&&Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  ? reply(200,{validation:protocol,engineHash}) : reply(503,{message:'Cloud replay is not configured.'});
+  ? reply(200,{validation:protocol,engineHash,engineVersion:2,supportedEngineVersions:[1,2]}) : reply(503,{message:'Cloud replay is not configured.'});
  if(req.method!=='POST')return reply(405,{message:'Use POST to save progress.'});
  const authorization=req.headers.get('authorization');
  if(!authorization?.startsWith('Bearer '))return reply(401,{message:'Sign in with your wallet to save.'});
@@ -26,8 +26,7 @@ Deno.serve(async(req:Request)=>{
   // The user's JWT is verified by PostgREST, and player_id verifies Web3 wallet
   // ownership. Merely decoding a token would not authenticate the request.
   const context=await rpc('hf_replay_context',{p_run:body.p_run},authorization);
-  if(context.engineHash&&context.engineHash!==engineHash)throw Error('Replay engine version changed. Keep the pending save for recovery.');
   const previous=context.seq,result=await validateReplay(context,body.p_events);
-  return reply(200,await rpc('hf_replay_commit',{p_auth_user:context.authUser,p_run:body.p_run,p_previous:previous,p_events:result.events,p_state:result.state,p_hash:engineHash},'Bearer '+key));
+  return reply(200,await rpc('hf_replay_commit',{p_auth_user:context.authUser,p_run:body.p_run,p_previous:previous,p_events:result.events,p_state:result.state,p_hash:result.engineHash},'Bearer '+key));
  }catch(error){return reply(400,{message:error instanceof Error?error.message:'Cloud replay failed. Keep the pending save and retry.'});}
 });

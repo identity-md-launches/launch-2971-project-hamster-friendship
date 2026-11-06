@@ -22,7 +22,7 @@
     var state = save.snapshot();
     document.getElementById('hud-sqk').textContent = state.profile.sqk.toLocaleString();
     document.getElementById('hud-pending').textContent = state.pendingCoins ? '(+' + state.pendingCoins + ' pending)' : '';
-    document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.runConflict ? 'Map ended elsewhere · open Profile to recover' : state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents || state.pendingRewards ? 'Cloud save pending · open Profile to retry' : 'Wallet profile saved' : 'this run only; not saved');
+    document.getElementById('save-summary').textContent = state.profile.name + ' · ' + (!state.storageOK ? 'Browser storage unavailable; keep this page open.' : state.cloud ? state.runConflict ? 'Map ended elsewhere · open Profile to recover' : state.playingGuest ? 'Guest run · restart the map for cloud credit' : state.pendingEvents || state.pendingRewards ? 'Cloud save pending · syncing when online' : 'Wallet profile saved' : 'this run only; not saved');
     if (window.__hamster.snapshot().state === 'title') {
       var map = state.profile.highest_map > 4 ? 1 : state.profile.highest_map;
       document.getElementById('btn-start').textContent = map > 1 ? 'Continue map ' + map : 'Start adventure';
@@ -40,12 +40,11 @@
       var values = { sqk: state.profile.sqk.toLocaleString(), total_score: state.profile.total_score.toLocaleString(), highest_map: String(state.profile.highest_map), purchases: String(state.profile.purchases.length) };
       Object.keys(values).forEach(function (key) { var node = document.getElementById('profile-' + key); if (node) node.textContent = values[key]; });
       var cloudStatus = document.getElementById('profile-save-state'); if (cloudStatus) cloudStatus.textContent = state.status;
-      var retry = document.getElementById('profile-retry'); if (retry) retry.hidden = state.runConflict;
       var recover = document.getElementById('profile-recover'); if (recover) recover.hidden = !state.runConflict;
       var recoveryHint = document.getElementById('profile-recovery-hint'); if (recoveryHint) recoveryHint.hidden = !state.runConflict && !state.recoveryEvents;
       var download = document.getElementById('profile-recovery-download'); if (download) download.hidden = !state.runConflict && !state.recoveryEvents;
       var accountInfo = document.getElementById('profile-account-info');
-      if (accountInfo) accountInfo.textContent = state.cloud ? state.pendingEvents || state.pendingRewards ? 'Lifetime Score shows credited points. Retry here or leave this page online to finish syncing.' : 'Saved to your verified wallet profile. Guest progress is never imported. Lifetime scores, SQK and purchases are retained.' : state.backendState === 'unavailable' ? 'Guest runs are not saved. Retry the connection below, or continue as a guest.' : state.configured ? 'Guest runs are not saved. Use Connect MetaMask above and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
+      if (accountInfo) accountInfo.textContent = state.cloud ? state.pendingEvents || state.pendingRewards ? 'Lifetime Score is your best single run. Leave this page online to finish syncing, or select Sync progress in wallet details.' : 'Lifetime Score is your best single run, saved to your verified wallet. SQK, purchases and progress also save to this profile.' : state.backendState === 'unavailable' ? 'Guest runs are not saved. Check the connection in wallet details, or continue as a guest.' : state.configured ? 'Lifetime Score is your best single run. Connect MetaMask and sign in to save progress and buy items.' : 'Guest runs are not saved. Cloud saves, purchases and global rankings are not available on this site yet.';
     }
     var balance = document.getElementById('market-balance'); if (balance) balance.textContent = state.profile.sqk.toLocaleString() + ' SQK available' + (state.pendingCoins ? ' · ' + state.pendingCoins + ' awaiting cloud save' : '');
   }
@@ -71,20 +70,14 @@
     var cloudStatus = el('p', state.status, 'panel-note'); cloudStatus.id = 'profile-save-state'; cloudStatus.setAttribute('role', 'status');
     var accountInfo = el('p', '', 'panel-note'); accountInfo.id = 'profile-account-info';
     content.append(form, stats, cloudStatus, accountInfo);
+    if (state.cloud && p.wallet) content.append(el('p', p.wallet, 'wallet-address'));
     if (!state.storageOK) content.append(message('Browser storage is unavailable. Enable site storage to keep progress after closing this page.', true));
     if (state.configured) {
-      var retryResult = message('');
-      var retry = action(state.cloud ? 'Retry cloud save' : 'Check cloud connection', async function () {
-        retry.disabled = true; retryResult.className = 'panel-note'; retryResult.textContent = 'Connecting…';
-        try { await save.retry(); retryResult.textContent = ''; }
-        catch (error) { retryResult.className = 'error'; retryResult.textContent = error.message === save.snapshot().status ? 'Still unavailable. Try again later or play as a guest.' : error.message; }
-        finally { retry.disabled = false; }
-      });
-      retry.id = 'profile-retry';
+      var recoveryResult = message('');
       var recover = action('Restart from cloud profile', async function () {
-        recover.disabled = true; retryResult.className = 'panel-note'; retryResult.textContent = 'Restoring cloud profile…';
+        recover.disabled = true; recoveryResult.className = 'panel-note'; recoveryResult.textContent = 'Restoring cloud profile…';
         try { await save.recover(); dialog.close(); await window.__hamster.restart(); }
-        catch (error) { retryResult.className = 'error'; retryResult.textContent = error.message; }
+        catch (error) { recoveryResult.className = 'error'; recoveryResult.textContent = error.message; }
         finally { recover.disabled = false; }
       }, 'btn-primary');
       recover.id = 'profile-recover';
@@ -93,14 +86,7 @@
         var blob = new Blob([JSON.stringify(save.recoveryRecord(), null, 2)], { type: 'application/json' });
         var url = URL.createObjectURL(blob), link = el('a'); link.href = url; link.download = 'squeek-recovery.json'; link.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
       }); download.id = 'profile-recovery-download';
-      content.append(retry, recoveryHint, recover, download, retryResult);
-    }
-    if (state.localLegacyAvailable) {
-      content.append(el('p', 'An older browser save is retained on this device. Its unverified totals cannot replace a verified wallet score. Download it for the project owner to review.', 'panel-note'));
-      content.append(action('Download older browser save', function () {
-        var url = URL.createObjectURL(new Blob([JSON.stringify(save.legacyRecord(), null, 2)], {type:'application/json'}));
-        var link = el('a'); link.href = url; link.download = 'squeek-legacy-browser-save.json'; link.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      }));
+      content.append(recoveryHint, recover, download, recoveryResult);
     }
     var earned = (p.badges || []).filter(function (b) { return b.source === 'skill' || b.source === 'contribution'; });
     if (earned.length) content.append(el('p', 'Earned badges: ' + earned.map(function (b) { return b.tier + ' ' + b.source; }).join(', '), 'panel-note'));
@@ -173,9 +159,9 @@
   var boardTimer, refreshBoard = function () {};
   function leaderboardPanel() {
     clearTimeout(boardTimer); title.textContent = 'Lifetime Top 100'; content.replaceChildren(); var stamp = generation, loading = false;
-    content.append(el('p', 'Accumulated score across all maps · verified wallets only. Scores never reset. Guests are unranked.', 'panel-note'));
+    content.append(el('p', 'Lifetime Score is your highest single-run score. Only a new personal best changes it. Verified wallets only; guests are unranked.', 'panel-note'));
     var state = message('Loading lifetime rankings…'); content.append(state);
-    var table = el('table', '', 'leaderboard'), caption = el('caption', 'Lifetime wallet scores'); caption.className = 'visually-hidden'; table.append(caption); table.hidden = true;
+    var table = el('table', '', 'leaderboard'), caption = el('caption', 'Personal best scores for verified wallets'); caption.className = 'visually-hidden'; table.append(caption); table.hidden = true;
     var head = el('thead'), hr = el('tr'); ['Rank', 'Player', 'Lifetime Score', 'Map'].forEach(function (text) { var th = el('th', text); th.scope = 'col'; hr.append(th); }); head.append(hr); table.append(head);
     var body = el('tbody'); table.append(body); content.append(table);
     content.append(el('p', 'Updates after a saved score change and every 15 seconds while open. Points are saved during play; pending offline points appear after syncing.', 'panel-note'));

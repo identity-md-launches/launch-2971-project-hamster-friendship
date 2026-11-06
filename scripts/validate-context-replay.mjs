@@ -10,9 +10,10 @@ import {replayRpc} from '../supabase/tests/replay-fixture.mjs';
 import {engineHash} from '../supabase/functions/_shared/replay.js';
 
 const {chromium}=await import(pathToFileURL(resolve('test/scratch/node_modules/playwright/index.mjs')).href);
+const {default:AxeBuilder}=await import(pathToFileURL(resolve('test/scratch/node_modules/@axe-core/playwright/dist/index.mjs')).href);
 const out='test/scratch/context',root=resolve('dist'),results=[],errors=[],failures=[],contexts=[];
 await mkdir(out+'/shots',{recursive:true});
-const h=await createHarness(10);
+const h=await createHarness(11);
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
 const server=createServer(async(req,res)=>{
  try{
@@ -42,13 +43,22 @@ async function client(user,width=390,height=844,touch=true){
  await context.addInitScript(({wallet,session})=>{
   const key='hamster-friendship-v2-wallet-session-'+wallet;
   if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(session));
+  if(!localStorage.getItem('hamster-friendship-v2-guest'))localStorage.setItem('hamster-friendship-v2-guest',JSON.stringify({name:'Unverified browser fixture',total_score:99999,sqk:99999}));
+  // Explicit provider/session fixtures exercise connection UI without making a
+  // fake wallet signature or claiming hosted Auth coverage.
+  localStorage.setItem('hamster-wallet-provider','io.metamask');
+  window.ethereum={isMetaMask:true,on(){},removeListener(){},async request({method}){
+   if(method==='eth_accounts'||method==='eth_requestAccounts')return [wallet];
+   if(method==='eth_chainId')return '0x1';if(method==='wallet_switchEthereumChain')return null;
+   throw Error('Signing is deliberately unavailable in this provider fixture');
+  }};
  },{wallet:user.wallet,session:{access_token:user.id,refresh_token:user.id,expires_at:Date.now()/1000+3600}});
  await context.route('https://nhtlwcukeyhvkrjveots.supabase.co/**',async route=>{
   if(c.net.offline){await route.abort('internetdisconnected');return;}
   const req=route.request(),name=new URL(req.url()).pathname.split('/').pop(),body=req.postDataJSON()||{};
   try{
    let data;
-   if(name==='hf-replay'&&req.method()==='GET')data={validation:'replay-1',engineHash};
+   if(name==='hf-replay'&&req.method()==='GET')data={validation:'replay-1',engineHash,engineVersion:2,supportedEngineVersions:[1,2]};
    else if(name==='hf-replay')data=await replayRpc(h,user,body.p_run,body.p_events);
    else data=await h.rpc(req.headers().authorization?user:null,name,body);
    if(name==='hf_start_run_v6'){
@@ -60,6 +70,7 @@ async function client(user,width=390,height=844,touch=true){
  });
  await page.clock.install();await page.clock.pauseAt(new Date());await page.goto(url);await advance(c);
  await page.evaluate(wallet=>window.HamsterSave.setWallet(wallet),user.wallet);
+ await page.waitForFunction(()=>window.HamsterSave.snapshot().cloud);
  assert.equal((await saved(c)).cloud,true);return c;
 }
 async function start(c){
@@ -72,7 +83,7 @@ async function start(c){
 }
 try{
  browser=await chromium.launch({headless:true});
- for(const [width,height]of [[390,844],[320,568],[768,1024],[568,320],[844,390],[1024,768]]){
+ for(const [width,height]of (process.argv.includes('--focused')?[]:[[390,844],[320,568],[768,1024],[568,320],[844,390],[1024,768]])){
   const user=await h.identity();await h.rpc(user,'hf_wallet_profile');const c=await client(user,width,height);
   await check(`${width}×${height}: product and Start fit the first screen`,async()=>{
    const b=await c.page.locator('#btn-start').boundingBox();assert(b.y>=0&&b.y+b.height<=height);
@@ -83,8 +94,8 @@ try{
    await start(c);const button=c.page.getByRole('button',{name:'Open',exact:true});await button.waitFor({state:'visible'});
    const b=await button.boundingBox();assert(b.width>=44&&b.height>=44);assert(b.x>=0&&b.x+b.width<=width&&b.y>=0&&b.y+b.height<=height);
    if(width===390)await c.page.screenshot({path:out+'/shots/open-390.png'});
-   c.net.offline=true;await button.tap();await advance(c,20);
-   assert.equal((await game(c)).score,2);assert.equal((await game(c)).state,'dialogue');
+   c.net.offline=true;await button.tap();await advance(c,50);
+   assert.equal((await game(c)).score,2,JSON.stringify(await game(c)));assert.equal((await game(c)).state,'dialogue');
    await dialogue(c);await advance(c,1050);await c.page.evaluate(()=>window.HamsterSave.flush());
    const events=await queued(c),basket=events.find(e=>e.source==='basket');
    assert(basket?.inputs.some(input=>input.pressed&16),'button did not record interact');
@@ -109,12 +120,70 @@ try{
     await fresh.page.screenshot({path:out+'/shots/recovered-profile-390.png'});await fresh.context.close();
    }
   });
+  await check(`${width}×${height}: clean Profile retains verified wallet, personal best and working cloud name saves without importing or deleting browser data`,async()=>{
+   const legacy=await c.page.evaluate(()=>localStorage.getItem('hamster-friendship-v2-guest'));
+   await c.page.locator('#btn-menu').click();await c.page.locator('#btn-profile').click();
+   assert.equal(await c.page.locator('#profile-total_score').textContent(),'2');
+   assert.equal(await c.page.locator('#player-dialog .wallet-address').textContent(),user.wallet);
+   assert(!/Retry cloud save|An older browser save|Download older browser save/.test(await c.page.locator('body').textContent()));
+   assert.equal(await c.page.locator('#profile-retry').count(),0);
+   await c.page.locator('#player-name').fill('Cloud Keeper');await c.page.getByRole('button',{name:'Save name',exact:true}).click();
+   await c.page.getByText('Name saved to your cloud profile.',{exact:true}).waitFor();assert.equal((await h.rpc(user,'hf_profile')).name,'Cloud Keeper');
+   assert.equal(await c.page.evaluate(()=>localStorage.getItem('hamster-friendship-v2-guest')),legacy);
+   assert.equal((await h.rpc(user,'hf_profile')).total_score,2);
+   assert.equal(await c.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   if(width===390||width===1440)await c.page.screenshot({path:out+'/shots/clean-profile-'+width+'.png'});
+   await c.page.clock.resume();const report=await new AxeBuilder({page:c.page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();assert.deepEqual(report.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[]);
+   await c.page.keyboard.press('Escape');await c.page.waitForFunction(()=>document.activeElement?.id==='btn-menu');
+  });
   await c.context.close();
  }
- await check('desktop E opens the basket through the same replay path',async()=>{
+ await check('native multi-touch movement and attack replay through engine 2, settle rewards and restore the best after refresh',async()=>{
+  const user=await h.identity();await h.rpc(user,'hf_wallet_profile');const c=await client(user,844,390,true);
+  await c.page.locator('#btn-start').tap();await c.page.waitForFunction(()=>!document.getElementById('btn-start').disabled);await advance(c,100);await dialogue(c);
+  assert(await c.page.locator('#touch-movement').isVisible(),'First drag must work immediately after dialogue, before another animation frame');
+  await c.page.evaluate(()=>{window.__touchEvents=[];for(const type of ['pointerdown','pointerup','pointercancel','gotpointercapture','lostpointercapture'])window.addEventListener(type,e=>window.__touchEvents.push({type,id:e.pointerId,target:e.target.id||e.target.className}),true);});
+  const cdp=await c.context.newCDPSession(c.page),points=[];
+  const send=(type,contacts=points)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:contacts.map(p=>({...p,radiusX:2,radiusY:2,force:1}))});
+  points.push({id:1,x:20,y:260});await send('touchStart');points[0].x=280;await send('touchMove');await advance(c,300);
+  const attack=await c.page.locator('.attack-btn').boundingBox();points.push({id:2,x:attack.x+attack.width/2,y:attack.y+attack.height/2});await send('touchStart');await advance(c,50);
+  assert((await game(c)).attacks>0);const releasedAction=points.splice(1,1);await send('touchEnd',releasedAction);await advance(c,1400);
+  const moving=await game(c);assert(moving.x>200,JSON.stringify({state:moving.state,x:moving.x,frame:moving.frame,trace:await c.page.evaluate(()=>window.__touchEvents),controls:(await queued(c)).flatMap(e=>e.inputs||[]).map(i=>({frame:i.frame,ticks:i.ticks,touch:i.touch,x:i.x}))}));assert(moving.score>0);await c.page.screenshot({path:out+'/shots/cloud-direct-touch-844.png'});
+  points.splice(0,1);await send('touchEnd');await advance(c,200);await cdp.detach();
+  await c.page.evaluate(()=>window.HamsterSave.retry());const state=await saved(c);assert.equal(state.pendingEvents,0);assert.equal(state.runConflict,false);
+  assert.equal(state.profile.total_score,(await game(c)).score);
+  assert.equal((await h.rpc(user,'hf_replay_context',{p_run:c.runs[0]})).engineVersion,2);
+  await c.page.reload();await advance(c,100);await c.page.waitForFunction(()=>window.HamsterSave.snapshot().cloud);assert.equal((await saved(c)).profile.total_score,state.profile.total_score);
+  await c.context.close();
+ });
+ await check('leaderboard refresh displays backend personal bests after lower and higher administrative run fixtures',async()=>{
+  const user=await h.identity();await h.rpc(user,'hf_wallet_profile');await h.rpc(user,'hf_profile',{p_name:'Ranking fixture'});
+  async function run(score){const r=await h.rpc(user,'hf_start_run_v6',{p_map:1,p_engine:2});await h.admin("update hf_private.runs set score=$2,status='dead' where id=$1",[r.id,score]);}
+  await run(5);await run(8);await run(6);
+  const c=await client(user,390,844,true);await c.page.locator('#btn-menu').click();await c.page.locator('#btn-leaderboard').click();
+  const entry=c.page.locator('.leaderboard tbody tr').filter({hasText:'Ranking fixture'});await entry.waitFor();assert.equal(await entry.locator('td').nth(2).textContent(),'8');
+  await run(4);await c.page.getByRole('button',{name:'Refresh rankings'}).click();await c.page.waitForFunction(()=>!document.querySelector('#panel-content [aria-busy]'));assert.equal(await entry.locator('td').nth(2).textContent(),'8');
+  await run(10);await c.page.getByRole('button',{name:'Refresh rankings'}).click();await c.page.waitForFunction(()=>[...document.querySelectorAll('.leaderboard tbody tr')].some(r=>r.textContent.includes('Ranking fixture')&&r.children[2].textContent==='10'));
+  assert.equal(await entry.locator('td').nth(2).textContent(),'10');assert.match(await c.page.locator('#panel-content').textContent(),/highest single-run score/);
+  await c.page.screenshot({path:out+'/shots/personal-best-board-390.png'});await c.context.close();
+ });
+ await check('desktop E opens the basket through the same replay path; wallet Sync progress, disconnect, reconnect and page refresh retain the best',async()=>{
   const user=await h.identity();await h.rpc(user,'hf_wallet_profile');const c=await client(user,1440,900,false);await start(c);
   assert(await c.page.locator('#context-interact').isHidden());await c.page.keyboard.press('e');await advance(c,20);await dialogue(c);
   await c.page.evaluate(()=>window.HamsterSave.retry());assert.equal((await saved(c)).profile.total_score,2);assert.equal((await saved(c)).pendingEvents,0);
+  await c.page.locator('#btn-wallet').click();await c.page.getByRole('button',{name:'Sync progress',exact:true}).click();
+  await c.page.waitForFunction(()=>document.getElementById('wallet-status').textContent==='Wallet profile saved.');
+  await c.page.getByRole('button',{name:'Disconnect',exact:true}).click();await c.page.waitForFunction(()=>!window.HamsterSave.snapshot().cloud);
+  await c.page.locator('#wallet-options').getByRole('button',{name:'Connect MetaMask',exact:true}).click();await c.page.waitForFunction(()=>window.HamsterSave.snapshot().cloud);
+  assert.equal((await saved(c)).profile.total_score,2);await c.page.reload();await advance(c,100);await c.page.waitForFunction(()=>window.HamsterSave.snapshot().cloud);assert.equal((await saved(c)).profile.total_score,2);
+  await c.page.locator('#btn-menu').click();await c.page.locator('#btn-profile').click();
+  await c.page.evaluate(()=>document.documentElement.style.fontSize='200%');
+  for(const width of [390,1440]){
+   await c.page.setViewportSize({width,height:900});await advance(c,100);assert.equal(await c.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   await c.page.locator('#player-dialog .wallet-address').evaluate(n=>n.scrollIntoView({block:'start',behavior:'instant'}));
+   const address=await c.page.locator('#player-dialog .wallet-address').boundingBox(),header=await c.page.locator('#player-dialog .panel-header').boundingBox();assert(address.x>=0&&address.x+address.width<=width);assert(address.y>=header.y+header.height);
+   if(width===390)await c.page.screenshot({path:out+'/shots/clean-profile-200percent-390.png'});
+  }
   await c.context.close();
  });
  await check('no JavaScript, local asset or replay/SQL failures',()=>{assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);});
