@@ -42,6 +42,8 @@ interface FriendshipSave {
   ready: Promise<void>;
   checkConnection(): Promise<void>;
   beginMap(map: number): Promise<{loot: string[]; monsters: FriendshipMonster[]; rulesVersion: number; ranked: boolean; purchases: string[]}>;
+  input(value: {frame: number; ticks: number; held: number; pressed: number; touch: boolean; x: number; y: number; weapon: string}): void;
+  checkpoint(frame: number): void;
   record(kind: string, data: Record<string, unknown>, frame: number): number | null;
   flush(): Promise<void>;
   setWallet(address: string): Promise<void>;

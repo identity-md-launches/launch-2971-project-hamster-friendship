@@ -4,7 +4,7 @@ import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {createHarness} from './major-harness.mjs';
 import {prepare} from '../../scripts/prepare-supabase.mjs';
 const results=[];
-for(const version of [0,1,2,3,4,5,6,7,8]){
+for(const version of [0,1,2,3,4,5,6,7,8,9]){
  const h=await createHarness(version);
  try{
   await h.db.exec(await readFile('supabase/inspect_production.sql','utf8'));
@@ -19,7 +19,7 @@ for(const version of [0,1,2,3,4,5,6,7,8]){
    before=(await h.admin('select user_id,name,sqk,total_score,cosmetics from hf_private.profiles')).rows;
   }
   await h.db.exec(await prepare(version));
-  assert.deepEqual((await h.admin('select public.hf_service_status() as s')).rows[0].s,{schemaVersion:7,rulesVersion:6,leaderboard:'lifetime',migration:9});
+  assert.deepEqual((await h.admin('select public.hf_service_status() as s')).rows[0].s,{schemaVersion:7,rulesVersion:6,leaderboard:'lifetime',migration:10,validation:'replay-1'});
   if(before)assert.deepEqual((await h.admin('select user_id,name,sqk,total_score,cosmetics from hf_private.profiles')).rows,before);
   for(const file of ['supabase/verify_major.sql','supabase/verify_production.sql']){
    const checks=await h.db.exec(await readFile(file,'utf8'));
@@ -27,7 +27,7 @@ for(const version of [0,1,2,3,4,5,6,7,8]){
   }
   await h.db.exec(await readFile('supabase/test_access.sql','utf8'));
   {const replay=await prepare(version);await assert.rejects(()=>h.db.exec(replay),/Expected|differs/);await h.db.exec('rollback');}
-  results.push({name:'Inspect and upgrade schema '+version+' → 9; preserve existing records; reject replay',passed:true});console.log('ok',results.at(-1).name);
+  results.push({name:'Inspect and upgrade schema '+version+' → 10; preserve existing records; reject replay',passed:true});console.log('ok',results.at(-1).name);
  }finally{await h.close();}
 }
 const h=await createHarness(2);

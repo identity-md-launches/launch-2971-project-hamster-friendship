@@ -27,12 +27,12 @@
   function hasConflict() { return outbox.some(function (r) { return Boolean(r.conflict); }); }
   function pendingRewards() { return Number(profile.pending_rewards || 0); }
   function savedStatus() { return hasConflict() ? conflictMessage() : outbox.length || pendingRewards() ? 'Save pending. Earned rewards are kept until fully credited.' : 'Wallet profile saved.'; }
-  function conflictMessage() { return 'This map has ended in another session. Saved rewards are safe. Unsent events are kept for recovery. Open Profile and choose Restart from cloud profile.'; }
+  function conflictMessage() { return 'This map cannot continue its cloud save. Saved rewards are safe. Unsent events are kept for recovery. Open Profile and choose Restart from cloud profile.'; }
   function pendingCoins() { return outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.filter(function (e) { return e.seq > (r.validatedAck || 0) && e.kind === 'pickup' && r.loot[e.target] === 'coin'; }).length); }, 0); }
   async function request(path, body, token, method) {
     var control = new AbortController(), timer = setTimeout(function () { control.abort(); }, 10000);
     try {
-      var response = await fetch(url + path, { method: method || 'POST', headers: Object.assign({ apikey: config.supabasePublishableKey, 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body), signal: control.signal, keepalive: path === '/rest/v1/rpc/hf_progress' });
+      var response = await fetch(url + path, { method: method || 'POST', headers: Object.assign({ apikey: config.supabasePublishableKey, 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body), signal: control.signal, keepalive: path === '/rest/v1/rpc/hf_progress' || path === '/functions/v1/hf-replay' });
       var data = await response.json().catch(function () { throw new Error('Cloud returned an unreadable response. Pending progress has been kept. Retry the save.'); });
       if (!response.ok) {
         if (data.code === 'PGRST202') throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
@@ -49,7 +49,9 @@
     backendFlight = Promise.resolve().then(async function () {
       try {
         var data = await request('/rest/v1/rpc/hf_service_status', {});
-        if (!data || data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime' || data.migration < 9 || !Number.isSafeInteger(data.migration)) throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
+        if (!data || data.schemaVersion !== 7 || data.rulesVersion !== 6 || data.leaderboard !== 'lifetime' || data.migration < 10 || data.validation !== 'replay-1' || !Number.isSafeInteger(data.migration)) throw new Error('Cloud saves and global rankings are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
+        var validator = await request('/functions/v1/hf-replay', {}, undefined, 'GET');
+        if (validator.validation !== 'replay-1') throw new Error('Ask the site owner to finish cloud setup.');
         backendReady = true; backendState = 'ready';
       } catch (error) {
         backendReady = false; backendState = 'unavailable';
@@ -74,7 +76,7 @@
     auth = auth || session; address = address || wallet; if (epoch === undefined) epoch = generation;
     var result = rpcFlight.then(async function () {
       var token = await access(auth, '-wallet-session-' + address);
-      var data = await request('/rest/v1/rpc/' + name, body || {}, token);
+      var data = await request(name === 'hf_replay' ? '/functions/v1/hf-replay' : '/rest/v1/rpc/' + name, body || {}, token);
       if (data.profile) accept(data.profile, epoch); else if (data.wallet) accept(data, epoch);
       return data;
     });
@@ -128,15 +130,22 @@
         while (queue.some(function (r) { return !r.conflict && !deferred.has(r.id); })) {
           var run = queue.find(function (r) { return !r.conflict && !deferred.has(r.id); });
           if (!run.events.length) { queue.splice(queue.indexOf(run), 1); retire(run, address); continue; }
-          var events = run.events.slice(0, 128);
+          // Bound replay work and keepalive bytes; retain the rest durably.
+          var events = [], bytes = 64, frames = 0;
+          for (var candidate of run.events) {
+            var size = JSON.stringify(candidate).length + 1;
+            var steps = (candidate.inputs || []).reduce(function (n, input) { return n + input.ticks; }, 0);
+            if (events.length && (events.length >= 128 || bytes + size > 55000 || frames + steps > 1200)) break;
+            events.push(candidate); bytes += size; frames += steps;
+          }
           var result;
-          try { result = await rpc('hf_progress', { p_run: run.id, p_events: events }, auth, address, epoch); }
+          try { result = await rpc(run.validation === 'replay-1' ? 'hf_replay' : 'hf_progress', { p_run: run.id, p_events: events }, auth, address, epoch); }
           catch (error) {
             // Classify by owned server state, never by a transport error string.
             // An offline/unavailable state check leaves the queue retryable.
             var remote;
             try { remote = await rpc('hf_run_state', { p_run: run.id }, auth, address, epoch); } catch (_) { throw error; }
-            if (!remote || !['abandoned', 'dead', 'complete'].includes(remote.status) || !Number.isSafeInteger(remote.ack) || remote.ack < 0 || !Number.isSafeInteger(remote.pendingPoints) || remote.pendingPoints < 0) throw error;
+            if (!remote || (!['abandoned', 'dead', 'complete'].includes(remote.status) && remote.validation !== 'legacy-unverifiable') || !Number.isSafeInteger(remote.ack) || remote.ack < 0 || !Number.isSafeInteger(remote.pendingPoints) || remote.pendingPoints < 0) throw error;
             run.validatedAck = Math.max(run.validatedAck || 0, remote.ack);
             if (remote.pendingPoints > 0 && run.events.every(function (e) { return e.seq <= remote.ack; })) {
               deferred.add(run.id); persist(queue, address); continue;
@@ -229,21 +238,34 @@
   }
   async function beginMap(map) {
     if (hasConflict()) throw new Error(conflictMessage());
-    if (active) record('death', {}, active.lastFrame); await flush();
+    if (active) record('death', {}, active.nextFrame); await flush();
     if (hasConflict()) throw new Error(conflictMessage());
     var epoch = generation, loot, monsters, id = uuid(), ranked = cloud;
     if (ranked) {
       if (outbox.length) throw new Error('Retry your pending cloud save in Profile before starting another map.');
       var result = await rpc('hf_start_run_v6', { p_map: map });
       if (epoch !== generation) throw new Error('The wallet changed. Start this map again.');
+      if (result.validation !== 'replay-1') throw new Error('Cloud saves are unavailable. Ask the site owner to finish cloud setup. Guest play is not saved.');
       id = result.id; loot = result.loot; monsters = result.monsters;
     } else {
       loot = Array.from({ length: 31 }, function () { return window.HamsterRules.drop(Math.random()); });
       monsters = Array.from({ length: 30 }, function () { return window.HamsterRules.monster(Math.random(), Math.random(), map); });
     }
-    active = { id: id, ranked: ranked, seq: 0, score: 0, lastFrame: 0, claimed: {}, defeated: {}, forage: {}, loot: loot };
+    active = { id: id, ranked: ranked, seq: 0, score: 0, lastFrame: 0, claimed: {}, defeated: {}, forage: {}, loot: loot, inputs: [], inputTicks: 0, nextFrame: 0 };
     notify(); return { loot: loot, monsters: monsters, rulesVersion: 6, ranked: ranked, purchases: profile.purchases.slice() };
   }
+  // Run-length encoding keeps steady movement compact. Inputs are attached to
+  // the next event before it is persisted; a one-second checkpoint also saves
+  // uneventful movement. Reward events never depend on an unpersisted buffer.
+  function input(value) {
+    if (!active || !active.ranked) return;
+    var last = active.inputs[active.inputs.length - 1];
+    if (last && !value.pressed && !last.pressed && last.frame + last.ticks === value.frame && last.ticks < 60 &&
+      ['held','touch','x','y','weapon'].every(function (k) { return last[k] === value[k]; })) last.ticks++;
+    else active.inputs.push(Object.assign({}, value));
+    active.inputTicks++; active.nextFrame = value.frame + 1;
+  }
+  function checkpoint(frame) { if (active && active.ranked && active.inputTicks >= 60) record('checkpoint', {}, frame); }
   function record(kind, data, frame) {
     if (!active) return null;
     if (kind === 'pickup') {
@@ -254,8 +276,9 @@
     active.lastFrame = Math.max(active.lastFrame, Math.floor(frame));
     var event = Object.assign({}, data, { kind: kind, frame: active.lastFrame, seq: ++active.seq });
     if (active.ranked) {
+      event.inputs = active.inputs; active.inputs = []; active.inputTicks = 0;
       var run = outbox.find(function (r) { return r.id === active.id; });
-      if (!run) { run = { id: active.id, loot: active.loot, events: [] }; outbox.push(run); }
+      if (!run) { run = { id: active.id, loot: active.loot, validation: 'replay-1', events: [] }; outbox.push(run); }
       run.events.push(event); persist(outbox, wallet);
     } else {
       var beforeScore = active.score;
@@ -327,7 +350,7 @@
   }
   window.HamsterSave = {
     ready: CLOUD ? Promise.resolve().then(function () { return requireBackend(); }).catch(function () {}) : Promise.resolve(),
-    checkConnection: function () { return requireBackend(true); }, beginMap: beginMap, record: record, flush: flush,
+    checkConnection: function () { return requireBackend(true); }, beginMap: beginMap, record: record, input: input, checkpoint: checkpoint, flush: flush,
     setWallet: setWallet, signIn: signIn,
     saveName: function (name) { return mutate(function () { return saveName(name); }); },
     purchase: function (id) { return mutate(function () { return purchase(id); }); },

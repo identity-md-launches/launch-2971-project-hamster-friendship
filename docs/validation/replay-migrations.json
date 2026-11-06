@@ -1,0 +1,51 @@
+{
+  "results": [
+    {
+      "name": "Inspect and upgrade schema 0 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 1 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 2 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 3 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 4 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 5 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 6 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 7 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 8 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Inspect and upgrade schema 9 → 10; preserve existing records; reject replay",
+      "passed": true
+    },
+    {
+      "name": "Wrong version selection aborts without applying later columns",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Disposable PostgreSQL with explicit Auth fixtures; no production SQL executed."
+  ]
+}

@@ -4,6 +4,8 @@ The project is **nhtlwcukeyhvkrjveots**, URL `https://nhtlwcukeyhvkrjveots.supab
 
 Open this project's [SQL Editor](https://supabase.com/dashboard/project/nhtlwcukeyhvkrjveots/sql/new) using an authorized administrator account. The exact SQL files below are included in this repository. Do not paste a database password, service-role key, personal access token or wallet secret into frontend configuration.
 
+**Current export requires migration 010 and the `hf-replay` Edge Function.** Follow [REPLAY.md](REPLAY.md) for deployment, runtime credentials, verification and old-queue recovery. Applying SQL alone does not install the replay function.
+
 ## Inspect before selecting migrations
 
 Run [inspect_production.sql](inspect_production.sql). It enumerates the expected tables even if absent, all existing public/private columns, indexes, constraints, RLS flags/policies, effective browser-role grants, helper/RPC grants, triggers, installed service version and available Supabase migration history. Notices include exact row counts and fingerprints without returning player records. Keep results privately with a backup.
@@ -12,20 +14,21 @@ The REST responses alone do **not** prove an empty database. If public player/in
 
 | Verified installed schema | Evidence | Missing SQL files, in execution order |
 | --- | --- | --- |
-| 0 | Administrator confirms no existing game schema or player records | 001, 002, 003, 004, 005, 006, 007, 008, 009 |
-| 1 | Base profiles/runs/purchases; no badges/wallet links | 002, 003, 004, 005, 006, 007, 008, 009 |
-| 2 | Badges/dice receipts; no wallet links | 003, 004, 005, 006, 007, 008, 009 |
-| 3 | Wallet links; no lifetime ledger/credited column | 004, 005, 006, 007, 008, 009 |
-| 4 | Service version 4, lifetime ledger and credited baseline | 005, 006, 007, 008, 009 |
-| 5 | Service version 5; nested verified Web3 claims and run-state RPC | 006, 007, 008, 009 |
-| 6 | Service version 6, rules 6, produce progression | 007, 008, 009 |
-| 7 | Service version 7, rules 6, no `migration` key; legacy-only active-run index | 008, 009 |
-| 8 | Service `{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime","migration":8}` | 009 |
-| 9 | Same schema/rules; `"migration":9`, `runs.pending_score` and `hf_settle_rewards()` | None; verify existing configuration |
+| 0 | Administrator confirms no existing game schema or player records | 001, 002, 003, 004, 005, 006, 007, 008, 009, 010 |
+| 1 | Base profiles/runs/purchases; no badges/wallet links | 002, 003, 004, 005, 006, 007, 008, 009, 010 |
+| 2 | Badges/dice receipts; no wallet links | 003, 004, 005, 006, 007, 008, 009, 010 |
+| 3 | Wallet links; no lifetime ledger/credited column | 004, 005, 006, 007, 008, 009, 010 |
+| 4 | Service version 4, lifetime ledger and credited baseline | 005, 006, 007, 008, 009, 010 |
+| 5 | Service version 5; nested verified Web3 claims and run-state RPC | 006, 007, 008, 009, 010 |
+| 6 | Service version 6, rules 6, produce progression | 007, 008, 009, 010 |
+| 7 | Service version 7, rules 6, no `migration` key; legacy-only active-run index | 008, 009, 010 |
+| 8 | Service `{"schemaVersion":7,"rulesVersion":6,"leaderboard":"lifetime","migration":8}` | 009, 010 |
+| 9 | Same schema/rules; `"migration":9`, `runs.pending_score` and `hf_settle_rewards()` | 010 |
+| 10 | Migration 10, validation `replay-1`, replay checkpoint columns and server-only commit RPC | None; verify the deployed replay function |
 
-Historical migrations 001–008 remain unchanged in [migrations/](migrations/). In particular, [004_lifetime_persistence.sql](migrations/004_lifetime_persistence.sql) adds the credited baseline/ledger, lifetime-retention and settlement triggers, canonical wallet recovery and Top 100. 005 reads verified nested Web3 claims; 006 checkpoints paid score during play; 007 permits separate device runs. 008 adds collectible reachability/path checks, the four-open-run limit and the shared wallet budget (150 points held, +1 per real second).
+Historical migrations 001–009 remain unchanged in [migrations/](migrations/). In particular, [004_lifetime_persistence.sql](migrations/004_lifetime_persistence.sql) adds the credited baseline/ledger, lifetime-retention and settlement triggers, canonical wallet recovery and Top 100. 005 reads verified nested Web3 claims; 006 checkpoints paid score during play; 007 permits separate device runs. 008 adds collectible reachability/path checks, the four-open-run limit and the shared wallet budget (150 points held, +1 per real second).
 
-**009 is required with the current export.** [009_deferred_rewards.sql](migrations/009_deferred_rewards.sql) keeps all 008 security checks and stores validated unpaid rewards in `hf_private.runs.pending_score`. The existing budget pays these points later, including after death, completion or abandonment. Only paid points reach score/produce growth/Top 100. `ack` acknowledges validation, while `pendingPoints` identifies an unpaid run; the client retains its batch until zero. `hf_settle_rewards()` lets the verified wallet recover server-held rewards on any device with no original queue. `profile.pending_rewards` keeps that device pending while credit remains due. No client amount or wallet address is accepted by settlement.
+**009 supplies durable pending rewards; 010 additionally requires server replay.** [009_deferred_rewards.sql](migrations/009_deferred_rewards.sql) keeps all 008 security checks and stores validated unpaid rewards in `hf_private.runs.pending_score`. The existing budget pays these points later, including after death, completion or abandonment. Only paid points reach score/produce growth/Top 100. `ack` acknowledges validation, while `pendingPoints` identifies an unpaid run; the client retains its batch until zero. `hf_settle_rewards()` lets the verified wallet recover server-held rewards on any device with no original queue. `profile.pending_rewards` keeps that device pending while credit remains due. No client amount or wallet address is accepted by settlement.
 
 009 also reconstructs outstanding rewards previously discarded by 008: sum distinct consumed forest values plus server-assigned claimed fruit drops, minus the run’s already-paid score (floored at zero), for rules 4/6. It changes no existing paid score, SQK, inventory or identity. Keep a backup and inspect those entitlements before enabling play. Never recover from unverified browser totals. No run is reopened; new events on terminal runs remain rejected.
 
@@ -55,7 +58,7 @@ Enable Ethereum Web3 Wallet authentication in this project's Authentication Prov
 
 These steps remain **unperformed in production**. Use real wallets you control; do not insert fake Auth identities or seed a production leaderboard.
 
-1. Run `node scripts/verify-production.mjs` again. Auth must return 200; service must advertise schema 7/rules 6/migration 9; Top 100 must return actual records or an honestly empty list. A successful probe alone is not completion.
+1. Run `node scripts/verify-production.mjs` again. Auth must return 200; service must advertise schema 7/rules 6/migration 10 and validation `replay-1`; replay health must return 200; Top 100 must return actual records or an honestly empty list. A successful probe alone is not completion.
 2. Open the exported website from the allowed HTTPS origin. Connect on Mainnet and explicitly sign in. In Profile save a player name; compare the resulting existing `hf_private.profiles`/`wallet_profiles` records in SQL Editor. Repeated login must retain one canonical wallet profile.
 3. Play and collect produce. Observe a server-acknowledged Lifetime Score increase; compare `profiles.total_score`, the owned run's `score/lifetime_credited`, and its `lifetime_entries` row. No client-supplied total should be accepted. Check SQK from legitimate coin drops; purchase/equip only when an earned balance covers the current price.
 4. Refresh, reconnect the same wallet, then log in from a second device. Compare Lifetime Score, SQK, purchases, cosmetics, produce progress and deepest map. Only uploaded, validated progress can appear on the other device; unpaid validated rewards must still show pending and remain recoverable there. Keep the original browser's pending event queue until it reconnects; never clear it to fix a save.
@@ -64,4 +67,4 @@ These steps remain **unperformed in production**. Use real wallets you control; 
 7. Also test budget exhaustion with valid offline runs: compare paid `score` plus `pending_score` to all validated earned points; reconnect/refresh both original and fresh devices. Before full payment the UI must remain pending and original batches must stay durable. As the budget refills, compare paid profile/ledger totals and pending amounts, then replay to verify no double credit. Use an isolated staging environment for synthetic fixtures, never insert fake production identities.
 8. Record actual test times, production record comparisons, migration outcomes and failures. Mark integration complete only after all seven requested production checks pass.
 
-Exact player position and per-run ammunition are session state and restart with a map. Permanent score, SQK, inventory/cosmetics, produce growth and unlocks restore from the database. The backend validates ownership, sequence, timing, damage, ammunition, one-time sources, forest-collectible reachability and a per-wallet real-time reward budget; browser physics/collisions are not a fully authoritative anti-bot server (a scripted client that paces plausible events can still earn up to the budget rate).
+Exact player position and per-run ammunition are session state and restart with a map. Permanent score, SQK, inventory/cosmetics, produce growth and unlocks restore from the database. Migration 010 validates control inputs against the existing game engine and server checkpoints before any new score, SQK or pickup is applied. Invented collisions and distant pickups fail. Bots supplying legal inputs are still possible. Older unsent events lack those controls and stay in the recovery record for owner review; historical credits and validated pending rewards remain untouched.

@@ -691,7 +691,7 @@
       button.setAttribute('aria-pressed', String(player.weapon === kind));
       var amount = owned ? kind === 'sword' ? '∞' : String(player.ammo[kind]) : '—';
       byId('ammo-' + kind).textContent = amount;
-      button.setAttribute('aria-label', 'Slot ' + (i + 1) + ': ' + kind + (owned ? ', ' + amount + (kind === 'gun' ? ' bullets' : kind === 'bomb' ? ' bombs' : ' uses') + (player.weapon === kind ? ', selected. Select again for chestnuts.' : '') : ', not collected'));
+      button.setAttribute('aria-label', (i + 1) + ' ' + kind.charAt(0).toUpperCase() + kind.slice(1) + ' ' + amount + (owned ? (kind === 'gun' ? ' bullets' : kind === 'bomb' ? ' bombs' : ' uses') + (player.weapon === kind ? ', selected. Select again for chestnuts.' : '') : ', not collected'));
     });
     byId('hud-map').textContent = String(mapNumber);
     byId('hud-enemies').textContent = defeatedCount + '/30';
@@ -2113,7 +2113,16 @@
   function tick() {
     if (game.state === 'paused') return;
     game.t++;
-    if (game.state === 'playing') { updateWorld(); if (game.state === 'playing' || game.state === 'dialogue') game.frames++; }
+    if (game.state === 'playing') {
+      var actions = ['left','right','jump','throw','interact','slot1','slot2','slot3'];
+      var heldMask = 0, pressedMask = 0;
+      actions.forEach(function (name, i) { if (held[name]) heldMask |= 1 << i; if (pressed[name]) pressedMask |= 1 << i; });
+      if (saves.input) saves.input({ frame: game.frames, ticks: 1, held: heldMask, pressed: pressedMask,
+        touch: movement.pointer !== null, x: movement.pointer !== null ? movement.x : 0,
+        y: movement.pointer !== null ? movement.y : 0, weapon: player.weapon });
+      updateWorld(); if (game.state === 'playing' || game.state === 'dialogue') game.frames++;
+      if (saves.checkpoint) saves.checkpoint(game.frames);
+    }
     else if (game.state === 'dialogue' || game.state === 'ending') updateCamera();
     updateFx();
     pressed = {};

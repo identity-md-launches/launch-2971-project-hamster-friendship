@@ -1,0 +1,69 @@
+{
+  "results": [
+    {
+      "name": "migration 009 reproduces distant reward and forty zero-frame basket runs without engine or clock edits",
+      "passed": true
+    },
+    {
+      "name": "009 → 010 preserves every credited balance, inventory, ledger and unpaid reward; old acknowledgements still settle",
+      "passed": true
+    },
+    {
+      "name": "legacy unsent events stay in the durable recovery record and no longer block a new verified run",
+      "passed": true
+    },
+    {
+      "name": "raw SQL distant hits, coin claims and forty zero-frame restart attempts earn zero score, SQK, growth or pending credit",
+      "passed": true
+    },
+    {
+      "name": "replay rejects invented first-frame collisions and baskets even with syntactically valid controls",
+      "passed": true
+    },
+    {
+      "name": "teleports, excessive vectors, skipped frames, unowned weapons, omitted events and excessive work fail closed",
+      "passed": true
+    },
+    {
+      "name": "authenticated/anonymous callers cannot commit replay state or reach private reward functions; cross-wallet context is denied",
+      "passed": true
+    },
+    {
+      "name": "actual controls, collisions, produce/SQK/weapon pickups and dialogue replay exactly; offline queue is durable",
+      "passed": true
+    },
+    {
+      "name": "partial replay checkpoints, lost replies and duplicate queues cannot double-credit",
+      "passed": true
+    },
+    {
+      "name": "same wallet on a fresh device recovers SQL scores, inventory and growth without the old local queue",
+      "passed": true
+    },
+    {
+      "name": "validated rewards defer without loss, settle on another device, and retain offline batches until payment",
+      "passed": true
+    },
+    {
+      "name": "an offline reload retains its signed session and inputs, then online recovery uploads them",
+      "passed": true
+    },
+    {
+      "name": "stale concurrent replay commits fail atomically; independent wallet runs retain valid queues",
+      "passed": true
+    },
+    {
+      "name": "trusted mid-boss checkpoints replay real hits, then save automatic completion on all four maps",
+      "passed": true
+    },
+    {
+      "name": "all four authored maps preserve keyboard/jump/analog physics during server replay",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Disposable PostgreSQL/Auth/HTTP fixtures, not production.",
+    "Run clocks accelerated and encounter loot/specs controlled only in explicitly marked legitimate-play fixtures. Exploit regression uses no engine/time/loot edits.",
+    "Automated replay validates game inputs; it does not prove a human supplied them or prevent bots playing legal moves."
+  ]
+}

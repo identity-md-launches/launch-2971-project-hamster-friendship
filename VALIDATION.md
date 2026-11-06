@@ -1,3 +1,68 @@
+# Revision validation · 2026-11-06
+
+The two reported defects are implemented and locally checked. **Production integration is incomplete.** No production migration, function deployment, authenticated player write or real wallet signature was performed. Fresh browser-rendered checks could not run on this machine. The prior accepted game, art, responsive CSS, invisible left-half controls, keyboard controls, wallet connector and economy remain.
+
+## Findings and changes
+
+- **High — e175bbe321cf43f33381f8e319f5b9d69851f00cf62f3cf0c977562d1b6a880e:** reproduced on migrations 001–009 in disposable PostgreSQL. Fabricated distant shell hits credited 5 Lifetime/produce points; 40 zero-frame basket/death runs credited 80. No engine, clock, score or loot edits were used in that reproduction. Migration `010_authoritative_replay.sql:147` now denies new claims through the old public RPC. `functions/_shared/replay.js:39` validates control inputs using the existing engine and server checkpoint; it accepts only the actual resulting events. Movement, walls, projectile/attack collisions and pickup eligibility are computed by that engine, not submitted as positions. The service-role-only commit at `010_authoritative_replay.sql:181` atomically applies rewards with the new checkpoint and compares the prior sequence. The browser records controls at `src/game.js:2120`, persists them with rewards at `src/save.js:260`, and keeps existing acknowledgement/retry/recovery behavior. New authenticated clients cannot manufacture a reward by directly calling the SQL RPC, copying a checkpoint, omitting a hit/death, fabricating a pickup or accelerating movement. Legal scripted input/bot play is still possible.
+- **Medium — c5b84f60db3d50deb9136b1d8975dd03654dc0acb6e0a39b5d239b2f54a09684:** reproduced from the accepted markup and label construction: `1Gun—` / `2Bomb—` / `3Sword—` did not occur in their `Slot …` accessible names. `src/index.html:128` now separates the number/name/ammo spans with whitespace. `src/game.js:694` begins each updated name with its exact displayed sequence, then appends ammunition/selection context. Four source/runtime checks pass for initial markup, empty slots, owned/selected slots and depleted ammo. The six-size Axe reproduction could not be rerun because browsers failed to launch; no fresh Axe pass is claimed.
+
+Historical migrations 001–009 are unchanged. The migration preserves profiles, SQK, inventory, lifetime entries and acknowledged unpaid rewards. Old *unsent* events lack input history and cannot safely be credited automatically; they remain downloadable in the existing recovery record for administrator review. Current inputs still survive offline saves/reloads and reconcile across devices. The generated `supabase/functions/_shared/engine.js` is required backend runtime source copied from the accepted engine with a headless/serialization bridge; it is not a replacement game or a dependency archive.
+
+## Actual checks
+
+| Command/check | Result |
+| --- | --- |
+| `npm run build` | Pass: 18 complete runtime files, 273,566 bytes in `dist/`. |
+| `npm run check` | Pass: JS parse, metadata, relative URLs, referenced DOM ids, and exact source/export equality. |
+| `node scripts/typecheck-major.mjs` | Pass: all 8 shipped JS scripts and declarations. |
+| TypeScript check of `functions/hf-replay/index.ts` | Pass using a minimal Deno runtime declaration in scratch; serving/network are separately exercised through the local adapter. |
+| `node scripts/prepare-replay.mjs --check` | Pass: packaged server engine exactly matches current game/rules plus the documented bridge. |
+| `node supabase/tests/authoritative-replay.mjs` | **15 groups passed.** Original exploit reproduction; both blocked sequences; malformed/teleport/omitted-event rejection; SQL privilege and ownership denial; genuine control-driven combat and produce/coin/weapon pickups; offline queue, reload/online restore, lost replies and duplicates; pending settlement on another device; inventory/wallet recovery and SQL Top 100; stale-commit rejection; all four map physics; automatic completion from trusted mid-boss checkpoints. |
+| `node supabase/tests/replay-http.mjs` | **4 groups passed.** Actual Edge entry under a local Deno/fetch adapter: health/CORS/authentication, injected identity/state and size rejection, validated commit/retry, fabricated reward rejection. |
+| `node supabase/tests/production-handoff.mjs` | **11 groups passed.** Guarded upgrade from each schema 0–9 to 10, metadata/RLS/grant/index/leaderboard checks, preservation and wrong-version/replay rejection. |
+| `node scripts/test-touch.mjs` | **11 groups passed.** 360-degree movement, floating origin, speed normalization, multi-touch ownership, release/cancel/lost capture, blur/rotation, keyboard, jump and tile collisions. |
+| `node scripts/test-major.mjs` | **16 existing gameplay groups passed.** All maps, enemies/bosses, transitions, combat, growth, pickups, guest behavior. |
+| `node scripts/test-major-audio.mjs` | **4 audio groups passed.** |
+| `node scripts/test-weapon-labels.mjs` | **4 label groups passed.** |
+| `node scripts/verify-production.mjs --out artifacts/validation/production-revision.json` | Exit **1**, expected unresolved service state: Auth settings 200; Ethereum Web3 preflight 422 `web3_provider_disabled`; status/profile/progress/Top 100 and replay health 404; private schema 406; catalog 401. |
+| `scripts/validate-touch.mjs` | Could not launch Chromium (SIGTRAP); no gameplay viewport/Axe checks executed. |
+| Pinned `taste.mjs --out test/scratch/taste` | Exit **2** before measurement: Chromium launch failure. No 16-check result or screenshot exists for this revision. |
+| Supplied browser tool / Firefox fallback | Could not launch: supplied Chromium reported socket path too long; local Firefox reported it could not find the application directory, even after scratch-only library installation. |
+| Historical `scripts/test.mjs` | Attempted, fails before gameplay because its old DOM fixture has no `document.body`; it also targets superseded economy rules. Left unchanged. Current gameplay checks above pass. |
+
+Machine-readable delivered evidence: `docs/validation/replay-results.json`, `docs/validation/replay-migrations.json`, `docs/validation/production-revision.json`. Test dependencies, optional browser binaries/libraries, package caches and scratch test scaffolds are excluded from submission. No ignore rule was changed. The final path/size audit found no protected-path edits and less than 1 MiB of changed/new Git-visible files, below the 8 MiB limit.
+
+## Better Interface review
+
+Applied the pinned workflow and all six domains to the changed surfaces. This is a revision of the existing interface, not a redesign.
+
+| Domain | Coverage, finding and result |
+| --- | --- |
+| Accessibility | Checked source and real HUD updates. Fixed the three label/name mismatches at `src/index.html:128` and `src/game.js:694`; native buttons, disabled and pressed states remain. Keyboard/touch runtime checks pass. Fresh Axe, screen-reader and visible-focus observations are **not performed**. |
+| Layout | Checked unchanged control geometry/media queries and DOM hierarchy. Whitespace separates inline labels without changing grid CSS, target dimensions or the left/right movement split. 320/390/1440 and portrait/landscape rendering are **not newly verified**; previous-round screenshots are historical. |
+| Writing | Checked visible label vocabulary and recovery/readiness errors. Weapon names match the visible Gun/Bomb/Sword terms. Old unverifiable events remain explicitly uncredited/recoverable. Production failures remain visible, with no fabricated leaderboard rows. |
+| Typography | Checked the existing five-size token scale, body/display families and slot-count wrapping rules; no new size/font/weight/tracking value. Rendered font/zoom measurements are **not performed**. |
+| Colors | Existing tokens retained. Calculated declared solid pairs using WCAG luminance: `#fbf3e4`/`#352216` **13.68:1**, `#1a110b`/`#f2a93b` **9.31:1**, `#e6d3b5`/`#26180f` **11.76:1**. These are token calculations, **not rendered/composited contrast observations**; canvas/alpha-background contrast remains unverified. |
+| UI | Checked empty, owned, selected, ammo-change and depleted weapon states through the actual HUD. Existing component shapes, focus rules, motion/reduced-motion CSS, audio and controls retained. No new decorative surface or animation. Rendered state/slow-motion review is **not performed**. |
+
+`DESIGN.md` records the unchanged tokens/typography/responsive behavior and revised label/readiness behavior. Title, favicon, description, og:title and local og:image remain present. The existing first-screen product and Start markup/layout are retained; the 390-wide rendered first screen is not newly observed.
+
+## Remaining work and limits
+
+An authorized administrator must inspect the actual production schema, apply only missing migrations through 010, deploy `hf-replay` in the **same** Supabase project, enable Ethereum Web3 Auth and run real-wallet acceptance. See `supabase/REPLAY.md` and `supabase/SQL_EDITOR.md`. The supplied publishable key does not grant that access. The live 404 is not evidence that production tables are empty.
+
+Local PostgreSQL uses explicit Auth/HTTP fixtures, accelerated run clocks for legitimate replay tests and controlled encounters where documented. The exploit reproduction does not alter game/clock/loot data. Mid-boss completion tests start from explicit trusted fixtures; they are not claimed as four complete playthroughs. Multi-process database contention, hosted Deno limits, real wallet signatures, physical devices, Safari, and fresh rendered viewport/Axe/taste checks remain unverified. Existing saved credits are not audited or removed retroactively. Replay prevents fabricated outcomes, not valid automated play.
+
+**Completion:** both code findings are locally addressed; full production integration and fresh rendered verification remain incomplete. No claim of a live production fix is made.
+
+
+---
+
+## Historical accepted-round records
+
+The following material predates this revision. Its browser results and migration-009 client commands are historical, not current check results.
+
 # Current task validation — 2026-11-06
 
 Current results and six-domain Better Interface review are in [artifacts/validation.md](artifacts/validation.md), with [machine-readable check results](artifacts/validation/test-results.json) and [actual production responses](artifacts/validation/production-current.json). The invisible controls, short-screen prompt placement and automatic restoration after an offline reload are implemented and locally checked. Production integration is **incomplete**: RPCs return 404 and Auth reports `web3_provider_disabled`. No production migrations or authenticated writes were executed. Records below are historical and do not establish current production persistence.
@@ -285,4 +350,4 @@ No real wallet signature, hosted Supabase request, production RLS inspection/mig
 - Static export: corresponding changed files in `dist/`; the complete 18-file export and unchanged local runtime art/manifest remain present.
 - Database: new `supabase/migrations/006_four_worlds.sql` and read-only `supabase/verify_major.sql`; migrations 001–005 are unchanged. Adds `produce_points`, checkpoints version-6 lifetime deltas/ledger, adds the v6 start RPC, extends compatible progress validation and advertises schema/rules 6. Applied only to local disposable databases.
 - Test source: `scripts/major-fixture.mjs`, `scripts/typecheck-major.mjs`, `scripts/test-major.mjs`, `scripts/test-major-audio.mjs`, `scripts/validate-major.mjs`, `scripts/validate-major-cloud.mjs`, `supabase/tests/major-harness.mjs`, `supabase/tests/major.mjs`, `supabase/tests/major-client.mjs`, `supabase/tests/major-engine.mjs`.
-- Documentation/evidence: `WORKPLAN.md`, `README.md`, `DESIGN.md`, `VALIDATION.md`, `supabase/README.md`, `docs/validation/major-results.json` and prefixed current screenshots. No ignore rule was changed. No frontend dependency, registry mirror, cache, archive or submodule is added to the submission.
+- Documentation/evidence: `WORKPLAN.md`, `README.md`, `DESIGN.md`, `VALIDATION.md`, `supabase/README.md`, `docs/validation/major-results.json` and prefixed current screenshots. No ignore rule was changed. The final path/size audit found no protected-path edits and less than 1 MiB of changed/new Git-visible files, below the 8 MiB limit. No frontend dependency, registry mirror, cache, archive or submodule is added to the submission.

@@ -26,7 +26,8 @@ await probe('Unauthenticated profile RPC','/rest/v1/rpc/hf_wallet_profile',{meth
 await probe('Unauthenticated progress RPC (no run or events)','/rest/v1/rpc/hf_progress',{method:'POST',body:{p_run:null,p_events:[]}});
 await probe('Private schema exposure','/rest/v1/profiles?select=user_id&limit=0',{headers:{'Accept-Profile':'hf_private'}});
 await probe('Catalog discovery permission','/rest/v1/',{headers:{Accept:'application/openapi+json'}});
-const rpcReady=service.status===200&&service.body?.schemaVersion===7&&service.body?.rulesVersion===6&&service.body?.leaderboard==='lifetime'&&service.body?.migration===9&&board.status===200;
+const replay=await probe('Authoritative replay health','/functions/v1/hf-replay');
+const rpcReady=service.status===200&&service.body?.schemaVersion===7&&service.body?.rulesVersion===6&&service.body?.leaderboard==='lifetime'&&service.body?.migration===10&&board.status===200&&replay.status===200&&replay.body?.validation==='replay-1';
 const web3State=web3.body?.error_code==='web3_provider_disabled'?'disabled':'not verified';
 const report={checkedAt:new Date().toISOString(),project:base,keyType:'publishable',connectivityPassed:auth.status===200,web3State,rpcReady,integrationComplete:false,productionMigrationsExecuted:[],probes,
  mandatoryTests:[
