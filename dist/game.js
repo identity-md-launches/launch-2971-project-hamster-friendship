@@ -616,48 +616,63 @@
     });
   });
 
-  // Direct drag: finger displacement moves a world-space target by the same
-  // rendered distance. There is no stick radius or origin to return to. The
-  // target stays put when the finger rests, so Chang catches up and stops.
+  // Fixed forward/backward joystick. Only the knob's horizontal offset from the
+  // base centre is read: right is forward, left is back. Vertical finger motion
+  // is ignored, so the stick can never steer Chang up, down or diagonally. The
+  // value is analog (-1..1) after a radial dead zone and eases toward the finger
+  // each tick; on release it is cleared and the walk's own friction stops Chang.
   var movementSurface = byId('touch-movement');
-  var movement = { pointer: null, lastX: 0, lastY: 0, targetX: 0, targetY: 0, x: 0, y: 0, amount: 0 };
+  var joystickBase = byId('joystick'), joystickKnob = byId('joystick-knob');
+  var STICK_DEAD_ZONE = 0.16, STICK_EASE = 0.5;
+  var movement = { pointer: null, originX: 0, travel: 1, target: 0, x: 0, y: 0, amount: 0 };
+  function stickValue(offset) {
+    var n = clamp(offset / movement.travel, -1, 1), size = Math.abs(n);
+    return size < STICK_DEAD_ZONE ? 0 : sign(n) * (size - STICK_DEAD_ZONE) / (1 - STICK_DEAD_ZONE);
+  }
+  function drawKnob(offset) {
+    if (!joystickKnob || !joystickKnob.style) return;
+    joystickKnob.style.setProperty('--knob-x', offset === null ? '0px' : clamp(offset, -movement.travel, movement.travel).toFixed(1) + 'px');
+    if (joystickBase && joystickBase.classList) joystickBase.classList.toggle('is-active', offset !== null);
+  }
+  function aimStick(clientX) {
+    var offset = clientX - movement.originX;
+    movement.target = stickValue(offset);
+    drawKnob(offset);
+  }
   function moveTouch(e) {
     if (e.pointerId !== movement.pointer || game.state !== 'playing') return;
     e.preventDefault();
-    var box = canvas.getBoundingClientRect();
-    var scale = Math.max(0.001, Math.min(box.width / W, box.height / H));
-    movement.targetX = clamp(movement.targetX + (e.clientX - movement.lastX) / scale, 0, WORLD_W - player.w);
-    movement.targetY = clamp(movement.targetY + (e.clientY - movement.lastY) / scale, 0, H - player.h);
-    movement.lastX = e.clientX; movement.lastY = e.clientY;
+    aimStick(e.clientX);
   }
   function updateTouchVector() {
     if (movement.pointer === null) return;
-    // Drop blocked travel instead of building up motion behind a wall/floor.
-    if (player.hitWall) movement.targetX = player.x;
-    if (player.onGround && movement.targetY > player.y) movement.targetY = player.y;
-    var dx = movement.targetX - player.x, dy = movement.targetY - player.y;
-    var distance = Math.hypot(dx, dy);
-    movement.amount = distance < 0.15 ? 0 : Math.min(distance / 4, 1);
-    movement.x = distance ? dx / distance * movement.amount : 0;
-    movement.y = distance ? dy / distance * movement.amount : 0;
+    // Ease toward the finger so jitter is filtered but a full push still
+    // reaches top speed within a few frames. y stays 0: one axis only.
+    movement.x += (movement.target - movement.x) * STICK_EASE;
+    if (Math.abs(movement.target - movement.x) < 0.01) movement.x = movement.target;
+    movement.y = 0;
+    movement.amount = Math.abs(movement.x);
   }
   function releaseMovement(e) {
     if (!movement || (e && e.pointerId !== movement.pointer)) return;
     var pointer = movement.pointer;
-    movement.pointer = null; movement.x = 0; movement.y = 0; movement.amount = 0;
+    movement.pointer = null; movement.target = 0; movement.x = 0; movement.y = 0; movement.amount = 0;
+    drawKnob(null);
     if (pointer !== null && movementSurface.hasPointerCapture && movementSurface.hasPointerCapture(pointer)) {
       try { movementSurface.releasePointerCapture(pointer); } catch (_) { /* The browser may already have released it. */ }
     }
   }
   function beginMovement(e) {
     if (game.state !== 'playing') return;
-    // A mouse on a hybrid/narrow screen retains the canvas attack behavior.
-    if (e.pointerType === 'mouse') { if (e.button === 0) { e.preventDefault(); focusStage(); pressed.throw = true; } return; }
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (movement.pointer !== null || Object.values(actionPointers).includes(e.pointerId)) return;
     e.preventDefault(); movement.pointer = e.pointerId;
-    movement.lastX = e.clientX; movement.lastY = e.clientY;
-    movement.targetX = player.x; movement.targetY = clamp(player.y, 0, H - player.h);
-    movement.x = 0; movement.y = 0; movement.amount = 0;
+    // Measure on every press: rotation, toolbars and scaling move the base.
+    var box = (joystickBase || movementSurface).getBoundingClientRect();
+    movement.originX = box.left + box.width / 2;
+    movement.travel = Math.max(8, box.width * 0.3);
+    movement.target = 0; movement.x = 0; movement.y = 0; movement.amount = 0;
+    aimStick(e.clientX);
     try { movementSurface.setPointerCapture(e.pointerId); } catch (_) { /* Synthetic pointers may not have native capture. */ }
   }
   movementSurface.addEventListener('pointerdown', beginMovement);
@@ -973,12 +988,9 @@
   function updatePlayer() {
     var p = player;
     var keysX = (held.left ? -1 : 0) + (held.right ? 1 : 0);
+    // Joystick input is one analog axis (forward/back). Releasing it falls
+    // through to the same friction as releasing a key, so Chang slows smoothly.
     var steering = movement.pointer !== null;
-    // A short, replayable brake removes airborne drift after releasing a drag.
-    // Keyboard input, jump, stomp and damage keep their original priorities.
-    if (p.touchSteering && !steering) p.touchBrake = 8;
-    p.touchSteering = steering;
-    if (steering) p.touchBrake = 0;
     var ax = held.left || held.right ? keysX : movement.x;
     if (p.hurt > 0) {
       p.hurt--;
@@ -997,17 +1009,13 @@
       }
       p.vx = clamp(p.vx, -max, max);
     }
-    if (p.touchBrake > 0) {
-      p.touchBrake--;
-      if (!held.left && !held.right && !p.hurt) { p.vx *= 0.55; if (Math.abs(p.vx) < 0.05) p.vx = 0; }
-    }
 
     if (pressed.jump) p.jumpBuf = 8;
     if (p.onGround) p.coyote = 6; else if (p.coyote > 0) p.coyote--;
     if (p.jumpBuf > 0) {
       p.jumpBuf--;
       if (p.coyote > 0 && p.hurt === 0) {
-        p.vy = -JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.onGround = false; p.steeringJump = true;
+        p.vy = -JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.onGround = false;
         dust(cx(p), p.y + p.h); audio.sfx('jump');
       }
     }
@@ -1015,24 +1023,10 @@
     if (p.vy >= 0) p.noCut = false;
     p.vy = Math.min(p.vy + GRAVITY, MAX_FALL);
 
-    // Touch has a real vertical axis. Jump, stomps and hurt keep their existing
-    // impulses; releasing the movement finger restores gravity.
-    if (p.vy >= 0) p.steeringJump = false;
-    if (steering && !held.jump && !p.steeringJump && !p.noCut && p.hurt === 0) {
-      p.vy += (movement.y * 1.7 - p.vy) * 0.45;
-      // Cancel this frame's gravity while steering, including horizontal drags.
-      p.vy -= GRAVITY * 0.55;
-      if (Math.abs(p.vy) < 0.015) p.vy = 0;
-    }
 
     if (mapNumber === 4 && !p.onGround) p.vx = clamp(p.vx + Math.sin(game.frames / 150) * 0.035, -1.9, 1.9);
     p.wasGround = p.onGround;
     moveBody(p);
-    if (steering && p.y < 0) { p.y = 0; p.vy = Math.max(0, p.vy); }
-    if (steering && p.y > H - p.h) { p.y = H - p.h; p.vy = Math.min(0, p.vy); }
-    // A horizontal touch has vy=0: retain actual floor contact so coyote time
-    // does not expire while walking, and Jump remains available continuously.
-    if (steering && p.vy === 0 && (standable(p.x + 1, p.y + p.h + 0.01) || standable(p.x + p.w - 1, p.y + p.h + 0.01))) p.onGround = true;
     if (p.onGround && !p.wasGround && p.vy === 0) dust(cx(p), p.y + p.h);
 
     if (p.throwCd > 0) p.throwCd--;
@@ -1614,6 +1608,78 @@
     if (gameChrome && canvas.parentElement) canvas.parentElement.style.setProperty('--chrome-height', Math.ceil(gameChrome.getBoundingClientRect().height) + 'px');
   }
   fitChrome();
+
+  // Every touch control lives in #touch-frame, which is sized to the visible
+  // game: the drawn picture in landscape (minus letterbox bars) or the whole
+  // stage in portrait, always below the measured chrome. Controls scale with
+  // the frame; a measured pass then shrinks them until none is clipped by the
+  // frame or overlaps another control.
+  var touchFrame = byId('touch-frame'), fitScheduled = false;
+  var PAD_MIN = 0.62;
+  function controlBoxes() {
+    var nodes = touchFrame.querySelectorAll('.joystick, .weapon-slots, .jump-btn, .attack-btn, .context-actions > *'), out = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var b = nodes[i].getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) out.push(b);
+    }
+    return out;
+  }
+  function controlsFit(frame) {
+    var boxes = controlBoxes(), e = 0.5;
+    for (var i = 0; i < boxes.length; i++) {
+      var a = boxes[i];
+      if (a.left < frame.left - e || a.top < frame.top - e || a.right > frame.right + e || a.bottom > frame.bottom + e) return false;
+      for (var j = i + 1; j < boxes.length; j++) {
+        var c = boxes[j];
+        if (a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top) return false;
+      }
+    }
+    return true;
+  }
+  function fitTouchFrame() {
+    fitScheduled = false;
+    var stage = canvas.parentElement;
+    if (!touchFrame || !touchFrame.querySelectorAll || !stage || !stage.getBoundingClientRect) return;
+    var sb = stage.getBoundingClientRect(), cb = canvas.getBoundingClientRect();
+    if (!sb.width || !sb.height || !cb.width || !cb.height) return;
+    var portrait = sb.height > sb.width;
+    var k = Math.min(cb.width / W, cb.height / H), pw = W * k, ph = H * k;
+    var px = cb.left - sb.left + (cb.width - pw) / 2, py = cb.top - sb.top + (cb.height - ph) / 2;
+    var l = portrait ? 0 : Math.max(0, px), r = portrait ? sb.width : Math.min(sb.width, px + pw);
+    var t = portrait ? 0 : Math.max(0, py), b = portrait ? sb.height : Math.min(sb.height, py + ph);
+    if (gameChrome) t = Math.max(t, Math.ceil(gameChrome.getBoundingClientRect().bottom - sb.top));
+    if (b - t < 120) t = Math.max(0, b - 120);
+    var st = touchFrame.style;
+    st.setProperty('--frame-left', Math.round(l) + 'px'); st.setProperty('--frame-right', Math.round(sb.width - r) + 'px');
+    st.setProperty('--frame-top', Math.round(t) + 'px'); st.setProperty('--frame-bottom', Math.round(sb.height - b) + 'px');
+    touchFrame.dataset.layout = portrait ? 'portrait' : 'landscape';
+    var fb = touchFrame.getBoundingClientRect(), fw = fb.width || r - l, fh = fb.height || b - t;
+    var scale = clamp(portrait ? Math.min(fw / 390, fh / 300) : Math.min(fw / 600, fh / 230), PAD_MIN, 1);
+    st.setProperty('--pad-scale', scale.toFixed(3));
+    if (game.state !== 'playing') return; // hidden controls cannot be measured
+    document.body.dataset.gameState = game.state;
+    var frame = touchFrame.getBoundingClientRect();
+    while (scale > PAD_MIN && !controlsFit(frame)) {
+      scale = Math.max(PAD_MIN, scale - 0.04);
+      st.setProperty('--pad-scale', scale.toFixed(3));
+    }
+    touchFrame.dataset.fit = controlsFit(frame) ? 'ok' : 'tight';
+  }
+  function scheduleTouchFit() {
+    if (fitScheduled) return;
+    fitScheduled = true;
+    window.requestAnimationFrame(fitTouchFrame);
+  }
+  window.addEventListener('resize', scheduleTouchFit);
+  window.addEventListener('hamster:viewport', scheduleTouchFit);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleTouchFit);
+  if (window.ResizeObserver && canvas.parentElement) new ResizeObserver(scheduleTouchFit).observe(canvas.parentElement);
+  if (window.ResizeObserver && gameChrome) new ResizeObserver(scheduleTouchFit).observe(gameChrome);
+  if (window.MutationObserver && touchFrame && touchFrame.querySelector) {
+    // Pickup/Read prompts appear and disappear during play; refit around them.
+    var prompts = touchFrame.querySelector('.context-actions');
+    if (prompts) new MutationObserver(scheduleTouchFit).observe(prompts, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  }
   window.addEventListener('resize', onViewResize);
   if (window.ResizeObserver && canvas.parentElement) new ResizeObserver(onViewResize).observe(canvas.parentElement);
   if (window.ResizeObserver && gameChrome) new ResizeObserver(fitChrome).observe(gameChrome);
@@ -2165,7 +2231,7 @@
       actions.forEach(function (name, i) { if (held[name]) heldMask |= 1 << i; if (pressed[name]) pressedMask |= 1 << i; });
       if (saves.input) saves.input({ frame: game.frames, ticks: 1, held: heldMask, pressed: pressedMask,
         touch: movement.pointer !== null, x: movement.pointer !== null ? movement.x : 0,
-        y: movement.pointer !== null ? movement.y : 0, weapon: player.weapon });
+        y: 0, weapon: player.weapon });
       updateWorld(); if (game.state === 'playing' || game.state === 'dialogue') game.frames++;
       if (saves.checkpoint) saves.checkpoint(game.frames);
     }
@@ -2175,8 +2241,10 @@
   }
 
   var last = performance.now(), acc = 0, STEP = 1000 / 60;
+  var fittedState = '';
   function frame(now) {
     document.body.dataset.gameState = game.state;
+    if (game.state !== fittedState) { fittedState = game.state; scheduleTouchFit(); }
     acc += Math.min(100, now - last);
     last = now;
     var steps = 0;

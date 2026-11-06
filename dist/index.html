@@ -77,7 +77,7 @@
             <button class="btn btn-secondary" id="btn-replay" type="button" hidden>Replay map 1</button>
             <button class="btn btn-secondary" id="btn-start-guild" type="button">Open GUILD</button>
           </div>
-          <p class="overlay-text touch-instructions">Drag anywhere on the left to guide Chang. Jump and attack on the right.</p>
+          <p class="overlay-text touch-instructions">Slide the joystick at bottom left to walk forward or back. Jump and attack on the right.</p>
           <p class="overlay-text" id="entry-save" role="status" aria-live="polite">Guest play · not saved. Checking cloud saves…</p>
         </div>
 
@@ -122,19 +122,28 @@
           </div>
         </div>
 
-        <div id="touch-movement" class="touch-movement" aria-hidden="true"></div>
-        <div class="touchpad" id="touchpad" aria-label="Game controls" role="group">
-          <div class="weapon-slots" role="group" aria-label="Weapons. Select an equipped slot again for chestnuts.">
-            <button id="slot-1" class="btn weapon-slot" type="button" data-slot="gun" aria-label="1 Gun —, not collected" aria-pressed="false" disabled><span class="slot-number">1</span> <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 4h13v5H7v5H3V9H1z"/></svg> <span class="slot-name">Gun</span> <span id="ammo-gun" class="slot-ammo">—</span></button>
-            <button id="slot-2" class="btn weapon-slot" type="button" data-slot="bomb" aria-label="2 Bomb —, not collected" aria-pressed="false" disabled><span class="slot-number">2</span> <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0h4v2H9v3h3v2h2v7h-2v2H4v-2H2V7h2V5h3V2h1z"/></svg> <span class="slot-name">Bomb</span> <span id="ammo-bomb" class="slot-ammo">—</span></button>
-            <button id="slot-3" class="btn weapon-slot" type="button" data-slot="sword" aria-label="3 Sword —, not collected" aria-pressed="false" disabled><span class="slot-number">3</span> <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 0h2v2h1v8h3v2H9v4H7v-4H3v-2h3V2h1z"/></svg> <span class="slot-name">Sword</span> <span id="ammo-sword" class="slot-ammo">—</span></button>
+        <div class="touch-frame" id="touch-frame">
+          <div id="touch-movement" class="touch-movement" aria-hidden="true">
+            <div class="joystick" id="joystick">
+              <svg class="joystick-arrows" viewBox="0 0 120 120" aria-hidden="true"><path fill="currentColor" d="M14 60l14-12v24zM106 60L92 48v24z"/></svg>
+              <span class="joystick-knob" id="joystick-knob"></span>
+            </div>
           </div>
-          <button class="btn btn-secondary pad-btn jump-btn" type="button" data-action="jump">Jump</button>
-          <button class="btn btn-primary pad-btn attack-btn" type="button" data-action="throw">Attack</button>
+          <div class="touchpad" id="touchpad" aria-label="Game controls" role="group">
+            <div class="weapon-slots" role="group" aria-label="Weapons. Select an equipped slot again for chestnuts.">
+              <button id="slot-1" class="btn weapon-slot" type="button" data-slot="gun" aria-label="1 Gun —, not collected" aria-pressed="false" disabled><span class="slot-number">1</span> <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 4h13v5H7v5H3V9H1z"/></svg> <span class="slot-name">Gun</span> <span id="ammo-gun" class="slot-ammo">—</span></button>
+              <button id="slot-2" class="btn weapon-slot" type="button" data-slot="bomb" aria-label="2 Bomb —, not collected" aria-pressed="false" disabled><span class="slot-number">2</span> <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0h4v2H9v3h3v2h2v7h-2v2H4v-2H2V7h2V5h3V2h1z"/></svg> <span class="slot-name">Bomb</span> <span id="ammo-bomb" class="slot-ammo">—</span></button>
+              <button id="slot-3" class="btn weapon-slot" type="button" data-slot="sword" aria-label="3 Sword —, not collected" aria-pressed="false" disabled><span class="slot-number">3</span> <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 0h2v2h1v8h3v2H9v4H7v-4H3v-2h3V2h1z"/></svg> <span class="slot-name">Sword</span> <span id="ammo-sword" class="slot-ammo">—</span></button>
+            </div>
+            <button class="btn btn-secondary pad-btn jump-btn" type="button" data-action="jump">Jump</button>
+            <button class="btn btn-primary pad-btn attack-btn" type="button" data-action="throw">Attack</button>
+          </div>
+          <div class="context-actions">
+            <button id="pickup-weapon" class="btn btn-primary" type="button" hidden>PICK UP</button>
+            <button id="context-interact" class="btn btn-secondary" type="button" hidden>Read</button>
+          </div>
         </div>
-        <button id="pickup-weapon" class="btn btn-primary" type="button" hidden>PICK UP</button>
         <p id="map-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
-        <button id="context-interact" class="btn btn-secondary" type="button" hidden>Read</button>
 
         <p class="toast" id="toast" role="status" aria-live="polite"></p>
       </div>
@@ -155,7 +164,7 @@
           <dt><kbd>Esc</kbd> or <kbd>P</kbd></dt>
           <dd>Pause, resume or restart</dd>
         </dl>
-        <p>Touch and drag anywhere on the left half to guide Chang in any direction. Chang follows the distance and direction of your drag, then settles when your finger rests. Lift to stop steering and fall naturally. Use Jump, Attack and weapon slots on the right while moving. Hold Jump for height. On a phone, rotate to landscape or choose Play in portrait. If fullscreen is unavailable, rotate manually; on iPhone Safari, use Share → Add to Home Screen for a standalone view. Walk near fruit, vegetables and coins to collect them. Weapons need the PICK UP button. A Read or Talk button appears near story objects. Change it opens the costumes you own in Marketplace.</p>
+        <p>Use the joystick at the bottom left to walk: slide right to go forward, left to go back. The farther you slide, the faster Chang walks; a small push near the centre does nothing. Lift your thumb and Chang slows to a stop. The joystick never moves Chang up, down or diagonally. Use Jump, Attack and weapon slots on the right while moving; hold Jump for height. On a phone, rotate to landscape or choose Play in portrait. If fullscreen is unavailable, rotate manually; on iPhone Safari, use Share → Add to Home Screen for a standalone view. Walk near fruit, vegetables and coins to collect them. Weapons need the PICK UP button. A Read or Talk button appears near story objects. Change it opens the costumes you own in Marketplace.</p>
       </details>
       <details class="guild-chapter"><summary>Combat and rewards</summary>
         <ul class="tips">
