@@ -463,7 +463,7 @@
   function newPlayer() {
     return {
       x: game.checkpoint.x, y: game.checkpoint.y, w: 12, h: 14, vx: 0, vy: 0, dir: 1,
-      onGround: false, coyote: 0, jumpBuf: 0, inv: 0, hurt: 0, throwCd: 0, throwAnim: 0,
+      onGround: false, coyote: 0, jumpBuf: 0, steeringJump: false, inv: 0, hurt: 0, throwCd: 0, throwAnim: 0,
       dead: false, safeX: game.checkpoint.x, safeY: game.checkpoint.y,
       runT: 0, wasGround: true, weapon: 'shell', weapons: ['shell'], ammo: { gun: 0, bomb: 0 }, attackIds: {}
     };
@@ -544,7 +544,7 @@
   };
   function clearInput() {
     held = {}; pressed = {}; actionPointers = {};
-    joystickPointer = null; if (joystick) joystick.style.setProperty('--stick-x', '0px'); if (joystick) joystick.style.setProperty('--stick-y', '0px');
+    releaseMovement();
     var b = document.querySelectorAll('.pad-btn.is-pressed');
     for (var i = 0; i < b.length; i++) b[i].classList.remove('is-pressed');
   }
@@ -606,27 +606,47 @@
     });
   });
 
-  // One pointer owns the joystick. Other pointers remain free for the actions.
-  var joystick = byId('joystick'), joystickPointer = null;
-  function moveStick(e) {
-    if (e.pointerId !== joystickPointer || game.state !== 'playing') return;
-    var b = joystick.getBoundingClientRect(), dx = e.clientX - b.left - b.width / 2, dy = e.clientY - b.top - b.height / 2;
-    var length = Math.sqrt(dx * dx + dy * dy), limit = b.width * 0.28, factor = length > limit ? limit / length : 1;
-    joystick.style.setProperty('--stick-x', dx * factor + 'px'); joystick.style.setProperty('--stick-y', dy * factor + 'px');
-    held.left = dx < -b.width * 0.12; held.right = dx > b.width * 0.12;
+  // The first touch anywhere on the left starts a floating, invisible origin.
+  // Capture only that finger: right-side actions keep independent ownership.
+  var movementSurface = byId('touch-movement');
+  var movement = { pointer: null, originX: 0, originY: 0, x: 0, y: 0, amount: 0 };
+  function moveTouch(e) {
+    if (e.pointerId !== movement.pointer || game.state !== 'playing') return;
+    e.preventDefault();
+    var dx = e.clientX - movement.originX, dy = e.clientY - movement.originY;
+    var length = Math.hypot(dx, dy), radius = 56, dead = 6;
+    if (length > radius) {
+      // Follow long drags, so changing direction never needs a return to the
+      // original touch point. This radius limits travel, never the hit area.
+      movement.originX = e.clientX - dx / length * radius;
+      movement.originY = e.clientY - dy / length * radius;
+    }
+    movement.amount = clamp((length - dead) / (radius - dead), 0, 1);
+    movement.x = length ? dx / length * movement.amount : 0;
+    movement.y = length ? dy / length * movement.amount : 0;
   }
-  function releaseStick(e) {
-    if (e && e.pointerId !== joystickPointer) return;
-    joystickPointer = null; held.left = false; held.right = false;
-    joystick.style.setProperty('--stick-x', '0px'); joystick.style.setProperty('--stick-y', '0px');
+  function releaseMovement(e) {
+    if (!movement || (e && e.pointerId !== movement.pointer)) return;
+    var pointer = movement.pointer;
+    movement.pointer = null; movement.x = 0; movement.y = 0; movement.amount = 0;
+    if (pointer !== null && movementSurface.hasPointerCapture && movementSurface.hasPointerCapture(pointer)) movementSurface.releasePointerCapture(pointer);
   }
-  joystick.addEventListener('pointerdown', function (e) {
-    if (game.state !== 'playing' || joystickPointer !== null) return;
-    e.preventDefault(); joystickPointer = e.pointerId; try { joystick.setPointerCapture(e.pointerId); } catch (_) { /* synthetic/accessibility pointer */ } moveStick(e);
+  movementSurface.addEventListener('pointerdown', function (e) {
+    if (game.state !== 'playing') return;
+    // A mouse on a hybrid/narrow screen retains the canvas attack behavior.
+    if (e.pointerType === 'mouse') { if (e.button === 0) { e.preventDefault(); focusStage(); pressed.throw = true; } return; }
+    if (movement.pointer !== null || Object.values(actionPointers).includes(e.pointerId)) return;
+    e.preventDefault(); movement.pointer = e.pointerId;
+    movement.originX = e.clientX; movement.originY = e.clientY;
+    movement.x = 0; movement.y = 0; movement.amount = 0;
+    try { movementSurface.setPointerCapture(e.pointerId); } catch (_) { /* Synthetic pointers may not have native capture. */ }
   });
-  joystick.addEventListener('pointermove', moveStick);
-  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) { joystick.addEventListener(name, releaseStick); });
-  joystick.addEventListener('keydown', function (e) { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') e.preventDefault(); });
+  movementSurface.addEventListener('pointermove', moveTouch);
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) { movementSurface.addEventListener(name, releaseMovement); });
+  // A terminal event still releases the finger if native capture was denied.
+  window.addEventListener('pointerup', releaseMovement);
+  window.addEventListener('pointercancel', releaseMovement);
+  movementSurface.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   canvas.addEventListener('pointerdown', function (e) {
     if (game.state === 'playing') { canvas.focus({ preventScroll: true }); if (e.button === 0 && e.pointerType !== 'touch') { e.preventDefault(); pressed.throw = true; } }
@@ -917,13 +937,18 @@
 
   function updatePlayer() {
     var p = player;
-    var ax = (held.left ? -1 : 0) + (held.right ? 1 : 0);
+    var keysX = (held.left ? -1 : 0) + (held.right ? 1 : 0);
+    var steering = movement.pointer !== null && movement.amount > 0;
+    var ax = held.left || held.right ? keysX : movement.x;
     if (p.hurt > 0) {
       p.hurt--;
       p.vx *= 0.94;
     } else {
       var max = 1.7;
-      if (ax !== 0) {
+      if (steering && !held.left && !held.right) {
+        p.vx += (ax * max - p.vx) * 0.35;
+        if (Math.abs(ax) > 0.01) p.dir = sign(ax);
+      } else if (ax !== 0) {
         p.vx += ax * (p.onGround ? 0.3 : 0.2);
         p.dir = ax;
       } else {
@@ -938,7 +963,7 @@
     if (p.jumpBuf > 0) {
       p.jumpBuf--;
       if (p.coyote > 0 && p.hurt === 0) {
-        p.vy = -JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.onGround = false;
+        p.vy = -JUMP_V; p.coyote = 0; p.jumpBuf = 0; p.onGround = false; p.steeringJump = true;
         dust(cx(p), p.y + p.h); audio.sfx('jump');
       }
     }
@@ -946,9 +971,23 @@
     if (p.vy >= 0) p.noCut = false;
     p.vy = Math.min(p.vy + GRAVITY, MAX_FALL);
 
+    // Touch has a real vertical axis. Jump, stomps and hurt keep their existing
+    // impulses; releasing the movement finger immediately restores gravity.
+    if (p.vy >= 0) p.steeringJump = false;
+    if (steering && !held.jump && !p.steeringJump && !p.noCut && p.hurt === 0) {
+      p.vy += (movement.y * 1.7 - p.vy) * 0.45;
+      // Cancel this frame's gravity while steering, including horizontal drags.
+      p.vy -= GRAVITY * 0.55;
+      if (Math.abs(p.vy) < 0.015) p.vy = 0;
+    }
+
     if (mapNumber === 4 && !p.onGround) p.vx = clamp(p.vx + Math.sin(game.frames / 150) * 0.035, -1.9, 1.9);
     p.wasGround = p.onGround;
     moveBody(p);
+    if (steering && p.y < 0) { p.y = 0; p.vy = Math.max(0, p.vy); }
+    // A horizontal touch has vy=0: retain actual floor contact so coyote time
+    // does not expire while walking, and Jump remains available continuously.
+    if (steering && p.vy === 0 && (standable(p.x + 1, p.y + p.h + 0.01) || standable(p.x + p.w - 1, p.y + p.h + 0.01))) p.onGround = true;
     if (p.onGround && !p.wasGround && p.vy === 0) dust(cx(p), p.y + p.h);
 
     if (p.throwCd > 0) p.throwCd--;

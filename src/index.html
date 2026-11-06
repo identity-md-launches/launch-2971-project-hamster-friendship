@@ -77,6 +77,7 @@
             <button class="btn btn-secondary" id="btn-replay" type="button" hidden>Replay map 1</button>
             <button class="btn btn-secondary" id="btn-start-guild" type="button">Open GUILD</button>
           </div>
+          <p class="overlay-text touch-instructions">Drag anywhere on the left to move. Jump and attack on the right.</p>
           <p class="overlay-text" id="entry-save" role="status" aria-live="polite">Guest play · not saved. Checking cloud saves…</p>
         </div>
 
@@ -121,8 +122,8 @@
           </div>
         </div>
 
+        <div id="touch-movement" class="touch-movement" aria-hidden="true"></div>
         <div class="touchpad" id="touchpad" aria-label="Game controls" role="group">
-          <div id="joystick" class="joystick" tabindex="0" role="group" aria-label="Movement joystick. Drag left or right; keyboard arrows also move."><span class="joystick-track" aria-hidden="true">↔</span><span class="joystick-thumb" aria-hidden="true"></span></div>
           <div class="weapon-slots" role="group" aria-label="Weapons. Select an equipped slot again for chestnuts.">
             <button id="slot-1" class="btn weapon-slot" type="button" data-slot="gun" aria-label="Slot 1: gun, not collected" aria-pressed="false" disabled><span class="slot-number">1</span><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 4h13v5H7v5H3V9H1z"/></svg><span class="slot-name">Gun</span><span id="ammo-gun" class="slot-ammo">—</span></button>
             <button id="slot-2" class="btn weapon-slot" type="button" data-slot="bomb" aria-label="Slot 2: bomb, not collected" aria-pressed="false" disabled><span class="slot-number">2</span><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0h4v2H9v3h3v2h2v7h-2v2H4v-2H2V7h2V5h3V2h1z"/></svg><span class="slot-name">Bomb</span><span id="ammo-bomb" class="slot-ammo">—</span></button>
@@ -154,7 +155,7 @@
           <dt><kbd>Esc</kbd> or <kbd>P</kbd></dt>
           <dd>Pause, resume or restart</dd>
         </dl>
-        <p>On a phone, rotate to landscape. If your browser cannot lock orientation, use the rotate overlay or choose Play in portrait. On iPhone Safari, use Share → Add to Home Screen for a standalone view; Safari’s browser bars cannot be hidden by the game. Drag the joystick to walk; hold Jump for height. Use Attack and weapon slots on the right. Walk near fruit, vegetables and coins to collect them. Weapons need the PICK UP button. A contextual Read or Talk button appears near story objects. Fullscreen requests landscape orientation when supported; on iPhone, rotate manually. Change it opens your owned costumes on desktop and mobile; equipping uses the same wallet inventory as Marketplace.</p>
+        <p>Touch and drag anywhere on the left half to move in any direction. A longer drag moves faster; lift your finger to release movement and fall naturally. Use Jump, Attack and weapon slots on the right while moving. Hold Jump for height. On a phone, rotate to landscape or choose Play in portrait. If fullscreen is unavailable, rotate manually; on iPhone Safari, use Share → Add to Home Screen for a standalone view. Walk near fruit, vegetables and coins to collect them. Weapons need the PICK UP button. A Read or Talk button appears near story objects. Change it opens the costumes you own in Marketplace.</p>
       </details>
       <details class="guild-chapter"><summary>Combat and rewards</summary>
         <ul class="tips">

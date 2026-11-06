@@ -2,7 +2,48 @@
 
 An in-place update of the existing Hamster Friendship pixel-art adventure. The original canvas engine, Chang/Alice artwork, story clues, marketplace, costumes, SQK economy, MetaMask connector, audio settings, static build and hosting name remain.
 
-**Production credentials are configured; production persistence is incomplete.** The supplied public URL/key now identify the existing project `nhtlwcukeyhvkrjveots`. Real requests reached Auth (HTTP 200), but the app's service, player-profile, score-progress and lifetime-leaderboard RPCs returned HTTP 404/PGRST202. No production migration or authenticated player write was possible with the publishable key. The game remains playable as an explicitly unsaved guest. See the [production report](VALIDATION.md#production-integration--2026-11-05) and [exact SQL Editor handoff](supabase/SQL_EDITOR.md).
+**This task delivers the touch-control redesign and an offline reconnect repair. Production integration remains incomplete.** The configured URL/key reach Auth (HTTP 200), but the production status, profile, progress and Global Top 100 RPCs still return **404/PGRST202**. The Ethereum Web3 grant explicitly returns **422 / `web3_provider_disabled`**. No administration connector or SQL credentials are available; no production migrations, authenticated player writes or data changes were performed. Guest play remains usable and explicitly unsaved. Current evidence, completed tasks, unresolved issues and six-domain review: [task report](artifacts/validation.md), [actual HTTP results](artifacts/validation/production-current.json). The existing [SQL Editor handoff](supabase/SQL_EDITOR.md) explains how an administrator can inspect the same project and apply only missing migrations without replaying installed ones.
+
+## Current task — mobile movement and reconnect
+
+- The visible circular joystick is completely removed. Touch and drag anywhere on the left half to steer in 360 degrees; movement uses a floating origin, radial dead zone, normalized speed and smooth acceleration. Lift the finger to release steering and restore gravity. Keyboard movement, Jump, stomps, damage, collisions, combat, maps and story remain.
+- Right-side Jump, Attack and weapon slots support separate fingers. Portrait and short landscape layouts keep their hit regions in the right half. Short portrait uses Jump beside Attack; simultaneous story/pickup prompts do not overlap controls or hide behind the HUD. Menus, release/cancel/lost capture, blur and rotation clear movement safely.
+- Enlarged help scrolls below its measured sticky dialog heading, with no text leaking above the title.
+- Reloading offline keeps the existing signed wallet session and pending events. A browser online event now restores that session and uploads the retained queue automatically. Verified offline events are replayed exactly once; guest/browser-editable totals never become ranked scores. A new device retrieves uploaded progress and server-held pending rewards; unsent events still need their original browser to reconnect.
+
+### Actual current checks
+
+Production build, all eight runtime scripts typechecked, source/export integrity, **53 export touch interaction checks**, **33 mobile regression checks**, **11 touch-engine checks**, **16 existing gameplay checks**, **4 audio checks**, **16 deferred-reward SQL/client checks**, **6 current persistence/inventory/Top 100 checks**, **4 offline-reconnect checks**, **10 SQL-backed browser save checks**, **10 guarded migration/preservation checks**, **6 reward-guard checks**, **4 connection-state checks**, **7 real-production error/retry checks**, and **16/16 taste checks** passed locally. These counts are named check groups, not full feature certification. Disposable PostgreSQL uses explicit Auth/HTTP fixtures; fixtures never ship in the export. The real production probe exits 1 for the actual unavailable RPCs and disabled Web3 provider. No successful production save or real signature is claimed. Chromium touch emulation is not a physical phone; WebKit could not launch because system libraries are missing. The supplied browser launcher also failed to start; bounded local Playwright tests supplied rendered validation.
+
+To reproduce current validation without changing root dependencies:
+
+```sh
+npm install --prefix test/scratch --cache test/scratch/npm-cache --no-audit --no-fund --package-lock=false @electric-sql/pglite@0.3.14 typescript@5.9.3 playwright@1.56.1 @axe-core/playwright@4.11.0
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node test/scratch/node_modules/playwright/cli.js install chromium
+npm run build
+node scripts/typecheck-major.mjs
+npm run check
+node scripts/test-touch.mjs
+node scripts/test-major.mjs
+node scripts/test-major-audio.mjs
+node supabase/tests/connection-state.mjs
+node supabase/tests/production-handoff.mjs
+node supabase/tests/reward-guard.mjs
+node supabase/tests/deferred-rewards.mjs
+node supabase/tests/current-persistence.mjs
+node supabase/tests/offline-reconnect.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-touch.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-deferred-rewards.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-mobile.mjs test/scratch/node_modules/playwright/index.mjs
+PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-integration.mjs --relay
+node scripts/verify-production.mjs --out artifacts/validation/production-current.json
+```
+
+The final production command is expected to fail until the original backend is repaired. `--relay` forwards genuine Supabase requests through Node when browser networking cannot reach the host; it invents no records. Test tools and browser downloads belong only in disposable `test/scratch/`; the site has no runtime npm dependencies. When the pinned contributor inputs are present, run the design probe with `PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" IMD_PLAYWRIGHT="$PWD/test/scratch/node_modules/playwright/index.mjs" node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste`.
+
+### After launch: production administration still required
+
+In project `nhtlwcukeyhvkrjveots`, an authorized administrator must inspect the existing schema/data using `supabase/inspect_production.sql`, preserve a backup and core fingerprints, apply only missing migrations through 009, run the supplied RLS/grant/index/RPC verification, enable **Ethereum Web3 Auth**, and allow the real hosted HTTPS login URI. The installed production schema is unknown; do not assume it is empty from a REST 404. The guarded `scripts/prepare-supabase.mjs --after <inspected version>` helper is retained and locally tested from every version 0–8. Then perform the [real-wallet acceptance run](supabase/SQL_EDITOR.md#required-real-wallet-acceptance-run): authenticated production reads/writes, saved score/SQK/inventory, refresh, offline reconnect, same-wallet recovery on another device and actual Top 100 records. No privileged credential belongs in this static site.
 
 ## Install, preview and rebuild
 
@@ -19,7 +60,7 @@ npm run preview
 
 Open `http://localhost:4173/`. Stop the preview with Ctrl+C. The production build copies 18 complete runtime files from `src/` to committed `dist/`. It uses relative URLs, a relative manifest/start URL, local art/icons/share image and no runtime CDN. The export was also tested beneath `/squeek/`, without route rewrites. The existing hosting name `hamster-friendship-the-lost-alic.identitymd.eth` and domain configuration are preserved; no deployment or naming action was performed.
 
-## What changed
+## Existing adventure features retained
 
 | Map | Exploration timer | Boss | Gameplay and scenery |
 | --- | --- | --- | --- |
@@ -34,7 +75,7 @@ The timers count **active exploration time until boss appearance**, preserving t
 - Weapons always require **E** on desktop or the visible **PICK UP** button on touch. One press claims only the nearest weapon. Gun/bomb/sword slots, ammunition and purchased damage upgrades remain.
 - Every 20 produce points increases Chang's visual size. Growth carries across saved maps/visits through `produce_points`, rises from scale 1.15 toward 2.05 and leaves the original 12×14 collision body and foot anchor stable. Historical scores do not invent a produce-growth history.
 - In-world SQK artwork is exactly 30% smaller: 36×31 → 25.2×21.7 logical pixels. Its horizontal SQK lettering never spins.
-- Touch controls have larger targets, more space and pointer ownership. The narrowest layout puts weapon slots above the joystick. Screens adapt to the measured chrome height, including 200% text; orientation/fullscreen fallbacks remain.
+- Touch controls use invisible left-half steering and independent right-side actions. The narrowest portrait layout places Jump beside Attack and weapon slots above them. Screens adapt to measured chrome height, including 200% text; orientation/fullscreen fallbacks remain.
 - Chestnut ammunition, gun, sword and bomb each have a different procedural waveform/envelope. A 24-voice ceiling, per-effect rate limits and master compression limit overlap. The original music/SFX volume and mute storage key is preserved.
 
 ## Permanent saves and identity
@@ -49,7 +90,7 @@ Pending ranked events are written before transmission, partitioned by wallet and
 
 Revision: migration **007** allows independent version-6 runs for the same wallet. Starting a run on another device no longer ends the first device's run or rejects its queued rewards. Each run closes through its own ordered death/finish event; profile locking and the existing event validator checkpoint both devices' valid points exactly once. Legacy starts also leave version-6 runs intact. Previously ended runs are not automatically reopened or credited from unverified recovery files. The frontend requires schema **7**, game rules **6**, and migration **9 or later** before signed login/ranked play. Migration 008 retains its four-open-run limit; starting a fifth can close the oldest run, but its validated unpaid rewards remain recoverable through 009.
 
-The revision also fixes the offered weapon pickup range on PC and mobile. Pointer selection of a weapon slot returns focus to the canvas so Space jumps and Enter fires; deliberate keyboard activation retains native slot focus and toggling. See the [revision validation record](VALIDATION.md#revision-validation) and [review responses](.imd-responses.json).
+The revision also fixes the offered weapon pickup range on PC and mobile. Pointer selection of a weapon slot returns focus to the canvas so Space jumps and Enter fires; deliberate keyboard activation retains native slot focus and toggling. See the [revision validation record](VALIDATION.md#revision-validation).
 
 Existing legacy cloud profiles can be linked through their authenticated, expiring server ticket. An existing verified wallet profile always wins. Older **unverified browser-only totals** are left untouched and offered as a download in Profile for owner review; they cannot overwrite or mint a verified score. Guests remain memory-only and unranked. See [Supabase migration and security details](supabase/README.md).
 
@@ -64,7 +105,7 @@ The existing backend and migrations are retained. Startup now checks backend rea
 
 **Production migrations executed: none.** Actual endpoint results are in [the recorded JSON](docs/validation/supabase-production.json). Auth connectivity is verified; authenticated database read/write, installed table/policy status, real signature, score restoration and live leaderboard records are not verified. The Data API denied private-schema exposure (406); this does not prove installed RLS policies. The browser remains the authority for positions/collisions; server event validation is not a fully authoritative multiplayer anti-cheat engine.
 
-## Validation
+## Historical validation and implementation notes
 
 Current integration checks include the production build, source/export integrity, all eight runtime scripts typechecked, SQL migration/preparation and permission tests, score/wallet recovery regressions and browser interactions. Production HTTP probes intentionally exit 1 while the RPCs are unavailable:
 
@@ -95,6 +136,6 @@ PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-majo
 PLAYWRIGHT_BROWSERS_PATH="$PWD/test/scratch/browsers" node scripts/validate-deferred-rewards.mjs
 ```
 
-The reward-loss revision reproduced 150/280 credited points on unchanged 001–008, then passed 16 SQL/client checks, the unaccelerated 206-second settlement regression, 9 rendered reward-flow checks, and upgrades from every schema 0–8. See [the current validation record](VALIDATION.md#revision--durable-deferred-rewards-migration-009) and [review response](.imd-responses.json). `SQUEEK_CHROMIUM_EXECUTABLE` can point the focused browser suite at an available Chromium executable if normal Playwright browser installation is unavailable. No browser binary ships with the site.
+The reward-loss revision reproduced 150/280 credited points on unchanged 001–008, then passed 16 SQL/client checks, the unaccelerated 206-second settlement regression, 9 rendered reward-flow checks, and upgrades from every schema 0–8. See [the current validation record](VALIDATION.md#revision--durable-deferred-rewards-migration-009). `SQUEEK_CHROMIUM_EXECUTABLE` can point the focused browser suite at an available Chromium executable if normal Playwright browser installation is unavailable. No browser binary ships with the site.
 
 The older `major-client.mjs`, `major-engine.mjs`, `concurrent-runs.mjs`, `validate-major-cloud.mjs` and `validate-revision.mjs` fixtures intentionally target pre-008 protocols/instant forage and do not cover the migration-9 readiness gate; they are historical coverage, not current passing save-client commands. The focused deferred-reward suites exercise the current SQL, client, ownership, queues, score, SQK, restoration and leaderboard path. Historical migration regressions also ran with `node supabase/tests/verified-wallet.mjs` and `node supabase/tests/lifetime.mjs`; they intentionally test schemas up to 005. Older v1–v3 gameplay scripts describe superseded rules and are retained as history, not presented as current passing checks. Test dependencies and browser downloads stay in disposable `test/scratch/`; they are not part of the site/submission. The pinned taste probe passed 16/16 after the final layout fix. See [VALIDATION.md](VALIDATION.md), [machine-readable results](docs/validation/major-results.json), [DESIGN.md](DESIGN.md) and [the pre-edit plan](WORKPLAN.md) for coverage, findings and limitations.

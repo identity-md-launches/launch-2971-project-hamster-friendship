@@ -4,6 +4,14 @@
   var dialog = /** @type {HTMLDialogElement} */ (document.getElementById('player-dialog'));
   var title = document.getElementById('panel-title'), content = document.getElementById('panel-content');
   var opener = null, panel = '', generation = 0;
+  // Scroll targets need the actual sticky title height, including wrapped
+  // headings at large text sizes. This does not change a dialog's focus order.
+  if (window.ResizeObserver) {
+    var headerObserver = new ResizeObserver(function (entries) {
+      entries.forEach(function (entry) { entry.target.parentElement.style.setProperty('--dialog-header-height', entry.contentRect.height + 'px'); });
+    });
+    document.querySelectorAll('.panel-header').forEach(function (header) { headerObserver.observe(header); });
+  }
   /** @template {keyof HTMLElementTagNameMap} K @param {K} tag @param {string} [text] @param {string} [className] @returns {HTMLElementTagNameMap[K]} */
   function el(tag, text, className) {
     var node = document.createElement(tag); if (text) node.textContent = text; if (className) node.className = className; return node;

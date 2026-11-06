@@ -262,9 +262,9 @@ body { overflow: hidden; }
 .rotate-hint { display: none; position: absolute; z-index: 5; inset: 144px 16px auto; text-align: center; color: var(--color-text-muted); font-size: var(--text-sm); }
 .touchpad { position: absolute; z-index: 3; inset: 0; pointer-events: none; user-select: none; }
 .touchpad > * { pointer-events: auto; }
-.joystick { display: none; position: absolute; inset: auto auto max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); width: 96px; height: 96px; border-radius: 50%; background: rgb(38 24 15 / 0.88); box-shadow: inset 0 0 0 2px var(--color-border-strong); touch-action: none; }
-.joystick-track { position: absolute; inset: 0; display: grid; place-content: center; color: var(--color-text-muted); font-size: var(--text-xl); pointer-events: none; }
-.joystick-thumb { position: absolute; width: 42px; height: 42px; left: calc(50% - 21px); top: calc(50% - 21px); border-radius: 50%; background: var(--color-surface-raised); box-shadow: inset 0 0 0 2px var(--color-accent); transform: translate(var(--stick-x,0px),var(--stick-y,0px)); pointer-events: none; }
+/* No visible ring or fixed start point. UI sits above this transparent surface. */
+.touch-movement { display: none; position: absolute; z-index: 2; inset: 0 50% 0 0; touch-action: none; user-select: none; -webkit-touch-callout: none; }
+.touch-instructions { display: none; }
 .weapon-slots { position: absolute; inset: auto 16px 48px auto; display: flex; gap: 6px; }
 .weapon-slot { position: relative; display: grid; grid-template-columns: auto auto; align-content: center; justify-content: center; gap: 0 3px; min-width: 56px; min-height: 64px; padding: 4px; border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-muted); font-size: var(--text-sm); box-shadow: inset 0 0 0 1px var(--color-border-strong); touch-action: manipulation; }
 .weapon-slot svg { width: 20px; height: 20px; }
@@ -278,7 +278,7 @@ body { overflow: hidden; }
 .attack-btn { inset: auto max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) auto; width: 84px; height: 84px; }
 .jump-btn { inset: auto max(28px, env(safe-area-inset-right)) max(112px, calc(env(safe-area-inset-bottom) + 96px)) auto; width: 60px; height: 60px; }
 #context-interact { position: absolute; z-index: 4; inset: auto auto 128px 50%; transform: translateX(-50%); font-size: var(--text-sm); }
-body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="playing"]) #context-interact { display: none; }
+body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="playing"]) .touch-movement, body:not([data-game-state="playing"]) #context-interact { display: none; }
 .menu-dialog { max-width: 400px; }
 .game-utilities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 .game-utilities .btn { font-size: var(--text-sm); white-space: normal; }
@@ -301,10 +301,11 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
 .mute-label { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
 .mute-label input { width: 20px; height: 20px; accent-color: var(--color-accent); flex: none; }
 .player-dialog {
+  --dialog-padding: var(--space-5);
   width: min(640px, calc(100% - 32px));
   max-height: calc(100vh - 48px);
   max-height: calc(100dvh - 48px);
-  padding: var(--space-5);
+  padding: var(--dialog-padding);
   border: 0;
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -312,10 +313,12 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
   overscroll-behavior: contain;
   overflow-y: auto;
   overflow-wrap: break-word;
+  scroll-padding-block-start: calc(var(--dialog-header-height, 44px) + var(--dialog-padding) + var(--space-4));
 }
 .player-dialog::backdrop { background: rgb(10 7 5 / 0.8); }
 .player-dialog .btn { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-block-end: var(--space-4); position: sticky; inset-block-start: 0; z-index: 1; background: var(--color-surface); }
+.panel-header::before { content: ''; position: absolute; z-index: -1; inset: calc(-1 * var(--dialog-padding)) 0 0; background: var(--color-surface); pointer-events: none; }
 .panel-header h2 { font-size: var(--text-lg); min-width: 0; }
 .close-dialog { flex: none; width: 44px; min-height: 44px; padding: 0; font-size: var(--text-lg); }
 #panel-content { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
@@ -348,7 +351,7 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
 .wallet-row img { width: 28px; height: 28px; object-fit: contain; }
 .wallet-address { overflow-wrap: anywhere; font-size: var(--text-base); font-variant-numeric: tabular-nums; }
 @media (max-width: 40rem) {
-  .player-dialog { padding: var(--space-4); }
+  .player-dialog { --dialog-padding: var(--space-4); }
   .wallet-dialog { margin-block: auto 0; width: 100%; border-end-start-radius: 0; border-end-end-radius: 0; padding-block-end: max(var(--space-4), env(safe-area-inset-bottom)); }
   .shop-item { grid-template-columns: 40px minmax(0,1fr); }
   .shop-item > .btn { grid-column: 2; justify-self: start; }
@@ -360,7 +363,9 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
 
 
 @media (max-width: 52rem), (pointer: coarse) {
-  .joystick, .pad-btn { display: grid; place-content: center; }
+  .touch-movement { display: block; }
+  .touch-instructions { display: block; }
+  .pad-btn { display: grid; place-content: center; }
   .weapon-slots { right: max(112px, calc(env(safe-area-inset-right) + 96px)); bottom: max(20px, env(safe-area-inset-bottom)); }
   .save-summary { inset: 137px auto auto 12px; max-width: calc(100% - 24px); }
   .rotate-hint { inset-block-start: 172px; }
@@ -381,7 +386,6 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
   .weapon-slots { gap: 4px; right: 88px; }
   .attack-btn { width: 64px; height: 64px; right: 12px; }
   .jump-btn { width: 52px; height: 52px; right: 18px; bottom: 96px; }
-  .joystick { width: 80px; height: 80px; left: 12px; }
   .overlay h2 { font-size: var(--text-lg); }
   .overlay-actions { max-width: 280px; }
 }
@@ -401,7 +405,7 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
   .profile-stats { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .btn, .toast, .hud-bar-fill { transition: none; } .btn:active, .pad-btn.is-pressed { scale: 1; } }
-@media (forced-colors: active) { .btn, .joystick, .weapon-slot, .dialogue { border: 1px solid CanvasText; } }
+@media (forced-colors: active) { .btn, .weapon-slot, .dialogue { border: 1px solid CanvasText; } }
 
 /* Supplemental status belongs to the compact menu, leaving only four HUD metrics. */
 .menu-dialog .map-status { position: static; display: grid; padding: 0; margin-block-end: 8px; background: transparent; }
@@ -436,7 +440,6 @@ body:not([data-game-state="playing"]) .touchpad, body:not([data-game-state="play
 .game-chrome .boss-status { position: static; justify-self: end; margin-inline: max(12px, env(safe-area-inset-right)); }
 
 @media (max-width: 28rem) { .weapon-slot { width: 44px; min-width: 44px; padding-inline: 2px; } }
-@media (max-width: 22rem) { .joystick { left: 8px; width: 76px; height: 76px; } }
 .stage-tools .btn { min-width: 44px; }
 #game:focus-visible { outline-offset: -3px; }
 .pad-btn.is-pressed { background: var(--color-accent-hover); color: var(--color-on-accent); }
@@ -471,7 +474,6 @@ body:not([data-game-state="playing"]) #pickup-weapon { display: none; }
 .stage-tools #btn-wallet { min-width: 44px; }
 #entry-save { max-width: 34ch; }
 @media (max-width: 52rem), (pointer: coarse) {
-  .joystick { width: 104px; height: 104px; }
   .attack-btn { width: 92px; height: 92px; }
   .jump-btn { width: 68px; height: 68px; right: max(28px, env(safe-area-inset-right)); bottom: max(124px, calc(env(safe-area-inset-bottom) + 112px)); }
   .weapon-slots { gap: 10px; right: max(126px, calc(env(safe-area-inset-right) + 114px)); bottom: max(24px, env(safe-area-inset-bottom)); }
@@ -482,15 +484,36 @@ body:not([data-game-state="playing"]) #pickup-weapon { display: none; }
   .site-header h1 { max-width: 120px; padding-block: 10px; }
   .stage-tools { max-width: 220px; }
   .stage-tools .btn { padding-inline: 10px; }
-  .joystick { width: 88px; height: 88px; left: 12px; bottom: max(24px, env(safe-area-inset-bottom)); }
   .attack-btn { width: 76px; height: 76px; right: 12px; bottom: max(24px, env(safe-area-inset-bottom)); }
   .jump-btn { width: 64px; height: 64px; right: 18px; bottom: max(120px, calc(env(safe-area-inset-bottom) + 108px)); }
   .weapon-slots { gap: 8px; right: 100px; bottom: max(24px, env(safe-area-inset-bottom)); }
   .weapon-slot { width: 48px; min-width: 48px; min-height: 68px; }
 }
 @media (max-width: 23rem) {
-  .weapon-slots { bottom: max(132px, calc(env(safe-area-inset-bottom) + 120px)); left: 12px; right: auto; }
   #pickup-weapon { bottom: max(216px, calc(env(safe-area-inset-bottom) + 204px)); }
+}
+/* In portrait, stack weapons above combat so the entire left half stays free. */
+@media (orientation: portrait) and (max-width: 52rem) {
+  .weapon-slots { left: calc(50% + 8px); right: max(12px, env(safe-area-inset-right)); bottom: max(200px, calc(env(safe-area-inset-bottom) + 188px)); justify-content: flex-end; gap: 4px; }
+  .weapon-slot { width: auto; min-width: 44px; flex: 1; max-width: 56px; }
+  #pickup-weapon { left: auto; right: max(12px, env(safe-area-inset-right)); bottom: max(284px, calc(env(safe-area-inset-bottom) + 272px)); translate: none; }
+  #context-interact { left: auto; right: max(12px, env(safe-area-inset-right)); bottom: max(352px, calc(env(safe-area-inset-bottom) + 340px)); transform: none; }
+}
+@media (orientation: landscape) and (max-width: 42rem) {
+  .weapon-slots { right: max(116px, calc(env(safe-area-inset-right) + 104px)); gap: 4px; }
+  .weapon-slot { width: 44px; min-width: 44px; }
+}
+/* Short portrait screens need an action row to leave room for story/pickup
+   prompts below the measured chrome. Both prompts may be visible together. */
+@media (orientation: portrait) and (max-width: 28rem) and (max-height: 42rem) {
+  .jump-btn { left: 50%; right: auto; bottom: max(30px, calc(env(safe-area-inset-bottom) + 18px)); }
+  .weapon-slots { bottom: max(116px, calc(env(safe-area-inset-bottom) + 104px)); }
+  #context-interact { bottom: max(200px, calc(env(safe-area-inset-bottom) + 188px)); }
+  #pickup-weapon { bottom: max(256px, calc(env(safe-area-inset-bottom) + 244px)); }
+}
+@media (orientation: landscape) {
+  #context-interact { left: calc(50% + 8px); transform: none; }
+  #pickup-weapon { translate: -100% 0; bottom: 128px; }
 }
 @media (orientation: landscape) and (max-height: 34rem) {
   .route-status { padding-block: 2px; }
@@ -501,7 +524,7 @@ body:not([data-game-state="playing"]) #pickup-weapon { display: none; }
 
 /* Text zoom can make the chrome taller than a fixed inset. Observe its actual
    height and give screens their own scrollable space below it. */
-body[data-game-state="title"] #rotate-hint { display: none; }
+body[data-game-state="title"] #rotate-hint, body[data-game-state="playing"] #rotate-hint { display: none; }
 .overlay { inset-block-start: calc(var(--chrome-height, 140px) + 8px); padding: 24px 16px 32px; justify-content: flex-start; justify-content: safe center; }
 .overlay > * { flex-shrink: 0; }
 .rotate-overlay { inset-block-start: calc(var(--chrome-height, 140px) + 16px); max-height: calc(100% - var(--chrome-height, 140px) - 32px); }

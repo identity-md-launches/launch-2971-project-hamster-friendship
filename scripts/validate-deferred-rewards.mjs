@@ -93,6 +93,17 @@ try{
   await c.page.locator('#btn-menu').click();await c.page.locator('#btn-leaderboard').click();await c.page.locator('.leaderboard tbody tr').waitFor();assert.equal(await c.page.locator('.leaderboard tbody tr td:nth-child(3)').textContent(),'280');
   assert.equal((await h.rpc(null,'hf_lifetime_top100')).rows[0].score,280);await c.page.screenshot({path:shots+'/leaderboard-280-390.png'});
  });
+ await check('reload offline then browser online automatically restores the signed session and synchronizes its retained events',async()=>{
+  const c=clients[4];await c.page.clock.resume();await c.page.evaluate(()=>window.HamsterSave.beginMap(1));c.net.offline=true;
+  await c.page.evaluate(async()=>{window.HamsterSave.record('forage',{source:'basket'},60);window.HamsterSave.record('death',{},61);await window.HamsterSave.flush();});
+  const q=await queues(c);assert.equal(q.length,1);await backdateRun(h,q[0].id);
+  await c.page.reload();await c.page.evaluate(wallet=>window.HamsterSave.setWallet(wallet),user.wallet);
+  assert.equal((await snapshot(c)).cloud,false);assert.equal((await snapshot(c)).pendingEvents,2);
+  c.net.offline=false;await c.page.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await c.page.waitForFunction(()=>window.HamsterSave.snapshot().cloud&&window.HamsterSave.snapshot().pendingEvents===0);
+  assert.equal((await snapshot(c)).profile.total_score,282);assert.equal((await queues(c)).length,0);
+  const fresh=await client(user);assert.equal((await snapshot(fresh)).profile.total_score,282);
+ });
  await check('no JavaScript or unexpected local/SQL resource failures in the revised flow',()=>{assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);});
  try{const wk=await pw.webkit.launch({headless:true});await wk.close();limitations.push('WebKit launches; these SQL browser flows were not exercised in WebKit.');}catch{limitations.push('WebKit could not launch in this environment; no Safari result claimed.');}
  console.log(results.length+' deferred reward browser checks passed.');

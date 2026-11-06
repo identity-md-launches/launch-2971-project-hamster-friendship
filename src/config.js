@@ -1,6 +1,6 @@
 /* Static browser configuration. Public values only; no environment substitution.
    Never put a secret or service-role key here.
-   Apply migrations 001–007 in order; enable Ethereum Web3 Auth.
+   Apply missing migrations through 009 in order; enable Ethereum Web3 Auth.
    Existing projects apply only migrations not already applied. See supabase/README.md.
    These public credentials identify the original production project.
    Configured credentials do not establish that its migrations/Auth are ready. */

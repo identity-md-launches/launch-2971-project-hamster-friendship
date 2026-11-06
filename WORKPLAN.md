@@ -1,53 +1,18 @@
-# Squeek major update: inspection and implementation plan
+# Current task plan — 2026-11-06
 
-## Reward-loss revision · 2026-11-05
+Continue the existing vanilla JavaScript canvas game and static-copy build. Preserve its maps, art, combat, wallet implementation, server event protocol, historical migrations and all existing data.
 
-Scope: evaluate finding `8591f286…` and preserve the accepted game/interface. Reproduced unchanged 001–008 with the exact real-clock walk: 75.18 seconds, 280 earned, 150 paid, acknowledgements 46/46/46/46, withheld 0/0/60/70, replay unchanged. Reproduced the four save clients retiring every queue and reporting saved. No production writes were used.
-
-Implementation plan carried out: add 009 rather than editing historical migrations; retain reachability, budget and four-open-run checks; store unpaid entitlements per run and settle through the existing wallet budget; recover 008’s already-consumed entitlements from server records; retain unpaid client batches and a truthful pending state; recover server-held rewards from any verified device. Update SQL preparation/version checks, rebuild the static export, test SQL/client/real-clock/browser behavior, review the six design domains and record the finding response. Production Auth/RPC access was rechecked separately and remains insufficient to inspect/migrate/write the actual database. See the current VALIDATION.md section.
-
-## Production integration · 2026-11-05
-
-The supplied project is `nhtlwcukeyhvkrjveots`. Before runtime edits, inspected the existing vanilla-JavaScript application, custom static-copy build, public config, persistence client, wallet authentication, migrations 001–007, verification SQL and pinned design references. Root build/dependency files remain unchanged. There is no Vite/Next/React environment-variable substitution; the existing browser configuration is `src/config.js`.
-
-Actual initial requests with the supplied publishable key: Auth settings HTTP 200; service status, wallet-profile and lifetime Top 100 HTTP 404/PGRST202. The Data API OpenAPI root requires a secret key (HTTP 401); a publishable key cannot inspect private database catalogs or apply migrations. No Supabase MCP administration tool is available. A missing RPC does not establish that its underlying tables are absent.
-
-Plan: configure only the supplied public values; surface checked backend readiness separately from configuration and authenticated persistence; keep guest play usable and clearly unsaved; preserve existing validated-event scoring and identity/data recovery. Deliver read-only SQL catalog inspection, the exact existing migration files with a guarded SQL Editor preparation workflow, and post-migration checks. Run live endpoint probes and record their actual failures separately from local PostgreSQL, browser, typecheck and design results. Do not claim successful production writes or migration execution without evidence.
-
-Risks: migrations cannot safely be selected from REST errors alone. An administrator must inspect the existing database first and execute only missing migrations in order. Ethereum Web3 Auth and the hosted origin must be configured in that same project. A real wallet signature is necessary for the mandatory end-to-end production persistence tests. Local fixtures prove implementation behavior only.
-
-## Revision inspection and plan · 2026-11-05
-
-This revision evaluates only the three supplied findings. Before changing runtime code, read the project context, existing frontend/save/wallet/audio/viewport flow, database migrations, tests, design guide and current documentation. Supabase public settings remain empty; production verification still needs the original owner configuration. No replacement backend or database reset is appropriate.
-
-Reproduced all three against the accepted baseline: real engine/save/SQL left the offline fruit uncredited after another device started; Chromium showed an enabled PICK UP at center distance 24 that did nothing; a mouse-selected gun slot kept focus and captured Space/Enter. Also identified the original `hf_one_active_map` unique index, which prevents a function-only concurrency fix.
-
-Plan reported before runtime edits: add migration 007 without editing installed migrations; retain shared-profile lock ordering and the unchanged progress validator; preserve independent v6 runs and protect them from older starts; gate the frontend on the patched schema. Reuse the existing nearest-weapon predicate for manual collection. Return pointer-selected slot focus to the canvas while retaining keyboard activation. Rebuild and run SQL, engine, interaction, responsive and six-domain design regressions, then record responses/evidence.
-
-Risks: the migration and new export must be used together (schema 7, rules 6). Already abandoned historical runs must not be reopened or credited from unverified local files. Changing the legacy index must preserve its single-active-run guarantee. The local single-connection SQL harness cannot establish independent connection contention or hosted signature/RLS behavior. Keep production limitations explicit.
-
-The original implementation plan below is retained as historical context.
-
-Inspected 2026-11-05 before application edits. This is an upgrade of the existing dependency-free canvas engine, static-copy build, Supabase REST/RPC client, EIP-6963/MetaMask connector, wardrobe, marketplace, audio, viewport and authored forest. The existing root manifest/lockfile and build configuration stay intact. The existing ENS/IPFS domain stays intact.
-
-## Findings and risks
-
-- `src/config.js` and `dist/config.js` contain empty Supabase URL/public key settings. Project history provides no project ID or database access. No original hosted database could be identified; no production Auth/database operation is possible. Retain the explicit owner-settable public configuration already offered by this project; do not invent a backend. Live configuration request through the web tool failed to resolve in this run. Historical documentation of a previous live request is not current verification.
-- Migrations 001–005 define private profiles, purchases, wallet links, runs, event validation, lifetime ledger and RLS. Canonical addresses come from Supabase-verified Web3 identity claims, never editable metadata. Wallet uniqueness and advisory/row locks already prevent duplicate profiles. Legacy Auth tickets preserve original server-side records. Old browser-only totals cannot be trusted for cloud scoring and must remain intact for owner-assisted recovery.
-- Rules version 4 currently uses a fixed 60-second boss and requires all 30 enemies plus a metal fragment to progress. New timings/progression must change together in client and SQL without invalidating pending version-4 events.
-- Scores currently settle on session termination. Closing a browser can leave a score absent from the leaderboard until another run abandons it. Checkpoint validated score deltas atomically with idempotent acknowledgements, without double-counting historical totals.
-- Existing touch pickup automatically takes weapons; desktop produce requires E. Separate produce proximity from manual weapon pickup on both inputs.
-- Preserve SQK probabilities, marketplace costs, cosmetics, purchased upgrades, one-hit combat, name validation, audio settings and existing wallet behavior. Growth is cosmetic with a stable collision body and foot anchor so it cannot trap the player in existing geometry.
-
-## Implementation sequence
-
-1. Add migration 006 to the same schema: checkpoint lifetime deltas, preserve version-4 queues, add version-6 map rules and produce progression; test populated upgrades, identity, permissions, replay and Top 100 against real PostgreSQL in local PGlite. Auth/HTTP fixtures are tests only.
-2. Update save client for the new version, durable outbox/exit checkpoints, identity races, configuration validation and immediate board refresh. Preserve old keys and legacy cloud ticket flow; expose untrusted local data as a download rather than importing forged totals.
-3. Extend original engine with forest/flying roaches (60s), glacier/ice/penguin (90s), caldera/fire/dragon (120s), reef/water/shark (150s). Duration means exploration time before boss appearance, preserving existing timed-boss behavior. Boss combat can extend a map. Automatic transition after defeat; fourth map ends the adventure.
-4. Add colorful procedural produce, proximity collection, manual E/PICK UP weapons, progressive bounded visual growth; test thresholds and collision stability.
-5. Enlarge/space touch controls with pointer ownership; shrink world SQK artwork by 30% from 36×31; give each weapon its own bounded procedural sound. Preserve mute/volume keys.
-6. Build/check each phase; run actual JavaScript typecheck, SQL/client regression, browser interactions in Chromium/WebKit when available, mobile/desktop and pinned taste probe. Fix applicable findings across all six Better Interface domains. Rebuild `dist/`, update README/DESIGN/VALIDATION, audit allowed paths and 8 MiB added-byte budget.
+1. Inspect production with the supplied public settings only; review migrations 001–009 and the existing guarded SQL handoff. Run disposable PostgreSQL migration, preservation, authorization, score/SQK/inventory, offline and same-wallet recovery checks. No available administration connector or SQL credentials can apply production SQL; do not infer installed tables from a 404 or replay migrations blindly. Record this limitation and actual HTTP results.
+2. Remove the fixed visible joystick. Use a transparent left-half movement surface, a gesture-local floating origin, radial dead zone and normalized two-axis steering through existing collision code. Preserve gravity on release, Jump/stomps/knockback, desktop keys and all combat/UI controls. Keep touch combat controls wholly in the right half at narrow widths. No camera gestures. Clear ownership on release, cancellation, lost capture, pause, visibility and viewport changes.
+3. Repair the observed offline-start restoration gap: a retained signed-in wallet whose session cannot restore while offline must retry its existing session when the browser comes online. Never import editable browser totals into permanent ranked scores.
+4. Build and typecheck the unchanged stack; exercise the actual export at a static subpath with Chromium and attempt WebKit. Validate real touch dispatch, eight-way movement, finger ownership, simultaneous actions, cleanup, mobile layouts, desktop keys, menus and real backend error/retry states. Run the pinned taste probe and review all six Better Interface domains. Document final source and actual results in DESIGN.md, README.md and artifacts/validation.md.
 
 ## Decisions and limits
 
-Use the project's existing public owner configuration, keeping ranked functionality unavailable until the original project is configured and migration 006 applied. No replacement backend, production reset, new project, deployment, seeded live leaderboard, guessed key or address. Local test identities are never exported as runtime data. Original records are not deleted or reset. Production claims require production evidence and will not be inferred from local tests.
+- Two-axis touch steering is the requested control change to an existing side-scrolling world. Solid tiles, jump mechanics, speeds, hurt/stomp behavior and released-touch gravity remain authoritative. Touch steering never raises the existing horizontal speed ceiling or changes server reward rules.
+- The provided production URL/key are public configuration, already present. Production administration is unavailable; finish the useful controls, client fixes, validation and static export without another needs-input stop. Do not label production integration complete.
+- Dependencies and browser binaries exist only under disposable test/scratch/. Root manifests, lockfile, build configuration and ignore files remain unchanged. New delivery budget: at most 1 MiB for source/scripts/docs/JSON plus 1 MiB for selected screenshots; rebuilt dist below 600 KiB; total added/changed file bytes must remain under 8 MiB. No new runtime dependency.
+
+## Final status
+
+The planned invisible controls, responsive prompt placement and offline-reload reconnect repair are implemented. Rendered review additionally fixed sticky dialog-header masking/scroll padding for enlarged help. The production build, actual JavaScript typecheck, local SQL/gameplay/audio/interaction suites and pinned taste probe passed; see artifacts/validation.md for exact outcomes and the six-domain review. Production remains incomplete: live RPCs return 404 and Auth explicitly reports web3_provider_disabled. No production migration or authenticated write was performed. The usable static export and the existing administrator handoff are delivered without another needs-input stop.

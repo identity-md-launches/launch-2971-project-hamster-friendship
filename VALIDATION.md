@@ -1,3 +1,9 @@
+# Current task validation — 2026-11-06
+
+Current results and six-domain Better Interface review are in [artifacts/validation.md](artifacts/validation.md), with [machine-readable check results](artifacts/validation/test-results.json) and [actual production responses](artifacts/validation/production-current.json). The invisible controls, short-screen prompt placement and automatic restoration after an offline reload are implemented and locally checked. Production integration is **incomplete**: RPCs return 404 and Auth reports `web3_provider_disabled`. No production migrations or authenticated writes were executed. Records below are historical and do not establish current production persistence.
+
+---
+
 # Squeek validation
 
 ## Revision · durable deferred rewards (migration 009)

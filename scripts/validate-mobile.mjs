@@ -33,7 +33,7 @@ try{
    page=await context.newPage();page.setDefaultTimeout(7000);page.on('pageerror',e=>errors.push({persona,message:e.message}));await page.goto(base);
    await check('portrait entry exposes Start adventure and the existing scene',async()=>{const b=await page.locator('#btn-start').boundingBox();assert(b.y+b.height<spec.portrait[1]);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),spec.portrait[0]);assert(await page.locator('#rotate-overlay').isHidden());});
    await check('connecting requests landscape without a signature, approval or transfer',async()=>{
-     await page.locator('#btn-menu').click();await page.locator('#btn-wallet').click();await page.getByRole('button',{name:'Connect MetaMask',exact:true}).click();await page.waitForFunction(()=>window.HamsterWallet.snapshot().connected);
+     await page.locator('#btn-wallet').click();await page.locator('#wallet-dialog').getByRole('button',{name:'Connect MetaMask',exact:true}).click();await page.waitForFunction(()=>window.HamsterWallet.snapshot().connected);
      const f=await page.evaluate(()=>window.mobileFixture);assert(f.locks.includes('landscape'));assert(f.calls.every(m=>['eth_accounts','eth_requestAccounts','eth_chainId','wallet_switchEthereumChain'].includes(m)));assert.equal((await page.evaluate(()=>window.HamsterSave.snapshot())).cloud,false);assert.equal(await page.getByRole('button',{name:'Sign in to save',exact:true}).count(),0);await page.keyboard.press('Escape');
    });
    await check('unsupported orientation lock shows a rotate overlay and freezes the same session',async()=>{
@@ -50,7 +50,7 @@ try{
      const before=await state(),scale=await page.evaluate(()=>visualViewport.scale);
      for(let i=0;i<4;i++){await page.locator('[data-action="throw"]').tap();await page.waitForTimeout(300);}
      assert((await state()).attacks>=before.attacks+4);const ground=(await state()).y;await page.locator('[data-action="jump"]').dispatchEvent('pointerdown',{pointerId:20,pointerType:'touch'});await page.waitForTimeout(80);assert((await state()).y<ground);await page.locator('[data-action="jump"]').dispatchEvent('pointerup',{pointerId:20,pointerType:'touch'});assert.equal(await page.evaluate(()=>visualViewport.scale),scale);
-     assert.equal(await page.locator('#btn-menu').evaluate(e=>getComputedStyle(e).touchAction),'manipulation');assert.equal(await page.locator('#joystick').evaluate(e=>getComputedStyle(e).touchAction),'none');
+     assert.equal(await page.locator('#btn-menu').evaluate(e=>getComputedStyle(e).touchAction),'manipulation');assert.equal(await page.locator('#touch-movement').evaluate(e=>getComputedStyle(e).touchAction),'none');
    });
    await check('pinch magnification keeps stage dimensions and is not globally disabled',async()=>{
      const before=await page.locator('#stage').boundingBox();const cdp=await context.newCDPSession(page);await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:2});await page.waitForFunction(()=>visualViewport.scale>1.9);await page.waitForTimeout(80);const after=await page.locator('#stage').boundingBox();assert(Math.abs(before.width-after.width)<2);assert(Math.abs(before.height-after.height)<2);

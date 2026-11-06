@@ -1,3 +1,15 @@
+# Current task update — 2026-11-06
+
+The provided public URL/key remain unchanged and Auth settings return HTTP 200. A credential-free Ethereum Web3 grant preflight now returns HTTP 422 with **`web3_provider_disabled`**. Status, profile, progress and lifetime Top 100 RPCs still return HTTP 404/PGRST202. These are live responses: [current JSON](../artifacts/validation/production-current.json). No production SQL/migrations, authenticated player write or real signature was possible; no production data was overwritten or deleted.
+
+The delivered save client now retries a retained signed wallet session on browser reconnect after an offline reload. Real disposable PostgreSQL plus the shipped save client and export verified pending-event preservation, exact-once score/SQK, durable deferred rewards, inventory/purchase/cosmetic persistence, canonical same-wallet recovery, RLS/grants and the current SQL Top 100. The new full-schema tests use explicit test Auth/HTTP identities and administrative bankroll/ranking fixtures only in the disposable database. They do not establish hosted authentication or production persistence. See [the current validation report](../artifacts/validation.md) and [test records](../artifacts/validation/test-results.json).
+
+An administrator must inspect the original project's actual schema, apply only missing migrations 001–009, verify preservation and permissions, enable Ethereum Web3 Auth and configure the real hosted redirect URI, then run the existing real-wallet acceptance procedure in [SQL_EDITOR.md](../supabase/SQL_EDITOR.md). Installed production tables/indexes/RLS remain unknown with the supplied access. The migration source files and existing guarded preparation helper are retained; no migration version was guessed.
+
+---
+
+Historical report follows; current results above take precedence.
+
 # Production Supabase integration report
 
 **Status: incomplete. Public configuration and Auth connectivity are verified; production player persistence is not.** This report distinguishes actual production responses from local implementation tests.

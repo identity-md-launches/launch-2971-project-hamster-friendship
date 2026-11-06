@@ -338,7 +338,12 @@
     recoveryRecord: function () { return JSON.parse(JSON.stringify({ wallet: wallet, runs: recovery.concat(outbox.filter(function (r) { return r.conflict; })) })); },
     snapshot: function () { return { profile: JSON.parse(JSON.stringify(profile)), cloud: cloud, configured: CLOUD, backendState: backendState, backendError: backendError, backendCheckedAt: backendCheckedAt, status: !cloud && backendState === 'unavailable' ? backendError : status, storageOK: storageOK, pendingCoins: pendingCoins(), pendingEvents: outbox.reduce(function (n, r) { return n + (r.conflict ? 0 : r.events.length); }, 0), pendingRewards: pendingRewards(), runConflict: hasConflict(), recoveryEvents: recovery.concat(outbox.filter(function (r) { return r.conflict; })).reduce(function (n, r) { return n + r.events.length; }, 0), ranked: Boolean(active && active.ranked), playingGuest: Boolean(active && !active.ranked), localLegacyAvailable: Boolean(read('-guest', null)), legacyAvailable: Boolean(read('-session', null)), wallet: wallet }; }
   };
-  window.addEventListener('online', function () { if (cloud) void flush(); });
+  window.addEventListener('online', function () {
+    if (cloud) void flush();
+    // A reload without network leaves cloud=false but keeps the signed session
+    // and durable queue. Reconnect must restore that session before flushing.
+    else if (wallet && read('-wallet-session-' + wallet, null)) void retry().catch(function () { /* Connection state already exposes a retryable error. */ });
+  });
   window.addEventListener('pagehide', function () { if (cloud) void flush(); });
   setInterval(function () { if (cloud && (outbox.length || pendingRewards()) && !flushing && navigator.onLine) void flush(); }, 4000);
 })();
